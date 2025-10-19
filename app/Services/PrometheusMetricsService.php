@@ -98,9 +98,12 @@ class PrometheusMetricsService
         $samples = 0;
 
         if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = $this->timestampColumn();
+
             $row = DB::table('ssr_metrics')
                 ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
-                ->where('created_at', '>=', $from->toDateTimeString())
+                ->whereNotNull($timestampColumn)
+                ->where($timestampColumn, '>=', $from->toDateTimeString())
                 ->first();
 
             if ($row !== null) {
@@ -268,5 +271,14 @@ class PrometheusMetricsService
         $formatted = number_format($value, 4, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.');
+    }
+
+    private function timestampColumn(): string
+    {
+        if (! Schema::hasTable('ssr_metrics')) {
+            return 'created_at';
+        }
+
+        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 }

@@ -168,9 +168,19 @@ class DemoContentSeeder extends Seeder
                 'path' => $row['path'],
                 'score' => $row['score'],
                 'meta' => null,
+                'size' => 350000,
+                'html_bytes' => 350000,
+                'meta_count' => 12,
+                'og_count' => 3,
+                'ldjson_count' => 1,
+                'img_count' => 8,
+                'blocking_scripts' => 1,
+                'has_json_ld' => true,
+                'has_open_graph' => true,
                 'first_byte_ms' => $row['first_byte_ms'],
                 'created_at' => $now->subDays($row['delta']),
                 'updated_at' => $now->subDays($row['delta']),
+                'collected_at' => $now->subDays($row['delta']),
             ];
         }, $ssrMetrics));
     }

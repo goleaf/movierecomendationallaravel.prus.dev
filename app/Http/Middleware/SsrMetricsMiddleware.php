@@ -47,6 +47,7 @@ class SsrMetricsMiddleware
         $metaPayload = [
             'first_byte_ms' => $firstByteMs,
             'html_size' => $size,
+            'html_bytes' => $size,
             'meta_count' => $meta,
             'og_count' => $og,
             'ldjson_count' => $ld,
@@ -83,6 +84,8 @@ class SsrMetricsMiddleware
         $payload = [
             'path' => $path,
             'score' => $score,
+            'collected_at' => now()->toIso8601String(),
+            'html_bytes' => $size,
             'html_size' => $size,
             'meta_count' => $meta,
             'og_count' => $og,
@@ -91,6 +94,8 @@ class SsrMetricsMiddleware
             'blocking_scripts' => $blocking,
             'first_byte_ms' => $firstByteMs,
             'meta' => $metaPayload,
+            'has_json_ld' => $ld > 0,
+            'has_open_graph' => $og > 0,
         ];
 
         StoreSsrMetric::dispatch($payload);

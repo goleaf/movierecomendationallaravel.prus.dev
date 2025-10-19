@@ -22,11 +22,20 @@ class SsrAnalyticsService
         $paths = 0;
 
         if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')->orderByDesc('id')->first();
+            $timestampColumn = $this->timestampColumn();
+
+            $row = DB::table('ssr_metrics')
+                ->whereNotNull($timestampColumn)
+                ->orderByDesc($timestampColumn)
+                ->orderByDesc('id')
+                ->first();
 
             if ($row) {
                 $score = (int) $row->score;
-                $paths = 1;
+                $paths = max(1, (int) DB::table('ssr_metrics')
+                    ->whereNotNull($timestampColumn)
+                    ->distinct()
+                    ->count('path'));
             }
         } elseif (Storage::exists('metrics/last.json')) {
             $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
@@ -63,8 +72,12 @@ class SsrAnalyticsService
         $series = [];
 
         if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = $this->timestampColumn();
+            $dateExpression = 'date('.$timestampColumn.')';
+
             $rows = DB::table('ssr_metrics')
-                ->selectRaw('date(created_at) as d, avg(score) as s')
+                ->selectRaw($dateExpression.' as d, avg(score) as s')
+                ->whereNotNull($timestampColumn)
                 ->groupBy('d')
                 ->orderBy('d')
                 ->limit($limit)
@@ -106,17 +119,20 @@ class SsrAnalyticsService
             return null;
         }
 
+        $timestampColumn = $this->timestampColumn();
+        $dateExpression = 'date('.$timestampColumn.')';
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
 
         return SsrMetric::query()
-            ->fromSub(function ($query) use ($today, $yesterday): void {
+            ->fromSub(function ($query) use ($today, $yesterday, $timestampColumn, $dateExpression): void {
                 $query
-                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday): void {
+                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday, $timestampColumn, $dateExpression): void {
                         $aggregateQuery
                             ->from('ssr_metrics')
-                            ->selectRaw('path, date(created_at) as d, avg(score) as avg_score')
-                            ->whereIn(DB::raw('date(created_at)'), [$yesterday, $today])
+                            ->selectRaw('path, '.$dateExpression.' as d, avg(score) as avg_score')
+                            ->whereNotNull($timestampColumn)
+                            ->whereIn(DB::raw($dateExpression), [$yesterday, $today])
                             ->groupBy('path', 'd');
                     }, 'agg')
                     ->selectRaw(
@@ -161,5 +177,14 @@ class SsrAnalyticsService
                 ];
             })
             ->all();
+    }
+
+    private function timestampColumn(): string
+    {
+        if (! Schema::hasTable('ssr_metrics')) {
+            return 'created_at';
+        }
+
+        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 }
