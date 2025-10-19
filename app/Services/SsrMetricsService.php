@@ -5,17 +5,88 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Carbon\CarbonInterface;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class SsrMetricsService
 {
+    public function shouldCapture(Request $request, Response $response): bool
+    {
+        if (! config('ssrmetrics.enabled')) {
+            return false;
+        }
+
+        if (! in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)) {
+            return false;
+        }
+
+        $status = $response->getStatusCode();
+
+        if ($status < 200 || $status >= 400) {
+            return false;
+        }
+
+        $contentType = strtolower((string) $response->headers->get('Content-Type', ''));
+
+        if ($contentType === '' || ! str_contains($contentType, 'text/html')) {
+            return false;
+        }
+
+        $path = $this->normalizePath($request->path());
+
+        $paths = collect(config('ssrmetrics.paths', []))
+            ->filter(static fn ($value): bool => is_string($value) && $value !== '')
+            ->map(fn (string $value): string => $this->normalizePath($value))
+            ->values();
+
+        if ($paths->isEmpty()) {
+            return true;
+        }
+
+        if ($paths->contains('*')) {
+            return true;
+        }
+
+        return $paths->contains($path);
+    }
+
+    public function makePayload(Request $request, Response $response, float $startedAt): array
+    {
+        $path = $this->normalizePath($request->path());
+        $firstByteMs = $this->calculateFirstByteMs($startedAt);
+        $metrics = $this->parseResponse($response);
+
+        return $this->buildPayload($path, $firstByteMs, $metrics);
+    }
+
+    private function normalizePath(?string $path): string
+    {
+        $path ??= '/';
+
+        $normalized = '/'.ltrim($path, '/');
+
+        return $normalized === '//' ? '/' : $normalized;
+    }
+
+    private function calculateFirstByteMs(float $startedAt, ?float $finishedAt = null): int
+    {
+        $finishedAt ??= microtime(true);
+
+        if ($finishedAt <= $startedAt) {
+            return 0;
+        }
+
+        return max(0, (int) round(($finishedAt - $startedAt) * 1000));
+    }
+
     /**
      * Extracts SSR-related metrics from an HTML response.
      */
@@ -122,6 +193,95 @@ class SsrMetricsService
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function storeMetric(array $payload): void
+    {
+        $this->storeNormalizedMetric(
+            $this->normalizePayload($payload),
+            $payload,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *     path: string,
+     *     score: int,
+     *     html_bytes: int|null,
+     *     meta_count: int|null,
+     *     og_count: int|null,
+     *     ldjson_count: int|null,
+     *     img_count: int|null,
+     *     blocking_scripts: int|null,
+     *     first_byte_ms: int,
+     *     has_json_ld: bool,
+     *     has_open_graph: bool,
+     *     meta: array<string, mixed>,
+     *     collected_at: CarbonInterface,
+     * }
+     */
+    public function normalizePayload(array $payload): array
+    {
+        $path = $this->normalizePath($payload['path'] ?? '/');
+
+        $score = (int) ($payload['score'] ?? 0);
+        $score = max(0, min(100, $score));
+
+        $htmlBytes = $this->extractInteger($payload, ['html_bytes', 'html_size', 'size']);
+        $metaCount = $this->extractInteger($payload, ['meta_count']);
+        $ogCount = $this->extractInteger($payload, ['og_count']);
+        $ldjsonCount = $this->extractInteger($payload, ['ldjson_count']);
+        $imgCount = $this->extractInteger($payload, ['img_count']);
+        $blockingScripts = $this->extractInteger($payload, ['blocking_scripts']);
+        $firstByteMs = $this->extractInteger($payload, ['first_byte_ms']) ?? 0;
+
+        $hasJsonLd = array_key_exists('has_json_ld', $payload)
+            ? (bool) $payload['has_json_ld']
+            : (($ldjsonCount ?? 0) > 0);
+
+        $hasOpenGraph = array_key_exists('has_open_graph', $payload)
+            ? (bool) $payload['has_open_graph']
+            : (($ogCount ?? 0) > 0);
+
+        $meta = $payload['meta'] ?? [];
+        $meta = is_array($meta) ? $meta : [];
+        $meta = array_merge($meta, [
+            'first_byte_ms' => $firstByteMs,
+            'html_bytes' => $htmlBytes,
+            'html_size' => $htmlBytes,
+            'meta_count' => $metaCount,
+            'og_count' => $ogCount,
+            'ldjson_count' => $ldjsonCount,
+            'img_count' => $imgCount,
+            'blocking_scripts' => $blockingScripts,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
+        ]);
+
+        $collectedAtSource = $payload['collected_at']
+            ?? $payload['timestamp']
+            ?? $payload['ts']
+            ?? null;
+
+        return [
+            'path' => $path,
+            'score' => $score,
+            'html_bytes' => $htmlBytes,
+            'meta_count' => $metaCount,
+            'og_count' => $ogCount,
+            'ldjson_count' => $ldjsonCount,
+            'img_count' => $imgCount,
+            'blocking_scripts' => $blockingScripts,
+            'first_byte_ms' => $firstByteMs,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
+            'meta' => $meta,
+            'collected_at' => $this->resolveTimestamp($collectedAtSource),
+        ];
+    }
+
+    /**
      * @param  array{collected_at: CarbonInterface|\DateTimeInterface|string|int|null}  $normalizedPayload
      * @param  array<string, mixed>  $originalPayload
      */
@@ -130,10 +290,14 @@ class SsrMetricsService
         $normalizedPayload = $this->ensureNormalizedPayload($normalizedPayload);
 
         if ($this->storeInDatabase($normalizedPayload)) {
+            $this->cleanupDatabaseRetention($normalizedPayload['collected_at']);
+            $this->cleanupJsonlRetention($normalizedPayload['collected_at']);
+
             return;
         }
 
         $this->storeInJsonl($normalizedPayload, $originalPayload);
+        $this->cleanupJsonlRetention($normalizedPayload['collected_at']);
     }
 
     /**
@@ -145,19 +309,7 @@ class SsrMetricsService
         $collectedAt = Arr::get($normalizedPayload, 'collected_at');
 
         if (! $collectedAt instanceof CarbonInterface) {
-            if ($collectedAt instanceof \DateTimeInterface) {
-                $collectedAt = Carbon::createFromInterface($collectedAt);
-            } elseif (is_numeric($collectedAt)) {
-                $collectedAt = Carbon::createFromTimestamp((int) $collectedAt);
-            } elseif (is_string($collectedAt) && $collectedAt !== '') {
-                try {
-                    $collectedAt = Carbon::parse($collectedAt);
-                } catch (Throwable) {
-                    $collectedAt = Carbon::now();
-                }
-            } else {
-                $collectedAt = Carbon::now();
-            }
+            $collectedAt = $this->attemptParseTimestamp($collectedAt) ?? Carbon::now();
         }
 
         $normalizedPayload['collected_at'] = $collectedAt;
@@ -250,10 +402,13 @@ class SsrMetricsService
      */
     private function storeInJsonl(array $normalizedPayload, array $originalPayload): void
     {
+        $disk = $this->storageDisk('fallback');
+        $path = $this->storagePath('fallback', 'incoming');
+
         try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
-            }
+            $filesystem = Storage::disk($disk);
+
+            $this->ensureDirectoryExists($disk, $path);
 
             $payload = [
                 'ts' => $normalizedPayload['collected_at']->toIso8601String(),
@@ -277,12 +432,253 @@ class SsrMetricsService
                 'has_open_graph' => $normalizedPayload['has_open_graph'],
             ];
 
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+            $filesystem->append($path, json_encode($payload, JSON_THROW_ON_ERROR));
         } catch (Throwable $e) {
             Log::error('Failed storing SSR metric.', [
                 'exception' => $e,
                 'payload' => $originalPayload,
+                'disk' => $disk,
+                'path' => $path,
             ]);
         }
+    }
+
+    public function storageDisk(string $tier): string
+    {
+        $disk = (string) Arr::get(config('ssrmetrics.storage', []), $tier.'.disk', 'local');
+        $configuredDisks = array_keys(config('filesystems.disks', []));
+
+        if ($disk === '' || ! in_array($disk, $configuredDisks, true)) {
+            return 'local';
+        }
+
+        return $disk;
+    }
+
+    public function storagePath(string $tier, string $fileKey): string
+    {
+        $default = match ($tier.'.'.$fileKey) {
+            'primary.incoming' => 'ssr-metrics.jsonl',
+            'primary.aggregate' => 'ssr-metrics-summary.json',
+            'fallback.recovery' => 'ssr-metrics-recovery.jsonl',
+            default => 'ssr-metrics-fallback.jsonl',
+        };
+
+        $path = (string) Arr::get(config('ssrmetrics.storage', []), $tier.'.files.'.$fileKey, $default);
+
+        return $path !== '' ? $path : $default;
+    }
+
+    private function cleanupDatabaseRetention(CarbonInterface $reference): void
+    {
+        $days = (int) config('ssrmetrics.retention.primary_days', 0);
+
+        if ($days <= 0 || ! Schema::hasTable('ssr_metrics')) {
+            return;
+        }
+
+        $column = $this->databaseTimestampColumn();
+
+        if ($column === null) {
+            return;
+        }
+
+        $cutoff = $reference->copy()->subDays($days);
+
+        try {
+            DB::table('ssr_metrics')
+                ->whereNotNull($column)
+                ->where($column, '<', $cutoff->toDateTimeString())
+                ->delete();
+        } catch (Throwable $e) {
+            Log::warning('Failed pruning SSR metric records.', [
+                'exception' => $e,
+            ]);
+        }
+    }
+
+    private function cleanupJsonlRetention(CarbonInterface $reference): void
+    {
+        $days = (int) config('ssrmetrics.retention.fallback_days', 0);
+
+        if ($days <= 0) {
+            return;
+        }
+
+        $disk = $this->storageDisk('fallback');
+        $path = $this->storagePath('fallback', 'incoming');
+        $filesystem = Storage::disk($disk);
+
+        if (! $filesystem->exists($path)) {
+            return;
+        }
+
+        try {
+            $contents = $filesystem->get($path);
+        } catch (Throwable $e) {
+            Log::warning('Failed reading SSR fallback metrics for retention cleanup.', [
+                'exception' => $e,
+                'disk' => $disk,
+                'path' => $path,
+            ]);
+
+            return;
+        }
+
+        $lines = preg_split("/\r\n|\n|\r/", $contents) ?: [];
+        $cutoff = $reference->copy()->subDays($days);
+        $kept = [];
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+
+            if ($trimmed === '') {
+                continue;
+            }
+
+            $decoded = null;
+            $timestamp = null;
+
+            try {
+                $decoded = json_decode($trimmed, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    $timestamp = $this->extractJsonlTimestamp($decoded);
+                }
+            } catch (Throwable) {
+                // Keep malformed lines to avoid data loss.
+            }
+
+            if ($timestamp !== null && $timestamp->lt($cutoff)) {
+                continue;
+            }
+
+            if (is_array($decoded)) {
+                try {
+                    $kept[] = json_encode($decoded, JSON_THROW_ON_ERROR);
+
+                    continue;
+                } catch (Throwable) {
+                    // Fall back to the original line.
+                }
+            }
+
+            $kept[] = $trimmed;
+        }
+
+        if ($kept === []) {
+            $filesystem->delete($path);
+
+            return;
+        }
+
+        $filesystem->put($path, implode(PHP_EOL, $kept).PHP_EOL);
+    }
+
+    private function databaseTimestampColumn(): ?string
+    {
+        if (! Schema::hasTable('ssr_metrics')) {
+            return null;
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+            return 'collected_at';
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'created_at')) {
+            return 'created_at';
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'updated_at')) {
+            return 'updated_at';
+        }
+
+        return null;
+    }
+
+    private function ensureDirectoryExists(string $disk, string $path): void
+    {
+        $directory = Str::beforeLast($path, '/');
+
+        if ($directory === $path || $directory === '' || $directory === '.') {
+            return;
+        }
+
+        $filesystem = Storage::disk($disk);
+
+        if (! $filesystem->exists($directory)) {
+            $filesystem->makeDirectory($directory);
+        }
+    }
+
+    private function extractJsonlTimestamp(array $payload): ?CarbonInterface
+    {
+        foreach (['ts', 'timestamp', 'collected_at', 'created_at'] as $key) {
+            if (! array_key_exists($key, $payload)) {
+                continue;
+            }
+
+            $parsed = $this->attemptParseTimestamp($payload[$key]);
+
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $keys
+     */
+    private function extractInteger(array $payload, array $keys): ?int
+    {
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$key];
+
+            if ($value === null) {
+                return null;
+            }
+
+            if (is_numeric($value)) {
+                return max(0, (int) $value);
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveTimestamp(mixed $value): CarbonInterface
+    {
+        return $this->attemptParseTimestamp($value) ?? Carbon::now();
+    }
+
+    private function attemptParseTimestamp(mixed $value): ?CarbonInterface
+    {
+        if ($value instanceof CarbonInterface) {
+            return Carbon::createFromInterface($value);
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::createFromInterface($value);
+        }
+
+        if (is_numeric($value)) {
+            return Carbon::createFromTimestamp((int) $value);
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return Carbon::parse($value);
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }

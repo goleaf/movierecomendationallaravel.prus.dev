@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\SsrMetricsMiddleware;
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
@@ -38,7 +39,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $result = $middleware->handle($request, static fn () => $response);
 
@@ -158,7 +159,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response($html, 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $middleware->handle($request, static fn () => $response);
 
@@ -179,7 +180,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $middleware->handle($request, static fn () => $response);
 
@@ -196,10 +197,66 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $middleware->handle($request, static fn () => $response);
 
         Queue::assertNothingPushed();
+    }
+
+    public function test_middleware_respects_service_capture_decision(): void
+    {
+        Queue::fake();
+
+        $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
+        $request = Request::create('/checked', 'GET');
+
+        $service = $this->createMock(SsrMetricsService::class);
+        $service->expects($this->once())
+            ->method('shouldCapture')
+            ->with($this->identicalTo($request), $this->identicalTo($response))
+            ->willReturn(false);
+        $service->expects($this->never())->method('makePayload');
+
+        $middleware = new SsrMetricsMiddleware($service);
+
+        $this->assertSame($response, $middleware->handle($request, static fn () => $response));
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_middleware_dispatches_payload_from_service(): void
+    {
+        Queue::fake();
+
+        $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
+        $request = Request::create('/capture', 'GET');
+
+        $expectedPayload = [
+            'path' => '/capture',
+            'score' => 99,
+        ];
+
+        $service = $this->createMock(SsrMetricsService::class);
+        $service->expects($this->once())
+            ->method('shouldCapture')
+            ->with($this->identicalTo($request), $this->identicalTo($response))
+            ->willReturn(true);
+        $service->expects($this->once())
+            ->method('makePayload')
+            ->with(
+                $this->identicalTo($request),
+                $this->identicalTo($response),
+                $this->isType('float')
+            )
+            ->willReturn($expectedPayload);
+
+        $middleware = new SsrMetricsMiddleware($service);
+
+        $this->assertSame($response, $middleware->handle($request, static fn () => $response));
+
+        Queue::assertPushed(StoreSsrMetric::class, function (StoreSsrMetric $job) use ($expectedPayload): bool {
+            return $job->payload === $expectedPayload;
+        });
     }
 }
