@@ -74,6 +74,35 @@ class RecAbTest extends TestCase
         $this->assertSame('A', $queued->getValue());
     }
 
+    public function test_for_device_uses_seed_to_assign_deterministic_variants(): void
+    {
+        Movie::factory()->count(2)->create();
+
+        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        config()->set('recs.ab_split', ['A' => 70.0, 'B' => 30.0]);
+        config()->set('recs.seed', 'experiment-2025');
+
+        $threshold = 70.0 / (70.0 + 30.0);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        $service = app(RecAb::class);
+
+        [$firstVariant] = $service->forDevice('device-seeded-1', 1);
+        $expectedFirst = $this->expectedVariantForSeed('device-seeded-1', $threshold, 'experiment-2025');
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        [$repeatVariant] = app(RecAb::class)->forDevice('device-seeded-1', 1);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        [$secondVariant] = app(RecAb::class)->forDevice('device-seeded-2', 1);
+        $expectedSecond = $this->expectedVariantForSeed('device-seeded-2', $threshold, 'experiment-2025');
+
+        $this->assertSame($expectedFirst, $firstVariant);
+        $this->assertSame($expectedFirst, $repeatVariant);
+        $this->assertSame($expectedSecond, $secondVariant);
+    }
+
     public function test_for_device_ranks_movies_using_weighted_popularity_and_recency(): void
     {
         $movies = collect([
@@ -128,5 +157,14 @@ class RecAbTest extends TestCase
 
         $this->assertSame('A', $variant);
         $this->assertSame($expectedOrder, $list->pluck('id')->values()->all());
+    }
+
+    private function expectedVariantForSeed(string $deviceId, float $threshold, string $seed): string
+    {
+        $hash = crc32($seed.'|'.$deviceId);
+        $unsigned = (int) sprintf('%u', $hash);
+        $random = $unsigned / 4294967295;
+
+        return $random < $threshold ? 'A' : 'B';
     }
 }

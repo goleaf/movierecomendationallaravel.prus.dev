@@ -17,27 +17,27 @@ class RecAb
     /** @return array{0:string,1:Collection<int,Movie>} */
     public function forDevice(string $deviceId, int $limit = 12): array
     {
-        $variant = $this->resolveVariant();
+        $variant = $this->resolveVariant($deviceId);
         $list = $this->score($variant, $deviceId, $limit);
 
         return [$variant, $list];
     }
 
-    protected function resolveVariant(): string
+    protected function resolveVariant(string $deviceId): string
     {
         $existing = request()->cookie(self::COOKIE_NAME);
         if (in_array($existing, ['A', 'B'], true)) {
             return $existing;
         }
 
-        $variant = $this->pickVariant();
+        $variant = $this->pickVariant($deviceId);
 
         Cookie::queue(self::COOKIE_NAME, $variant, self::COOKIE_LIFETIME_MINUTES);
 
         return $variant;
     }
 
-    protected function pickVariant(): string
+    protected function pickVariant(string $deviceId): string
     {
         $weights = config('recs.ab_split', ['A' => 50.0, 'B' => 50.0]);
         $weightA = (float) ($weights['A'] ?? 50.0);
@@ -49,9 +49,20 @@ class RecAb
         }
 
         $threshold = $weightA / $total;
-        $random = random_int(0, 10000) / 10000;
+        $seed = config('recs.seed');
+        $random = is_string($seed) && $seed !== ''
+            ? $this->deterministicRandom($deviceId, $seed)
+            : random_int(0, 10000) / 10000;
 
         return $random < $threshold ? 'A' : 'B';
+    }
+
+    private function deterministicRandom(string $deviceId, string $seed): float
+    {
+        $hash = crc32($seed.'|'.$deviceId);
+        $unsigned = (int) sprintf('%u', $hash);
+
+        return $unsigned / 4294967295;
     }
 
     /** @return Collection<int,Movie> */
