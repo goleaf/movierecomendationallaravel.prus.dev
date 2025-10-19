@@ -37,7 +37,13 @@ a{color:#9fc5ff;text-decoration:none}.container{max-width:1200px;margin:0 auto;p
 <body><div class="container">
 <header class="mb"><a href="{{ url('/') }}"><strong>{{ __('messages.app.name') }}</strong></a> <span class="muted">{{ __('messages.app.tagline') }}</span></header>
 @yield('content')
-<footer class="muted">{{ __('messages.app.footer', ['year' => date('Y')]) }}</footer>
+<footer class="muted">
+    {{ __('messages.app.footer', ['year' => date('Y')]) }}
+    <span aria-hidden="true">•</span>
+    <a href="{{ url('/privacy') }}">{{ __('messages.app.privacy') }}</a>
+    <span aria-hidden="true">•</span>
+    <a href="{{ url('/terms') }}">{{ __('messages.app.terms') }}</a>
+</footer>
 </div>
 @livewireScripts
 @filamentScripts([
