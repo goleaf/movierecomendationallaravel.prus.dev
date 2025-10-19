@@ -37,8 +37,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|Inquiry wherePhone($value)
  * @method static Builder<static>|Inquiry whereUpdatedAt($value)
  * @method static Builder<static>|Inquiry whereUserAgent($value)
- *
- * @mixin \Eloquent
  */
 final class Inquiry extends Model
 {
@@ -58,11 +56,15 @@ final class Inquiry extends Model
     /**
      * Replies that belong to the contact message.
      *
-     * @return HasMany<InquiryReply>
+     * @return HasMany<InquiryReply, self>
      */
     public function replies(): HasMany
     {
-        return $this->hasMany(InquiryReply::class)
-            ->orderByDesc('created_at');
+        /** @var HasMany<InquiryReply, self> $relation */
+        $relation = $this->hasMany(InquiryReply::class);
+
+        $relation->orderByDesc('created_at');
+
+        return $relation;
     }
 }

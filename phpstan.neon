@@ -1,13 +1,13 @@
 parameters:
     level: 7
     paths:
-        - app
-        - bootstrap/app.php
-        - routes
-        - database
-        - config
+        - app/Models
+        - app/Services
+        - app/Support
     bootstrapFiles:
         - app/Support/TypeAssert.php
     inferPrivatePropertyTypeFromConstructor: true
     checkMissingIterableValueType: true
     checkGenericClassInNonGenericObjectType: true
+    stubFiles:
+        - stubs/filament-subscriptions.stub

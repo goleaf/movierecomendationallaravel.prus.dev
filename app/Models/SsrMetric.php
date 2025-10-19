@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  */
 class SsrMetric extends Model
 {
+    /** @use HasFactory<\Database\Factories\SsrMetricFactory> */
     use HasFactory;
 
     protected $table = 'ssr_metrics';

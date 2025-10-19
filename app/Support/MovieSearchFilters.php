@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -15,12 +17,11 @@ final class MovieSearchFilters
         public readonly ?string $genre,
         public readonly ?int $yearFrom,
         public readonly ?int $yearTo,
-    ) {
-    }
+    ) {}
 
     public static function fromRequest(Request $request): self
     {
-        $query = trim((string) $request->query('q', ''));
+        $query = self::normalizeString($request->query('q', '')) ?? '';
         $type = self::normalizeType($request->query('type'));
         $genre = self::normalizeString($request->query('genre'));
         $yearFrom = self::normalizeYear($request->query('yf'));
@@ -33,6 +34,10 @@ final class MovieSearchFilters
         return new self($query, $type, $genre, $yearFrom, $yearTo);
     }
 
+    /**
+     * @param  Builder<\App\Models\Movie>  $builder
+     * @return Builder<\App\Models\Movie>
+     */
     public function apply(Builder $builder): Builder
     {
         if ($this->query !== '') {
@@ -63,6 +68,9 @@ final class MovieSearchFilters
         return $builder;
     }
 
+    /**
+     * @return array{q: string, type: ?string, genre: ?string, yf: ?int, yt: ?int}
+     */
     public function toViewData(): array
     {
         return [
@@ -89,6 +97,10 @@ final class MovieSearchFilters
     {
         if ($value === null) {
             return null;
+        }
+
+        if (is_array($value)) {
+            $value = reset($value);
         }
 
         $string = trim((string) $value);

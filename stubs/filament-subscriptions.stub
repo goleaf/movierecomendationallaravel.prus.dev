@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Laravelcm\Subscriptions\Traits;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Laravelcm\Subscriptions\Models\Plan;
+use Laravelcm\Subscriptions\Models\Subscription;
+
+if (false) {
+    /**
+     * @property-read EloquentCollection<int, Subscription> $planSubscriptions
+     */
+    trait HasPlanSubscriptions
+    {
+        public function planSubscriptions(): MorphMany;
+
+        /**
+         * @return EloquentCollection<int, Subscription>
+         */
+        public function activePlanSubscriptions(): EloquentCollection;
+
+        public function planSubscription(string $subscriptionSlug): ?Subscription;
+
+        /**
+         * @return EloquentCollection<int, Plan>
+         */
+        public function subscribedPlans(): EloquentCollection;
+
+        public function subscribedTo(int $planId): bool;
+
+        public function newPlanSubscription(string $subscription, Plan $plan, ?Carbon $startDate = null): Subscription;
+    }
+}

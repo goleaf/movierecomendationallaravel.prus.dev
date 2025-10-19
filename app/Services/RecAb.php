@@ -22,14 +22,20 @@ class RecAb
     protected function score(string $variant, string $deviceId, int $limit): Collection
     {
         $W = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
+        /** @var Collection<int, Movie> $movies */
         $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
 
-        return $movies->map(function (Movie $m) use ($W) {
+        $scored = $movies->map(function (Movie $m) use ($W): array {
             $pop = ((float) ($m->imdb_rating ?? 0)) / 10 * (max(0.0, (float) log10(($m->imdb_votes ?? 0) + 1)) / 6);
             $recent = $m->year ? max(0.0, (5 - (now()->year - (int) $m->year))) / 5.0 : 0.0;
             $score = $W['pop'] * $pop + $W['recent'] * $recent + $W['pref'] * 0.0;
 
             return ['m' => $m, 's' => $score];
-        })->sortByDesc('s')->pluck('m')->take($limit);
+        })->sortByDesc('s')->pluck('m')->take($limit)->values();
+
+        /** @var Collection<int, Movie> $result */
+        $result = $scored;
+
+        return $result;
     }
 }

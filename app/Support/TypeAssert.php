@@ -26,6 +26,9 @@ function assert_non_empty_string(mixed $value, ?string $message = null): string
     return $string;
 }
 
+/**
+ * @return array<array-key, mixed>
+ */
 function assert_array(mixed $value, ?string $message = null): array
 {
     if (! is_array($value)) {
@@ -38,9 +41,7 @@ function assert_array(mixed $value, ?string $message = null): array
 /**
  * @template T of object
  *
- * @param mixed $value
- * @param class-string<T> $className
- * @param string|null $message
+ * @param  class-string<T>  $className
  * @return T
  */
 function assert_instanceof(mixed $value, string $className, ?string $message = null): object

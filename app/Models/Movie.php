@@ -34,10 +34,15 @@ use Kirschbaum\Commentions\HasComments;
 class Movie extends Model implements Commentable
 {
     use HasComments;
+
+    /** @use HasFactory<\Database\Factories\MovieFactory> */
     use HasFactory;
 
     protected $guarded = [];
 
+    /**
+     * @var list<string>
+     */
     protected $appends = ['weighted_score'];
 
     protected function casts(): array
@@ -70,18 +75,36 @@ class Movie extends Model implements Commentable
         return round($weighted, 4);
     }
 
+    /**
+     * @phpstan-return HasMany<RecAbLog, static>
+     */
     public function recAbLogs(): HasMany
     {
-        return $this->hasMany(RecAbLog::class);
+        /** @var HasMany<RecAbLog, static> $relation */
+        $relation = $this->hasMany(RecAbLog::class);
+
+        return $relation;
     }
 
+    /**
+     * @phpstan-return HasMany<RecClick, static>
+     */
     public function recClicks(): HasMany
     {
-        return $this->hasMany(RecClick::class);
+        /** @var HasMany<RecClick, static> $relation */
+        $relation = $this->hasMany(RecClick::class);
+
+        return $relation;
     }
 
+    /**
+     * @phpstan-return HasMany<DeviceHistory, static>
+     */
     public function deviceHistory(): HasMany
     {
-        return $this->hasMany(DeviceHistory::class);
+        /** @var HasMany<DeviceHistory, static> $relation */
+        $relation = $this->hasMany(DeviceHistory::class);
+
+        return $relation;
     }
 }

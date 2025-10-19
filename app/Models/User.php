@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +13,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Kirschbaum\Commentions\Contracts\Commenter;
 
+/**
+ * @property string|null $name
+ * @property string $email
+ */
 class User extends Authenticatable implements Commenter, HasAvatar, HasName
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -65,9 +68,12 @@ class User extends Authenticatable implements Commenter, HasAvatar, HasName
      */
     public static function mentionableForComments(): Collection
     {
-        return static::query()
+        /** @var Collection<int, static> $users */
+        $users = static::query()
             ->orderBy('name')
             ->get();
+
+        return $users;
     }
 
     public function getFilamentName(): string

@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use stdClass;
 
 class TrendingService
 {
@@ -39,25 +40,29 @@ class TrendingService
             return $this->fallbackSnapshot($limit);
         }
 
+        /** @var Collection<int, Movie> $movies */
         $movies = Movie::query()
             ->whereIn('id', $top->keys()->all())
             ->get()
             ->keyBy('id');
 
-        return $top
-            ->map(function (int $clicks, int $movieId) use ($movies) {
-                $movie = $movies->get($movieId);
-                if (! $movie) {
-                    return null;
-                }
+        /** @var Collection<int, array{movie: Movie, clicks: int|null}> $result */
+        $result = collect();
 
-                return [
-                    'movie' => $movie,
-                    'clicks' => $clicks,
-                ];
-            })
-            ->filter()
-            ->values();
+        foreach ($top as $movieId => $clicks) {
+            $movie = $movies->get($movieId);
+
+            if (! $movie instanceof Movie) {
+                continue;
+            }
+
+            $result->push([
+                'movie' => $movie,
+                'clicks' => $clicks,
+            ]);
+        }
+
+        return $result;
     }
 
     /**
@@ -69,15 +74,19 @@ class TrendingService
             return collect();
         }
 
-        return Movie::query()
+        /** @var Collection<int, Movie> $movies */
+        $movies = Movie::query()
             ->orderByDesc('imdb_votes')
             ->orderByDesc('imdb_rating')
             ->limit($limit)
-            ->get()
-            ->map(fn (Movie $movie) => [
+            ->get();
+
+        return $movies
+            ->map(static fn (Movie $movie): array => [
                 'movie' => $movie,
                 'clicks' => null,
-            ]);
+            ])
+            ->values();
     }
 
     /**
@@ -91,6 +100,7 @@ class TrendingService
 
         [$from, $to] = $this->timeframe($days);
 
+        /** @var Collection<int, stdClass> $items */
         $items = collect();
 
         if (Schema::hasTable('rec_clicks')) {
@@ -121,18 +131,19 @@ class TrendingService
         }
 
         if ($items->isNotEmpty()) {
-            return $items->map(fn (object $item) => [
+            return $items->map(static fn (stdClass $item): array => [
                 'id' => (int) $item->id,
                 'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
                 'year' => $item->year !== null ? (int) $item->year : null,
-                'type' => $item->type,
+                'type' => $item->type !== null ? (string) $item->type : null,
                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
                 'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
                 'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
-            ]);
+            ])->values();
         }
 
+        /** @var Collection<int, Movie> $fallback */
         $fallback = Movie::query()
             ->when($type !== '', fn ($query) => $query->where('type', $type))
             ->when($genre !== '', fn ($query) => $query->whereJsonContains('genres', $genre))
@@ -143,16 +154,16 @@ class TrendingService
             ->limit($limit)
             ->get();
 
-        return $fallback->map(fn (Movie $movie) => [
+        return $fallback->map(static fn (Movie $movie): array => [
             'id' => $movie->id,
             'title' => $movie->title,
             'poster_url' => $movie->poster_url,
             'year' => $movie->year,
-            'type' => $movie->type,
+            'type' => $movie->type !== null ? (string) $movie->type : null,
             'imdb_rating' => $movie->imdb_rating,
             'imdb_votes' => $movie->imdb_votes,
             'clicks' => null,
-        ]);
+        ])->values();
     }
 
     /**
