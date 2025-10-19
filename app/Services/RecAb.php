@@ -7,23 +7,48 @@ use Illuminate\Support\Collection;
 
 class RecAb
 {
-    /** @return array{0:string,1:Collection<int,Movie>} */
-    public function forDevice(string $deviceId, int $limit=12): array
+    private const DEFAULT_WEIGHTS = [
+        'pop' => 0.5,
+        'recent' => 0.2,
+        'pref' => 0.3,
+    ];
+
+    /**
+     * @return array{0:string,1:Collection<int,Movie>}
+     */
+    public function forDevice(string $deviceId, int $limit = 12): array
     {
-        $variant = (crc32($deviceId)%2===0)?'A':'B';
-        $list = $this->score($deviceId, $limit);
+        $variant = (crc32($deviceId) % 2 === 0) ? 'A' : 'B';
+        $list = $this->score($deviceId, $variant, $limit);
+
         return [$variant, $list];
-        }
-    /** @return Collection<int,Movie> */
-    protected function score(string $deviceId, int $limit): Collection
+    }
+
+    /**
+     * @return Collection<int,Movie>
+     */
+    protected function score(string $deviceId, string $variant, int $limit): Collection
     {
-        $W = config('recs.A',['pop'=>0.5,'recent'=>0.2,'pref'=>0.3]);
-        $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
-        return $movies->map(function(Movie $m) use ($W){
-            $pop = ((float)($m->imdb_rating ?? 0))/10 * (max(0.0, (float)log10(($m->imdb_votes ?? 0)+1))/6);
-            $recent = $m->year ? max(0.0, (5-(now()->year-(int)$m->year)))/5.0 : 0.0;
-            $score = $W['pop']*$pop + $W['recent']*$recent + $W['pref']*0.0;
-            return ['m'=>$m,'s'=>$score];
-        })->sortByDesc('s')->pluck('m')->take($limit);
+        $weights = array_merge(self::DEFAULT_WEIGHTS, (array) config("recs.$variant"));
+
+        $movies = Movie::query()
+            ->orderByDesc('imdb_votes')
+            ->limit(200)
+            ->get();
+
+        return $movies->map(function (Movie $movie) use ($weights) {
+            $popularity = ((float) ($movie->imdb_rating ?? 0)) / 10 * (max(0.0, (float) log10(($movie->imdb_votes ?? 0) + 1)) / 6);
+            $recency = $movie->year ? max(0.0, (5 - (now()->year - (int) $movie->year)) / 5.0) : 0.0;
+            $score = $weights['pop'] * $popularity + $weights['recent'] * $recency + $weights['pref'] * 0.0;
+
+            return [
+                'movie' => $movie,
+                'score' => $score,
+            ];
+        })
+            ->sortByDesc('score')
+            ->pluck('movie')
+            ->take($limit)
+            ->values();
     }
 }

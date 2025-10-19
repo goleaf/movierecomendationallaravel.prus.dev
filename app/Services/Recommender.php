@@ -4,11 +4,27 @@ namespace App\Services;
 
 use App\Models\Movie;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class Recommender
 {
-    public function __construct(protected RecAb $ab){}
-    /** @return Collection<int,Movie> */
-    public function recommendForDevice(string $deviceId, int $limit=12): Collection
-    { [$variant,$list]=$this->ab->forDevice($deviceId,$limit); return $list; }
+    public function __construct(protected RecAb $ab) {}
+
+    /**
+     * @return array{variant:string,recommendations:Collection<int,Movie>}
+     */
+    public function recommendForDevice(string $deviceId, int $limit = 12): array
+    {
+        [$variant, $list] = $this->ab->forDevice($deviceId, $limit);
+
+        Log::debug('rec_ab.variant_selected', [
+            'device_id' => $deviceId,
+            'variant' => $variant,
+        ]);
+
+        return [
+            'variant' => $variant,
+            'recommendations' => $list,
+        ];
+    }
 }
