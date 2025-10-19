@@ -1,15 +1,15 @@
 <x-filament::card>
-  <div class="text-sm text-gray-400">Период: {{ $from }} — {{ $to }}</div>
+  <div class="text-sm text-gray-400">{{ __('analytics.widgets.funnel.period', ['from' => $from, 'to' => $to]) }}</div>
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm text-left text-gray-200" style="margin-top:12px;">
       <thead class="text-xs uppercase text-gray-400">
         <tr>
-          <th class="px-2 py-1">Placement</th>
-          <th class="px-2 py-1">Imps</th>
-          <th class="px-2 py-1">Clicks</th>
-          <th class="px-2 py-1">Views</th>
-          <th class="px-2 py-1">CTR %</th>
-          <th class="px-2 py-1">View→Click %</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.placement') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.imps') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.clicks') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.views') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.ctr') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.view_rate') }}</th>
         </tr>
       </thead>
       <tbody>

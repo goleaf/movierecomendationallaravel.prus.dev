@@ -12,7 +12,7 @@ class AnalyticsPanelProvider extends PanelProvider
         return $panel
             ->id('analytics')
             ->path('analytics')
-            ->brandName('Analytics')
+            ->brandName(__('analytics.panel.brand'))
             ->sidebarCollapsibleOnDesktop()
             ->widgets([
                 \App\Filament\Widgets\QueueStatsWidget::class,
