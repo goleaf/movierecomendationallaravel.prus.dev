@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Analytics;
 
+use App\Models\CtrDailySnapshot;
 use App\Support\AnalyticsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -376,20 +377,6 @@ class CtrAnalyticsService
             ];
         }
 
-        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
-
-        $logs = DB::table('rec_ab_logs')
-            ->selectRaw('date(created_at) as d, variant, count(*) as imps')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('d', 'variant')
-            ->get();
-
-        $clicks = DB::table('rec_clicks')
-            ->selectRaw('date(created_at) as d, variant, count(*) as clks')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('d', 'variant')
-            ->get();
-
         $days = [];
         $current = $from->startOfDay();
         $end = $to->endOfDay();
@@ -399,25 +386,43 @@ class CtrAnalyticsService
             $current = $current->addDay();
         }
 
+        $snapshotMap = [];
+        if (Schema::hasTable('ctr_daily_snapshots')) {
+            $snapshotMap = CtrDailySnapshot::query()
+                ->whereBetween('snapshot_date', [$from->toDateString(), $to->toDateString()])
+                ->get()
+                ->groupBy(fn (CtrDailySnapshot $snapshot) => $snapshot->snapshot_date->format('Y-m-d'))
+                ->map(fn (Collection $rows): array => $rows->keyBy(fn (CtrDailySnapshot $row) => (string) $row->variant)->all())
+                ->all();
+        }
+
         $series = ['A' => [], 'B' => []];
         $max = 0.0;
+        $legacyData = null;
+
         foreach ($days as $day) {
-            $logA = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $logB = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'B');
-            $clkA = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $clkB = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'B');
+            foreach (['A', 'B'] as $variant) {
+                $ctr = null;
 
-            $impsA = (int) ($logA->imps ?? 0);
-            $impsB = (int) ($logB->imps ?? 0);
-            $clksA = (int) ($clkA->clks ?? 0);
-            $clksB = (int) ($clkB->clks ?? 0);
+                if (isset($snapshotMap[$day][$variant])) {
+                    $row = $snapshotMap[$day][$variant];
+                    $impressions = (int) $row->impressions;
+                    $clicks = (int) $row->clicks;
+                    $ctr = $impressions > 0 ? 100.0 * $clicks / $impressions : 0.0;
+                } else {
+                    if ($legacyData === null) {
+                        $legacyData = $this->loadLegacyDailyMetrics($from, $to);
+                    }
 
-            $ctrA = $impsA > 0 ? 100.0 * $clksA / $impsA : 0.0;
-            $ctrB = $impsB > 0 ? 100.0 * $clksB / $impsB : 0.0;
+                    $impressions = (int) ($legacyData['impressions'][$day][$variant] ?? 0);
+                    $clicks = (int) ($legacyData['clicks'][$day][$variant] ?? 0);
+                    $ctr = $impressions > 0 ? 100.0 * $clicks / $impressions : 0.0;
+                }
 
-            $series['A'][] = round($ctrA, 2);
-            $series['B'][] = round($ctrB, 2);
-            $max = max($max, $ctrA, $ctrB);
+                $ctr = round($ctr, 2);
+                $series[$variant][] = $ctr;
+                $max = max($max, $ctr);
+            }
         }
 
         $max = max(5.0, ceil(max($max, 0.0) / 5.0) * 5.0);
@@ -430,6 +435,45 @@ class CtrAnalyticsService
             'days' => $days,
             'series' => $series,
             'max' => $max,
+        ];
+    }
+
+    /**
+     * @return array{impressions: array<string, array<string, int>>, clicks: array<string, array<string, int>>}
+     */
+    private function loadLegacyDailyMetrics(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+
+        $impressions = [];
+        $logs = DB::table('rec_ab_logs')
+            ->selectRaw('date(created_at) as d, variant, count(*) as imps')
+            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+            ->groupBy('d', 'variant')
+            ->get();
+
+        foreach ($logs as $row) {
+            $day = (string) $row->d;
+            $variant = (string) $row->variant;
+            $impressions[$day][$variant] = (int) $row->imps;
+        }
+
+        $clicks = [];
+        $clickRows = DB::table('rec_clicks')
+            ->selectRaw('date(created_at) as d, variant, count(*) as clks')
+            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+            ->groupBy('d', 'variant')
+            ->get();
+
+        foreach ($clickRows as $row) {
+            $day = (string) $row->d;
+            $variant = (string) $row->variant;
+            $clicks[$day][$variant] = (int) $row->clks;
+        }
+
+        return [
+            'impressions' => $impressions,
+            'clicks' => $clicks,
         ];
     }
 
