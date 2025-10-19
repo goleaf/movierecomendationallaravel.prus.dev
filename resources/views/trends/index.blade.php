@@ -23,9 +23,10 @@
 @else
   <div class="grid grid-4">
     @foreach($items as $item)
+      @php($posterUrl = artwork_url($item->poster_url ?? null))
       <a class="card" href="{{ route('movies.show', ['movie'=>$item->id, 'placement'=>$item->placement ?? 'trends', 'variant'=>$item->variant ?? 'mixed']) }}">
-        @if($item->poster_url)
-          <img src="{{ $item->poster_url }}" alt="{{ $item->title ? 'Постер фильма «' . $item->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+        @if($posterUrl)
+          <img src="{{ $posterUrl }}" alt="{{ $item->title ? 'Постер фильма «' . $item->title . '»' : 'Постер фильма' }}" loading="lazy"/>
         @endif
         <div><strong>{{ $item->title }}</strong> ({{ $item->year ?? __('messages.common.dash') }})</div>
         <div class="muted">

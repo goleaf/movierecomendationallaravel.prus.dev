@@ -53,6 +53,8 @@ class HomePage extends Component
             $this->recommended = collect();
         }
 
+        $this->recommended = $this->recommended->map(fn (Movie $movie) => $this->transformArtwork($movie));
+
         $this->trending = $this->fetchTrendingSnapshot();
 
         if ($this->trending->isEmpty()) {
@@ -62,10 +64,12 @@ class HomePage extends Component
                     ->orderByDesc('imdb_rating')
                     ->limit(8)
                     ->get()
-                    ->map(static fn (Movie $movie) => [
-                        'movie' => $movie,
-                        'clicks' => null,
-                    ])
+                    ->map(function (Movie $movie) {
+                        return [
+                            'movie' => $this->transformArtwork($movie),
+                            'clicks' => null,
+                        ];
+                    })
                 : collect();
         }
     }
@@ -152,7 +156,7 @@ class HomePage extends Component
             ->keyBy('id');
 
         return collect($aggregates)
-            ->map(static function (int $clicks, int $movieId) use ($movies) {
+            ->map(function (int $clicks, int $movieId) use ($movies) {
                 $movie = $movies->get($movieId);
 
                 if ($movie === null) {
@@ -160,12 +164,20 @@ class HomePage extends Component
                 }
 
                 return [
-                    'movie' => $movie,
+                    'movie' => $this->transformArtwork($movie),
                     'clicks' => $clicks,
                 ];
             })
             ->filter()
             ->values();
+    }
+
+    protected function transformArtwork(Movie $movie): Movie
+    {
+        $movie->setAttribute('poster_url', artwork_url($movie->poster_url));
+        $movie->setAttribute('backdrop_url', artwork_url($movie->backdrop_url));
+
+        return $movie;
     }
 
     public function render(): View

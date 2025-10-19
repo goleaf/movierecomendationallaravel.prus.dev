@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 return [
 
+    'artwork' => [
+        'proxy_url' => env('ARTWORK_PROXY_URL'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

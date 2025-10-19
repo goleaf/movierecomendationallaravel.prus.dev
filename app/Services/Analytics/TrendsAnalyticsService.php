@@ -53,7 +53,7 @@ class TrendsAnalyticsService
         return $fallback->map(static fn (Movie $movie): object => (object) [
             'id' => $movie->id,
             'title' => $movie->title,
-            'poster_url' => $movie->poster_url,
+            'poster_url' => artwork_url($movie->poster_url),
             'year' => $movie->year,
             'type' => $movie->type,
             'imdb_rating' => $movie->imdb_rating,
@@ -133,7 +133,11 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(static fn (object $item): array => (array) $item)->all();
+                    return $items->map(static function (object $item): array {
+                        $item->poster_url = artwork_url($item->poster_url);
+
+                        return (array) $item;
+                    })->all();
                 }
             }
 
@@ -164,7 +168,11 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(static fn (object $item): array => (array) $item)->all();
+                    return $items->map(static function (object $item): array {
+                        $item->poster_url = artwork_url($item->poster_url);
+
+                        return (array) $item;
+                    })->all();
                 }
             }
 
@@ -174,7 +182,11 @@ class TrendsAnalyticsService
                 $filters['year_from'],
                 $filters['year_to'],
             )
-                ->map(static fn (object $item): array => (array) $item)
+                ->map(static function (object $item): array {
+                    $item->poster_url = artwork_url($item->poster_url ?? null);
+
+                    return (array) $item;
+                })
                 ->all();
         });
 

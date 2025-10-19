@@ -10,14 +10,15 @@
         @else
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach ($recommended as $movie)
+                    @php($posterUrl = artwork_url($movie->poster_url))
                     <a
                         wire:key="recommended-{{ $movie->id }}"
                         href="{{ route('movies.show', $movie) }}"
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
-                        @if ($movie->poster_url)
+                        @if ($posterUrl)
                             <img
-                                src="{{ $movie->poster_url }}"
+                                src="{{ $posterUrl }}"
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
@@ -46,15 +47,16 @@
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach ($trending as $row)
                     @php($movie = $row['movie'])
+                    @php($posterUrl = artwork_url($movie->poster_url))
 
                     <a
                         wire:key="trending-{{ $movie->id }}"
                         href="{{ route('movies.show', $movie) }}"
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
-                        @if ($movie->poster_url)
+                        @if ($posterUrl)
                             <img
-                                src="{{ $movie->poster_url }}"
+                                src="{{ $posterUrl }}"
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
