@@ -79,9 +79,11 @@ class SsrAnalyticsService
                 ->selectRaw($dateExpression.' as d, avg(score) as s')
                 ->whereNotNull($timestampColumn)
                 ->groupBy('d')
-                ->orderBy('d')
+                ->orderByDesc('d')
                 ->limit($limit)
-                ->get();
+                ->get()
+                ->sortBy('d')
+                ->values();
 
             foreach ($rows as $row) {
                 $labels[] = $row->d;
