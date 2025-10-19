@@ -2,13 +2,16 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\DeviceHistory;
+use App\Models\RecAbLog;
+use App\Models\RecClick;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class FunnelWidget extends Widget
 {
     protected static string $view = 'filament.widgets.funnel';
+
     protected static ?string $heading = 'Funnels (7 дней)';
 
     protected function getViewData(): array
@@ -17,9 +20,9 @@ class FunnelWidget extends Widget
         $to = now()->format('Y-m-d');
 
         $impVariant = Schema::hasTable('rec_ab_logs')
-            ? DB::table('rec_ab_logs')
+            ? RecAbLog::query()
                 ->selectRaw('variant, count(*) as imps')
-                ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
+                ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
                 ->groupBy('variant')
                 ->pluck('imps', 'variant')
                 ->all()
@@ -28,14 +31,14 @@ class FunnelWidget extends Widget
         $totalImps = array_sum($impVariant);
 
         $totalViews = Schema::hasTable('device_history')
-            ? (int) DB::table('device_history')
-                ->whereBetween('viewed_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
+            ? (int) DeviceHistory::query()
+                ->betweenViewedAt("{$from} 00:00:00", "{$to} 23:59:59")
                 ->count()
             : 0;
 
         $totalClicks = Schema::hasTable('rec_clicks')
-            ? (int) DB::table('rec_clicks')
-                ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
+            ? (int) RecClick::query()
+                ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
                 ->count()
             : 0;
 
@@ -43,9 +46,9 @@ class FunnelWidget extends Widget
         $placements = ['home', 'show', 'trends'];
         foreach ($placements as $placement) {
             $clicks = Schema::hasTable('rec_clicks')
-                ? (int) DB::table('rec_clicks')
+                ? (int) RecClick::query()
                     ->where('placement', $placement)
-                    ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
+                    ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
                     ->count()
                 : 0;
 

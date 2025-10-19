@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\RecClick;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -25,10 +25,10 @@ class TrendsController extends Controller
 
         $items = collect();
         if (Schema::hasTable('rec_clicks')) {
-            $query = DB::table('rec_clicks')
+            $query = RecClick::query()
                 ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
                 ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
-                ->whereBetween('rec_clicks.created_at', [$from, $to])
+                ->betweenCreatedAt($from, $to)
                 ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
                 ->orderByDesc('clicks');
 

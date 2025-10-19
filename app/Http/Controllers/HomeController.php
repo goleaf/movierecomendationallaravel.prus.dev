@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\RecClick;
 use App\Services\Recommender;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
@@ -47,16 +47,16 @@ class HomeController extends Controller
      */
     protected function fetchTrendingSnapshot(): Collection
     {
-        if (!Schema::hasTable('rec_clicks')) {
+        if (! Schema::hasTable('rec_clicks')) {
             return collect();
         }
 
         $from = now()->subDays(7)->format('Y-m-d 00:00:00');
         $to = now()->format('Y-m-d 23:59:59');
 
-        $top = DB::table('rec_clicks')
+        $top = RecClick::query()
             ->selectRaw('movie_id, count(*) as clicks')
-            ->whereBetween('created_at', [$from, $to])
+            ->betweenCreatedAt($from, $to)
             ->groupBy('movie_id')
             ->orderByDesc('clicks')
             ->limit(8)
@@ -74,7 +74,7 @@ class HomeController extends Controller
         return $top
             ->map(function (int $clicks, int $movieId) use ($movies) {
                 $movie = $movies->get($movieId);
-                if (!$movie) {
+                if (! $movie) {
                     return null;
                 }
 
