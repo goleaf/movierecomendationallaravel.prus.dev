@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class ZTestWidget extends BaseWidget
 {
+    private const MIN_SAMPLE_SIZE = 1000;
+
     protected function getStats(): array
     {
         $from = now()->subDays(7)->toDateTimeString();
@@ -36,8 +38,14 @@ class ZTestWidget extends BaseWidget
 
         $ctrA = $impressionsA > 0 ? $clicksA / $impressionsA : 0;
         $ctrB = $impressionsB > 0 ? $clicksB / $impressionsB : 0;
-        $pooled = ($clicksA + $clicksB) / max(1, ($impressionsA + $impressionsB));
-        $z = ($ctrA - $ctrB) / max(1e-9, sqrt($pooled * (1 - $pooled) * (1 / max(1, $impressionsA) + 1 / max(1, $impressionsB))));
+        $meetsSampleSize = $impressionsA >= self::MIN_SAMPLE_SIZE && $impressionsB >= self::MIN_SAMPLE_SIZE;
+
+        $z = null;
+
+        if ($meetsSampleSize) {
+            $pooled = ($clicksA + $clicksB) / max(1, ($impressionsA + $impressionsB));
+            $z = ($ctrA - $ctrB) / max(1e-9, sqrt($pooled * (1 - $pooled) * (1 / max(1, $impressionsA) + 1 / max(1, $impressionsB))));
+        }
 
         $aDescription = __('analytics.widgets.z_test.description_format', [
             'impressions' => __('analytics.widgets.z_test.impressions', ['count' => number_format($impressionsA)]),
@@ -49,16 +57,20 @@ class ZTestWidget extends BaseWidget
             'clicks' => __('analytics.widgets.z_test.clicks', ['count' => number_format($clicksB)]),
         ]);
 
-        $pValueDescription = abs($z) > 1.96
-            ? __('analytics.widgets.z_test.p_value.significant')
-            : __('analytics.widgets.z_test.p_value.not_significant');
+        $pValueDescription = $meetsSampleSize
+            ? (abs((float) $z) > 1.96
+                ? __('analytics.widgets.z_test.p_value.significant')
+                : __('analytics.widgets.z_test.p_value.not_significant'))
+            : __('analytics.widgets.z_test.guard_rails.minimum_samples', [
+                'min' => number_format(self::MIN_SAMPLE_SIZE),
+            ]);
 
         return [
             Stat::make(__('analytics.widgets.z_test.ctr_a'), round($ctrA * 100, 2).'%')
                 ->description($aDescription),
             Stat::make(__('analytics.widgets.z_test.ctr_b'), round($ctrB * 100, 2).'%')
                 ->description($bDescription),
-            Stat::make(__('analytics.widgets.z_test.z_test'), number_format($z, 2))
+            Stat::make(__('analytics.widgets.z_test.z_test'), $z === null ? '—' : number_format($z, 2))
                 ->description($pValueDescription),
         ];
     }
