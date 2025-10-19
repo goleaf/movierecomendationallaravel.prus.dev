@@ -3,7 +3,7 @@
     {{ $this->form }}
 
     <x-filament::card>
-      <div class="text-sm text-gray-400">{{ __('admin.ctr.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
+      <div class="text-sm text-gray-200">{{ __('admin.ctr.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
       <ul class="mt-4 space-y-2">
         @forelse($summary as $row)
           <li class="text-sm text-gray-200">
@@ -15,29 +15,49 @@
             ]) }}
           </li>
         @empty
-          <li class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</li>
+          <li class="text-sm text-gray-300">{{ __('admin.ctr.no_data') }}</li>
         @endforelse
       </ul>
     </x-filament::card>
 
     <div class="grid gap-6 lg:grid-cols-2">
       <x-filament::card>
-        <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.daily_heading') }}</h3>
+        @php
+          $lineChartHeadingId = 'ctr-line-chart-heading';
+          $lineChartDescriptionId = 'ctr-line-chart-description';
+        @endphp
+        <h3 id="{{ $lineChartHeadingId }}" class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.daily_heading') }}</h3>
+        <p id="{{ $lineChartDescriptionId }}" class="sr-only">{{ __('admin.ctr.charts.daily_description') }}</p>
         <div class="mt-4 overflow-x-auto" @if($lineSvg) wire:ignore @endif>
           @if($lineSvg)
-            <div class="min-w-full" aria-hidden="true">{!! $lineSvg !!}</div>
+            <div
+              class="min-w-full rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-sky-400"
+              role="img"
+              aria-labelledby="{{ $lineChartHeadingId }} {{ $lineChartDescriptionId }}"
+              tabindex="0"
+            >{!! $lineSvg !!}</div>
           @else
-            <div class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+            <div class="text-sm text-gray-300">{{ __('admin.ctr.no_data') }}</div>
           @endif
         </div>
       </x-filament::card>
       <x-filament::card>
-        <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.placements_heading') }}</h3>
+        @php
+          $barChartHeadingId = 'ctr-bar-chart-heading';
+          $barChartDescriptionId = 'ctr-bar-chart-description';
+        @endphp
+        <h3 id="{{ $barChartHeadingId }}" class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.placements_heading') }}</h3>
+        <p id="{{ $barChartDescriptionId }}" class="sr-only">{{ __('admin.ctr.charts.placements_description') }}</p>
         <div class="mt-4 overflow-x-auto" @if($barsSvg) wire:ignore @endif>
           @if($barsSvg)
-            <div class="min-w-full" aria-hidden="true">{!! $barsSvg !!}</div>
+            <div
+              class="min-w-full rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-sky-400"
+              role="img"
+              aria-labelledby="{{ $barChartHeadingId }} {{ $barChartDescriptionId }}"
+              tabindex="0"
+            >{!! $barsSvg !!}</div>
           @else
-            <div class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+            <div class="text-sm text-gray-300">{{ __('admin.ctr.no_data') }}</div>
           @endif
         </div>
       </x-filament::card>
@@ -46,11 +66,11 @@
     <x-filament::card>
       <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.placement_clicks.heading') }}</h3>
       @if(empty($placementClicks))
-        <div class="mt-2 text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+        <div class="mt-2 text-sm text-gray-300">{{ __('admin.ctr.no_data') }}</div>
       @else
         <div class="mt-4 overflow-x-auto">
-          <table class="min-w-full text-left text-sm text-gray-200">
-            <thead class="uppercase text-xs text-gray-400">
+          <table class="min-w-full text-left text-sm text-gray-100">
+            <thead class="uppercase text-xs text-gray-200">
               <tr>
                 <th class="px-2 py-1">{{ __('admin.ctr.placement_clicks.placement') }}</th>
                 <th class="px-2 py-1">{{ __('admin.ctr.placement_clicks.clicks') }}</th>
@@ -71,10 +91,10 @@
 
     <x-filament::card>
       <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.funnels.heading') }}</h3>
-      <div class="text-sm text-gray-400">{{ __('admin.funnel.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
+      <div class="text-sm text-gray-200">{{ __('admin.funnel.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
       <div class="mt-4 overflow-x-auto">
-        <table class="min-w-full text-left text-sm text-gray-200">
-          <thead class="uppercase text-xs text-gray-400">
+        <table class="min-w-full text-left text-sm text-gray-100">
+          <thead class="uppercase text-xs text-gray-200">
             <tr>
               <th class="px-2 py-1">{{ __('admin.funnel.headers.placement') }}</th>
               <th class="px-2 py-1">{{ __('admin.funnel.headers.imps') }}</th>
@@ -96,7 +116,7 @@
               </tr>
             @empty
               <tr>
-                <td class="px-2 py-2 text-sm text-gray-400" colspan="6">{{ __('admin.ctr.no_data') }}</td>
+                <td class="px-2 py-2 text-sm text-gray-300" colspan="6">{{ __('admin.ctr.no_data') }}</td>
               </tr>
             @endforelse
           </tbody>

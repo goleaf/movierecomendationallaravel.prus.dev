@@ -30,6 +30,7 @@ return [
         'ab_summary_item' => 'Variant :variant — Imps: :impressions, Clicks: :clicks, CTR: :ctr%',
         'no_data' => 'No data for the selected period.',
         'filters' => [
+            'aria_label' => 'CTR analytics filters',
             'from' => 'From',
             'to' => 'To',
             'placement' => 'Placement',
@@ -51,7 +52,9 @@ return [
         ],
         'charts' => [
             'daily_heading' => 'Daily CTR (A vs B)',
+            'daily_description' => 'Line chart comparing daily CTR for variants A and B.',
             'placements_heading' => 'CTR by placement',
+            'placements_description' => 'Bar chart showing CTR split by placement for variants A and B.',
         ],
         'placement_clicks' => [
             'heading' => 'Clicks by placement',

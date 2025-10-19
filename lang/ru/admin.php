@@ -30,6 +30,7 @@ return [
         'ab_summary_item' => 'Вариант :variant — Показы: :impressions, Клики: :clicks, CTR: :ctr%',
         'no_data' => 'Нет данных за выбранный период.',
         'filters' => [
+            'aria_label' => 'Фильтры CTR аналитики',
             'from' => 'От даты',
             'to' => 'До даты',
             'placement' => 'Площадка',
@@ -51,7 +52,9 @@ return [
         ],
         'charts' => [
             'daily_heading' => 'CTR по дням (A vs B)',
+            'daily_description' => 'Линейный график, показывающий сравнение ежедневного CTR вариантов A и B.',
             'placements_heading' => 'CTR по площадкам',
+            'placements_description' => 'Столбчатый график CTR по площадкам для вариантов A и B.',
         ],
         'placement_clicks' => [
             'heading' => 'Клики по площадкам',

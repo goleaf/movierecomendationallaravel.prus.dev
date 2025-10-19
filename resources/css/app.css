@@ -19,3 +19,9 @@
         @apply max-w-lg;
     }
 }
+
+@layer base {
+    :focus-visible {
+        @apply outline-none ring-2 ring-sky-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+    }
+}
