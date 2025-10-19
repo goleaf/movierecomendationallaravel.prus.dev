@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\ArtworkProxyController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Resources\MovieResource;
 use App\Models\Movie;
@@ -13,4 +14,6 @@ Route::middleware('noindex')->group(function (): void {
     Route::get('/movies/{movie}', function (Movie $movie) {
         return new MovieResource($movie);
     })->name('api.movies.show');
+
+    Route::get('/artwork', ArtworkProxyController::class)->name('api.artwork');
 });
