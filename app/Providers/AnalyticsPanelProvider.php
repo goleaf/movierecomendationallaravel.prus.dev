@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Providers;
+
+use Filament\Panel;
+use Filament\PanelProvider;
+
+class AnalyticsPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->id('analytics')
+            ->path('analytics')
+            ->brandName('Analytics')
+            ->sidebarCollapsibleOnDesktop()
+            ->widgets([
+                \App\Filament\Widgets\QueueStatsWidget::class,
+                \App\Filament\Widgets\FunnelWidget::class,
+                \App\Filament\Widgets\CtrLineWidget::class,
+                \App\Filament\Widgets\CtrBarsWidget::class,
+                \App\Filament\Widgets\ZTestWidget::class,
+                \App\Filament\Widgets\SsrStatsWidget::class,
+                \App\Filament\Widgets\SsrScoreWidget::class,
+                \App\Filament\Widgets\SsrDropWidget::class,
+            ])
+            ->pages([
+                \App\Filament\Pages\Analytics\CtrPage::class,
+                \App\Filament\Pages\Analytics\TrendsPage::class,
+                \App\Filament\Pages\Analytics\TrendsAdvancedPage::class,
+                \App\Filament\Pages\Analytics\QueuePage::class,
+            ]);
+    }
+}
