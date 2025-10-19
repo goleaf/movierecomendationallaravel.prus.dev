@@ -109,6 +109,7 @@ class DemoContentSeeder extends Seeder
             ['device_id' => 'device-alt-4', 'variant' => 'A'],
         ])->map(function (array $row) use ($now): array {
             return [
+                'movie_id' => $row['variant'] === 'A' ? 1 : 2,
                 'device_id' => $row['device_id'],
                 'variant' => $row['variant'],
                 'placement' => 'home',
@@ -147,9 +148,16 @@ class DemoContentSeeder extends Seeder
         ];
 
         DB::table('device_history')->insert(array_map(function (array $row) use ($now): array {
+            $page = match ($row['path']) {
+                '/' => 'home',
+                '/trends' => 'trends',
+                default => 'show',
+            };
+
             return [
                 'device_id' => $row['device_id'],
                 'path' => $row['path'],
+                'page' => $page,
                 'viewed_at' => $now->subDays(1),
                 'created_at' => $now->subDays(1),
                 'updated_at' => $now->subDays(1),
@@ -167,7 +175,6 @@ class DemoContentSeeder extends Seeder
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
                 'size' => 350000,
                 'html_bytes' => 350000,
                 'meta_count' => 12,

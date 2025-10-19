@@ -5,31 +5,52 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\InteractsWithRecommendationWeightsSettings;
 use Tests\Seeders\DemoContentSeeder;
 use Tests\TestCase;
 
 class VisitorRoutesTest extends TestCase
 {
+    use InteractsWithRecommendationWeightsSettings;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
+        $frozen = CarbonImmutable::parse('2025-01-15 12:00:00');
+        Carbon::setTestNow($frozen);
+        CarbonImmutable::setTestNow($frozen);
+
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'path')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->string('path')->nullable();
+            });
+        }
+
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'page')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->string('page')->nullable();
+            });
+        }
 
         $this->seed(DemoContentSeeder::class);
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'variant_b' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+        ]);
     }
 
     protected function tearDown(): void
     {
         Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
 
         parent::tearDown();
     }

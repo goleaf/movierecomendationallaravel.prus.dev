@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Spatie\LaravelData\Data;
 use Spatie\LaravelSettings\SettingsCasts\DataCast;
 use Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast;
 use Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast;
@@ -80,12 +79,20 @@ return [
      * These global casts will be automatically used whenever a property within
      * your settings class isn't a default PHP type.
      */
-    'global_casts' => [
-        DateTimeInterface::class => DateTimeInterfaceCast::class,
-        DateTimeZone::class => DateTimeZoneCast::class,
-        //        Spatie\DataTransferObject\DataTransferObject::class => Spatie\LaravelSettings\SettingsCasts\DtoCast::class,
-        Data::class => DataCast::class,
-    ],
+    'global_casts' => (static function (): array {
+        $casts = [
+            DateTimeInterface::class => DateTimeInterfaceCast::class,
+            DateTimeZone::class => DateTimeZoneCast::class,
+        ];
+
+        $laravelDataClass = 'Spatie\\LaravelData\\Data';
+
+        if (class_exists($laravelDataClass)) {
+            $casts[$laravelDataClass] = DataCast::class;
+        }
+
+        return $casts;
+    })(),
 
     /*
      * The package will look for settings in these paths and automatically

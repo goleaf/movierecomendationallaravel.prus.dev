@@ -57,6 +57,7 @@ final class AnalyticsPanelProvider extends PanelProvider
             'App\\Filament\\Pages\\Analytics\\TrendsPage',
             'App\\Filament\\Pages\\Analytics\\QueuePage',
             'App\\Filament\\Pages\\Analytics\\SsrPage',
+            'App\\Filament\\Pages\\RecommendationWeightsPage',
             Billing::class,
         ], static fn (string $class): bool => class_exists($class)));
 

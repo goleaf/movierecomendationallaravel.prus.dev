@@ -8,23 +8,25 @@ use App\Models\Movie;
 use App\Services\RecAb;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\InteractsWithRecommendationWeightsSettings;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
 {
+    use InteractsWithRecommendationWeightsSettings;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Config::set('recs', [
-            'A' => [
-                'pop' => 0.7,
-                'recent' => 0.3,
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => [
+                'pop' => 0.9,
+                'recent' => 0.1,
                 'pref' => 0.0,
             ],
-            'B' => [
+            'variant_b' => [
                 'pop' => 0.2,
                 'recent' => 0.8,
                 'pref' => 0.0,

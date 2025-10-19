@@ -8,10 +8,12 @@ use App\Models\Movie;
 use App\Services\RecAb;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Concerns\InteractsWithRecommendationWeightsSettings;
 use Tests\TestCase;
 
 class RecAbFormulaTest extends TestCase
 {
+    use InteractsWithRecommendationWeightsSettings;
     use RefreshDatabase;
 
     protected function tearDown(): void
@@ -25,10 +27,10 @@ class RecAbFormulaTest extends TestCase
     {
         Carbon::setTestNow(now()->setDate(2025, 1, 1));
 
-        config([
-            'recs.ab_split' => ['A' => 100.0, 'B' => 0.0],
-            'recs.A' => ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0],
-            'recs.seed' => 'unit-tests',
+        $this->updateRecommendationWeightsSettings([
+            'ab_split' => ['A' => 100.0, 'B' => 0.0],
+            'variant_a' => ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0],
+            'seed' => 'unit-tests',
         ]);
 
         $recent = Movie::factory()->movie()->create([

@@ -15,10 +15,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\InteractsWithRecommendationWeightsSettings;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
 {
+    use InteractsWithRecommendationWeightsSettings;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -40,6 +42,12 @@ class RecAbTest extends TestCase
             });
         }
 
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'path')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->string('path')->nullable();
+            });
+        }
+
         Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
     }
 
@@ -54,8 +62,10 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(3)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'variant_b' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $serviceA = app(RecAb::class);
@@ -76,8 +86,10 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.ab_split', ['A' => 100.0, 'B' => 0.0]);
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->updateRecommendationWeightsSettings([
+            'ab_split' => ['A' => 100.0, 'B' => 0.0],
+            'variant_a' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET'));
 
@@ -96,10 +108,12 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.ab_split', ['A' => 70.0, 'B' => 30.0]);
-        config()->set('recs.seed', 'experiment-2025');
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'variant_b' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'ab_split' => ['A' => 70.0, 'B' => 30.0],
+            'seed' => 'experiment-2025',
+        ]);
 
         $threshold = 70.0 / (70.0 + 30.0);
 
@@ -148,8 +162,10 @@ class RecAbTest extends TestCase
         ]);
 
         $weights = ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0];
-        config()->set('recs.A', $weights);
-        config()->set('recs.B', $weights);
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => $weights,
+            'variant_b' => $weights,
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);
@@ -194,13 +210,16 @@ class RecAbTest extends TestCase
             'year' => 2024,
         ]);
 
-        config()->set('recs.A', ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.2, 'recent' => 0.3, 'pref' => 0.5]);
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0],
+            'variant_b' => ['pop' => 0.2, 'recent' => 0.3, 'pref' => 0.5],
+        ]);
 
         DB::table('device_history')->insert([
             'movie_id' => $preferred->id,
             'device_id' => 'device-pref',
             'placement' => 'home',
+            'page' => 'home',
             'path' => '/variant-b-test',
             'viewed_at' => now(),
             'created_at' => now(),
@@ -218,6 +237,85 @@ class RecAbTest extends TestCase
 
         $this->assertSame('B', $variantB);
         $this->assertSame($preferred->id, $listB->first()->id, 'Variant B should boost the device-preferred title.');
+    }
+
+    public function test_pick_variant_honours_settings_seed_and_split(): void
+    {
+        Movie::factory()->count(2)->create();
+
+        $this->updateRecommendationWeightsSettings([
+            'variant_a' => ['pop' => 0.6, 'recent' => 0.2, 'pref' => 0.2],
+            'variant_b' => ['pop' => 0.2, 'recent' => 0.6, 'pref' => 0.2],
+            'ab_split' => ['A' => 20.0, 'B' => 80.0],
+            'seed' => 'settings-layer',
+        ]);
+
+        $threshold = 20.0 / (20.0 + 80.0);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        [$firstVariant] = app(RecAb::class)->forDevice('device-settings-1', 1);
+        $expectedFirst = $this->expectedVariantForSeed('device-settings-1', $threshold, 'settings-layer');
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        [$secondVariant] = app(RecAb::class)->forDevice('device-settings-2', 1);
+        $expectedSecond = $this->expectedVariantForSeed('device-settings-2', $threshold, 'settings-layer');
+
+        $this->assertSame($expectedFirst, $firstVariant);
+        $this->assertSame($expectedSecond, $secondVariant);
+    }
+
+    public function test_score_uses_variant_weights_from_settings(): void
+    {
+        Carbon::setTestNow(now()->setDate(2025, 1, 1));
+
+        $recent = Movie::factory()->create([
+            'imdb_tt' => 'tt7000001',
+            'title' => 'Aurora Dawn',
+            'imdb_rating' => 7.1,
+            'imdb_votes' => 12_000,
+            'year' => 2024,
+        ]);
+        $classic = Movie::factory()->create([
+            'imdb_tt' => 'tt7000002',
+            'title' => 'Legacy Echo',
+            'imdb_rating' => 8.9,
+            'imdb_votes' => 540_000,
+            'year' => 2012,
+        ]);
+        $middle = Movie::factory()->create([
+            'imdb_tt' => 'tt7000003',
+            'title' => 'Steady Pulse',
+            'imdb_rating' => 8.2,
+            'imdb_votes' => 120_000,
+            'year' => 2020,
+        ]);
+
+        $this->updateRecommendationWeightsSettings([
+            'variant_b' => ['pop' => 0.1, 'recent' => 0.9, 'pref' => 0.0],
+            'variant_a' => ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0],
+            'ab_split' => ['A' => 0.0, 'B' => 100.0],
+        ]);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+        [$variant, $list] = app(RecAb::class)->forDevice('device-settings-order', 3);
+
+        $weights = ['pop' => 0.1, 'recent' => 0.9];
+        $ordered = collect([$recent, $classic, $middle])
+            ->mapWithKeys(function (Movie $movie) use ($weights) {
+                $popularity = $movie->weighted_score / 10.0;
+                $recency = $movie->year
+                    ? max(0.0, (5 - (now()->year - (int) $movie->year)) / 5)
+                    : 0.0;
+
+                return [$movie->id => ($weights['pop'] * $popularity) + ($weights['recent'] * $recency)];
+            })
+            ->sortDesc()
+            ->keys()
+            ->all();
+
+        $this->assertSame('B', $variant);
+        $this->assertSame($ordered, $list->pluck('id')->all());
+        $this->assertSame($recent->id, $list->first()?->id);
     }
 
     public function test_weights_are_normalised_before_scoring(): void
