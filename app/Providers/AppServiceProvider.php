@@ -13,6 +13,8 @@ use App\Support\SsrMetricsFallbackStore;
 use Filament\Facades\Filament;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Cache\Repository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SsrMetricsService::class, static function ($app): SsrMetricsService {
             return new SsrMetricsService($app->make(SsrMetricsFallbackStore::class));
         });
+
+        $this->registerHotPathCache('cache.hot_path.filters', 'hot_path_filters');
+        $this->registerHotPathCache('cache.hot_path.genres', 'hot_path_genres');
     }
 
     /**
@@ -73,5 +78,18 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
         });
+
+        if (! Cache::hasMacro('hotPathFilters')) {
+            Cache::macro('hotPathFilters', static fn (): Repository => Cache::store('hot_path_filters'));
+        }
+
+        if (! Cache::hasMacro('hotPathGenres')) {
+            Cache::macro('hotPathGenres', static fn (): Repository => Cache::store('hot_path_genres'));
+        }
+    }
+
+    private function registerHotPathCache(string $serviceId, string $store): void
+    {
+        $this->app->singleton($serviceId, static fn (): Repository => Cache::store($store));
     }
 }

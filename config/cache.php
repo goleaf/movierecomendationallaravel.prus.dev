@@ -92,6 +92,16 @@ return [
             'driver' => 'octane',
         ],
 
+        'hot_path_filters' => [
+            'driver' => 'memoized',
+            'store' => env('CACHE_HOT_PATH_FILTERS_STORE', env('CACHE_STORE', 'database')),
+        ],
+
+        'hot_path_genres' => [
+            'driver' => 'memoized',
+            'store' => env('CACHE_HOT_PATH_GENRES_STORE', env('CACHE_STORE', 'database')),
+        ],
+
     ],
 
     /*
