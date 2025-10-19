@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Analytics;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Support\AnalyticsFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -68,8 +69,12 @@ class CtrOverview extends Component
 
     protected function rules(): array
     {
-        $placementOptions = $this->placements === [] ? ['home', 'show', 'trends'] : $this->placements;
-        $variantOptions = $this->variants === [] ? ['A', 'B'] : $this->variants;
+        $placementOptions = $this->placements === []
+            ? AnalyticsFilters::placementCodes()
+            : $this->placements;
+        $variantOptions = $this->variants === []
+            ? AnalyticsFilters::variantCodes()
+            : $this->variants;
 
         return [
             'filters.from' => ['required', 'date'],

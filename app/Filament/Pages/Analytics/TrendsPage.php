@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\TrendsAnalyticsService;
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Actions;
@@ -70,8 +71,13 @@ class TrendsPage extends Page implements HasForms
             'animation' => __('admin.trends.types.animation'),
         ];
 
-        $this->filters['from'] = now()->subDays($this->filters['days'])->format('Y-m-d');
-        $this->filters['to'] = now()->format('Y-m-d');
+        $defaultTo = CarbonImmutable::now();
+        $defaultFrom = $defaultTo->subDays($this->filters['days']);
+
+        [$from, $to] = AnalyticsFilters::parseDateRange(null, null, $defaultFrom, $defaultTo);
+
+        $this->filters['from'] = $from->format('Y-m-d');
+        $this->filters['to'] = $to->format('Y-m-d');
 
         $this->form->fill($this->filters);
         $this->refreshData();
@@ -79,15 +85,16 @@ class TrendsPage extends Page implements HasForms
 
     public function refreshData(): void
     {
-        $defaultFrom = now()->subDays($this->filters['days'] ?? 7)->format('Y-m-d');
-        $defaultTo = now()->format('Y-m-d');
+        $defaultTo = CarbonImmutable::now();
+        $days = (int) ($this->filters['days'] ?? 7);
+        $defaultFrom = $defaultTo->subDays($days > 0 ? $days : 7);
 
-        $fromDate = $this->parseDate($this->filters['from'] ?? null, $defaultFrom);
-        $toDate = $this->parseDate($this->filters['to'] ?? null, $defaultTo);
-
-        if ($fromDate->greaterThan($toDate)) {
-            [$fromDate, $toDate] = [$toDate, $fromDate];
-        }
+        [$fromDate, $toDate] = AnalyticsFilters::parseDateRange(
+            $this->filters['from'] ?? null,
+            $this->filters['to'] ?? null,
+            $defaultFrom,
+            $defaultTo,
+        );
 
         $result = app(TrendsAnalyticsService::class)->getTrendsData(
             (int) ($this->filters['days'] ?? 7),
@@ -141,8 +148,13 @@ class TrendsPage extends Page implements HasForms
                     ->afterStateUpdated(function (?string $state): void {
                         $days = (int) ($state ?? 7);
                         $this->filters['days'] = $days;
-                        $this->filters['from'] = now()->subDays($days)->format('Y-m-d');
-                        $this->filters['to'] = now()->format('Y-m-d');
+                        $defaultTo = CarbonImmutable::now();
+                        $defaultFrom = $defaultTo->subDays($days);
+
+                        [$from, $to] = AnalyticsFilters::parseDateRange(null, null, $defaultFrom, $defaultTo);
+
+                        $this->filters['from'] = $from->format('Y-m-d');
+                        $this->filters['to'] = $to->format('Y-m-d');
                         $this->form->fill($this->filters);
                         $this->refreshData();
                     }),
@@ -210,14 +222,5 @@ class TrendsPage extends Page implements HasForms
                     ->columnSpanFull()
                     ->alignEnd(),
             ]);
-    }
-
-    private function parseDate(?string $value, string $fallback): CarbonImmutable
-    {
-        try {
-            return CarbonImmutable::parse($value ?? $fallback);
-        } catch (\Throwable) {
-            return CarbonImmutable::parse($fallback);
-        }
     }
 }

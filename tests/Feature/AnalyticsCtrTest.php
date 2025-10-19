@@ -6,10 +6,10 @@ namespace Tests\Feature;
 
 use App\Filament\Widgets\FunnelWidget;
 use App\Http\Controllers\CtrController;
+use App\Http\Requests\CtrRangeRequest;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -57,10 +57,13 @@ class AnalyticsCtrTest extends TestCase
             'updated_at' => $impressionTime,
         ]);
 
-        $request = Request::create('/admin/ctr', 'GET', [
+        $request = CtrRangeRequest::create('/admin/ctr', 'GET', [
             'from' => '2025-01-05',
             'to' => '2025-01-10',
         ]);
+        $request->setContainer($this->app);
+        $request->setRedirector($this->app->make('redirect'));
+        $request->validateResolved();
 
         $view = app(CtrController::class)->index($request);
 

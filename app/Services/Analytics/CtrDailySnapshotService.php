@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\CtrDailySnapshot;
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -49,7 +50,7 @@ class CtrDailySnapshotService
 
         $variants = array_values(array_unique(array_merge(array_keys($impressions), array_keys($clicks))));
         if ($variants === []) {
-            $variants = ['A', 'B'];
+            $variants = AnalyticsFilters::variantCodes();
         }
 
         $snapshotDate = $day->startOfDay();

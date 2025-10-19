@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Actions;
@@ -50,31 +51,27 @@ class CtrPage extends Page implements HasForms
 
     public ?string $barsSvg = null;
 
-    /** @var array<int, string> */
-    public array $placementOptions = ['' => ''];
+    /** @var array<string, string> */
+    public array $placementOptions = [];
 
-    /** @var array<int, string> */
-    public array $variantOptions = ['' => ''];
+    /** @var array<string, string> */
+    public array $variantOptions = [];
 
     public function mount(): void
     {
+        $defaultTo = CarbonImmutable::now();
+        $defaultFrom = $defaultTo->subDays(7);
+
+        [$from, $to] = AnalyticsFilters::parseDateRange(null, null, $defaultFrom, $defaultTo);
+
         $this->filters = [
-            'from' => now()->subDays(7)->format('Y-m-d'),
-            'to' => now()->format('Y-m-d'),
+            'from' => $from->format('Y-m-d'),
+            'to' => $to->format('Y-m-d'),
             'placement' => '',
             'variant' => '',
         ];
-        $this->placementOptions = [
-            '' => __('admin.ctr.filters.placements.all'),
-            'home' => __('admin.ctr.filters.placements.home'),
-            'show' => __('admin.ctr.filters.placements.show'),
-            'trends' => __('admin.ctr.filters.placements.trends'),
-        ];
-        $this->variantOptions = [
-            '' => __('admin.ctr.filters.variants.all'),
-            'A' => __('admin.ctr.filters.variants.a'),
-            'B' => __('admin.ctr.filters.variants.b'),
-        ];
+        $this->placementOptions = AnalyticsFilters::placementOptions();
+        $this->variantOptions = AnalyticsFilters::variantOptions();
 
         $this->form->fill($this->filters);
         $this->refreshData();
@@ -82,14 +79,15 @@ class CtrPage extends Page implements HasForms
 
     public function refreshData(): void
     {
-        $defaultFrom = now()->subDays(7)->format('Y-m-d');
-        $defaultTo = now()->format('Y-m-d');
-        $fromDate = $this->parseDate($this->filters['from'] ?? null, $defaultFrom);
-        $toDate = $this->parseDate($this->filters['to'] ?? null, $defaultTo);
+        $defaultTo = CarbonImmutable::now();
+        $defaultFrom = $defaultTo->subDays(7);
 
-        if ($fromDate->greaterThan($toDate)) {
-            [$fromDate, $toDate] = [$toDate, $fromDate];
-        }
+        [$fromDate, $toDate] = AnalyticsFilters::parseDateRange(
+            $this->filters['from'] ?? null,
+            $this->filters['to'] ?? null,
+            $defaultFrom,
+            $defaultTo,
+        );
 
         $service = app(CtrAnalyticsService::class);
 
@@ -108,15 +106,6 @@ class CtrPage extends Page implements HasForms
         $this->filters['from'] = $fromDate->format('Y-m-d');
         $this->filters['to'] = $toDate->format('Y-m-d');
         $this->form->fill($this->filters);
-    }
-
-    private function parseDate(?string $value, string $fallback): CarbonImmutable
-    {
-        try {
-            return CarbonImmutable::parse($value ?? $fallback);
-        } catch (\Throwable) {
-            return CarbonImmutable::parse($fallback);
-        }
     }
 
     public function form(Form $form): Form

@@ -6,6 +6,7 @@ namespace App\Services\Analytics;
 
 use App\Models\CtrDailySnapshot;
 use App\Support\AnalyticsCache;
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class CtrAnalyticsService
             ->all();
 
         if ($placements === []) {
-            $placements = ['home', 'show', 'trends'];
+            $placements = AnalyticsFilters::placementCodes();
         }
 
         /** @var list<string> $placements */
@@ -73,8 +74,7 @@ class CtrAnalyticsService
             })
             ->all();
 
-        $totalLabel = __('admin.ctr.funnels.total');
-        $totalLabel = is_string($totalLabel) && $totalLabel !== '' ? $totalLabel : 'total';
+        $totalLabel = AnalyticsFilters::translate('admin.ctr.funnels.total', 'Итого');
         $totalViews = $funnels[$totalLabel]['views'] ?? 0;
 
         $summary = $summaryData['summary'];
@@ -91,7 +91,7 @@ class CtrAnalyticsService
         ];
 
         $variants = array_keys(array_flip(array_merge(
-            ['A', 'B'],
+            AnalyticsFilters::variantCodes(),
             array_map(
                 static fn (array $row): string => (string) $row['variant'],
                 $summary
@@ -171,7 +171,7 @@ class CtrAnalyticsService
                 ->map(fn ($value): int => (int) $value)
                 ->all();
 
-            $variants = $variant !== null ? [$variant] : ['A', 'B'];
+            $variants = $variant !== null ? [$variant] : AnalyticsFilters::variantCodes();
             /** @var list<array{variant: string, impressions: int, clicks: int, ctr: float}> $summary */
             $summary = [];
             foreach ($variants as $code) {
@@ -206,14 +206,16 @@ class CtrAnalyticsService
     }
 
     /**
-     * @param  list<string>  $placements
+     * @param  list<string>|null  $placements
      * @return list<array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}>
      */
-    public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
+    public function funnels(CarbonImmutable $from, CarbonImmutable $to, ?array $placements = null): array
     {
         if (! Schema::hasTable('rec_ab_logs')) {
             return [];
         }
+
+        $placements ??= AnalyticsFilters::placementCodes();
 
         return $this->cache->rememberCtr('funnels', [
             'from' => $from,
@@ -223,9 +225,6 @@ class CtrAnalyticsService
             [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
             $baselineStats = $this->deviceBaselineStats($from);
-            if ($baselineStats['device'] === []) {
-                $baselineStats = $this->fetchDeviceBaselineStats(null);
-            }
 
             $impressionsQuery = DB::table('rec_ab_logs')
                 ->select('placement', DB::raw('count(*) as imps'))
@@ -363,9 +362,10 @@ class CtrAnalyticsService
 
             $totalCtr = $totalImps > 0 ? round(100 * $totalClicks / $totalImps, 2) : 0.0;
             $totalCuped = $this->calculateCupedCtr($totalEntries, $baselineStats) ?? $totalCtr;
+            $totalLabel = AnalyticsFilters::translate('admin.ctr.funnels.total', 'Итого');
 
             $rows[] = [
-                'label' => __('admin.ctr.funnels.total'),
+                'label' => $totalLabel,
                 'imps' => $totalImps,
                 'clicks' => $totalClicks,
                 'views' => $totalViews,
@@ -417,12 +417,16 @@ class CtrAnalyticsService
                 ->all();
         }
 
-        $series = ['A' => [], 'B' => []];
+        $variantCodes = AnalyticsFilters::variantCodes();
+        $series = [];
+        foreach ($variantCodes as $variantCode) {
+            $series[$variantCode] = [];
+        }
         $max = 0.0;
         $legacyData = null;
 
         foreach ($days as $day) {
-            foreach (['A', 'B'] as $variant) {
+            foreach ($variantCodes as $variant) {
                 $ctr = null;
 
                 if (isset($snapshotMap[$day][$variant])) {
@@ -646,7 +650,7 @@ class CtrAnalyticsService
                 ->unique()
                 ->values();
 
-            $variants = ['A', 'B'];
+            $variants = AnalyticsFilters::variantCodes();
 
             $rows = [];
 
@@ -699,18 +703,7 @@ class CtrAnalyticsService
 
     private function translatePlacement(string $placement): string
     {
-        $key = "admin.ctr.filters.placements.$placement";
-        $translated = __($key);
-
-        if (is_array($translated)) {
-            $translated = reset($translated) ?: null;
-        }
-
-        if (is_string($translated) && $translated !== $key && $translated !== '') {
-            return $translated;
-        }
-
-        return ucfirst($placement);
+        return AnalyticsFilters::placementLabel($placement, false);
     }
 
     /**

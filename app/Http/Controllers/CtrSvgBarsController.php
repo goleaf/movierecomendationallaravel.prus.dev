@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesSvgCaching;
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,14 +15,19 @@ class CtrSvgBarsController extends Controller
 {
     use HandlesSvgCaching;
 
-    public function __construct(private readonly CtrAnalyticsService $analytics)
-    {
-    }
+    public function __construct(private readonly CtrAnalyticsService $analytics) {}
 
     public function bars(Request $request): Response
     {
-        $from = $this->parseDate($request->query('from'), now()->subDays(7)->format('Y-m-d'));
-        $to = $this->parseDate($request->query('to'), now()->format('Y-m-d'));
+        $defaultTo = CarbonImmutable::now();
+        $defaultFrom = $defaultTo->subDays(7);
+
+        [$from, $to] = AnalyticsFilters::parseDateRange(
+            $request->query('from'),
+            $request->query('to'),
+            $defaultFrom,
+            $defaultTo,
+        );
 
         $svg = $this->analytics->buildPlacementCtrSvg($from, $to) ?? $this->emptyChart();
 
@@ -31,15 +37,6 @@ class CtrSvgBarsController extends Controller
         ], ['rec_ab_logs', 'rec_clicks']);
     }
 
-    private function parseDate(?string $value, string $fallback): CarbonImmutable
-    {
-        try {
-            return CarbonImmutable::parse($value ?? $fallback);
-        } catch (\Throwable) {
-            return CarbonImmutable::parse($fallback);
-        }
-    }
-
     private function emptyChart(): string
     {
         return '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="260">'
@@ -47,5 +44,4 @@ class CtrSvgBarsController extends Controller
             .'<text x="50%" y="50%" fill="#889" font-size="14" dominant-baseline="middle" text-anchor="middle">No data</text>'
             .'</svg>';
     }
-
 }
