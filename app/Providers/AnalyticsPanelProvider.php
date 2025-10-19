@@ -17,6 +17,7 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Catalog',
                 'Telemetry',
                 'Analytics',
+                'Administration',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
