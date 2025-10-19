@@ -1,14 +1,19 @@
 @extends('layouts.app')
-@section('title','CTR Analytics')
+@section('title', __('admin.ctr.title'))
 @section('content')
 <div class="card">
-  <div class="muted">Период: {{ $from }} — {{ $to }} · <a href="{{ route('works') }}" target="_blank">Works log</a></div>
-  <img src="{{ route('admin.ctr.svg',['from'=>$from,'to'=>$to]) }}" alt="CTR line"/>
-  <img src="{{ route('admin.ctr.bars.svg',['from'=>$from,'to'=>$to]) }}" alt="CTR bars" style="margin-top:10px;"/>
-  <h3>Итоги A/B</h3>
+  <div class="muted">{{ __('admin.ctr.period', ['from' => $from, 'to' => $to]) }}</div>
+  <img src="{{ route('admin.ctr.svg',['from'=>$from,'to'=>$to]) }}" alt="{{ __('admin.ctr.line_alt') }}"/>
+  <img src="{{ route('admin.ctr.bars.svg',['from'=>$from,'to'=>$to]) }}" alt="{{ __('admin.ctr.bars_alt') }}" style="margin-top:10px;"/>
+  <h3>{{ __('admin.ctr.ab_summary_heading') }}</h3>
   <ul>
     @foreach($summary as $s)
-      <li>Вариант {{ $s['v'] }} — Imps: {{ $s['imps'] }}, Clicks: {{ $s['clks'] }}, CTR: {{ $s['ctr'] }}%</li>
+      <li>{{ __('admin.ctr.ab_summary_item', [
+        'variant' => $s['v'],
+        'impressions' => $s['imps'],
+        'clicks' => $s['clks'],
+        'ctr' => $s['ctr'],
+      ]) }}</li>
     @endforeach
   </ul>
 </div>

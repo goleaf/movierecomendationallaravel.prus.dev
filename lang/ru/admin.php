@@ -8,28 +8,11 @@ return [
         'bars_alt' => 'Столбчатый график CTR',
         'ab_summary_heading' => 'Итоги A/B',
         'ab_summary_item' => 'Вариант :variant — Показы: :impressions, Клики: :clicks, CTR: :ctr%',
-        'empty_summary' => 'Нет данных за выбранный период.',
-        'filters' => [
-            'from' => 'С',
-            'to' => 'По',
-            'variant' => 'Вариант',
-            'variant_all' => 'Все варианты',
-            'placement' => 'Площадка',
-            'placement_all' => 'Все площадки',
-            'apply' => 'Применить фильтры',
-        ],
     ],
     'metrics' => [
         'title' => 'Очереди / Horizon',
         'heading' => 'Очереди',
         'stats' => 'Заданий: :jobs, Ошибок: :failed, Пакетов: :batches',
-        'refresh' => 'Обновить метрики',
-        'queue_label' => 'Заданий в очереди',
-        'failed_label' => 'Проваленных заданий',
-        'processed_label' => 'Обработанных пакетов',
-        'horizon_workload' => 'Нагрузка Horizon',
-        'horizon_supervisors' => 'Супервайзеры Horizon',
-        'horizon_empty' => 'Телеметрия Horizon недоступна.',
     ],
     'funnel' => [
         'period' => 'Период: :from — :to',
@@ -43,7 +26,6 @@ return [
         ],
     ],
     'trends' => [
-        'days_label' => 'Длина периода',
         'days_option' => ':days дней',
         'type_placeholder' => 'Тип',
         'types' => [
@@ -55,10 +37,5 @@ return [
         'year_from_placeholder' => 'Год от',
         'year_to_placeholder' => 'Год до',
         'apply' => 'Показать',
-        'period' => 'Топ за :days дн. (:from — :to)',
-        'empty' => 'По выбранным фильтрам ничего не найдено.',
-        'clicks' => 'Клики: :count',
-        'imdb' => 'IMDb: :rating',
-        'votes' => 'Голоса: :count',
     ],
 ];
