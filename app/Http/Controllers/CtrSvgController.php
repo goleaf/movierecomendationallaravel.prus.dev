@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesSvgCaching;
 use App\Services\Analytics\CtrAnalyticsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Illuminate\Http\Response;
 
 class CtrSvgController extends Controller
 {
+    use HandlesSvgCaching;
+
     public function __construct(private readonly CtrAnalyticsService $analytics)
     {
     }
@@ -22,7 +25,10 @@ class CtrSvgController extends Controller
 
         $svg = $this->analytics->buildDailyCtrSvg($from, $to) ?? $this->emptyChart();
 
-        return $this->svgResponse($svg);
+        return $this->cachedSvgResponse($request, $svg, [
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+        ], ['rec_ab_logs', 'rec_clicks']);
     }
 
     private function parseDate(?string $value, string $fallback): CarbonImmutable
@@ -42,8 +48,4 @@ class CtrSvgController extends Controller
             .'</svg>';
     }
 
-    private function svgResponse(string $svg): Response
-    {
-        return new Response($svg, Response::HTTP_OK, ['Content-Type' => 'image/svg+xml']);
-    }
 }
