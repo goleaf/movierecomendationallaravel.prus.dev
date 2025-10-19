@@ -13,6 +13,7 @@ parameters:
     stubFiles:
         - stubs/laravel-settings.php
         - stubs/filament-subscriptions.php
+        - stubs/laravel-subscriptions.php
     inferPrivatePropertyTypeFromConstructor: true
     parallel:
         maximumNumberOfProcesses: 1
