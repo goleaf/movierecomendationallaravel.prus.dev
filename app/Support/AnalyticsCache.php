@@ -6,7 +6,7 @@ namespace App\Support;
 
 use Closure;
 use DateTimeInterface;
-use Illuminate\Cache\TaggedCache;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 
 class AnalyticsCache
@@ -36,33 +36,80 @@ class AnalyticsCache
 
     public function flushCtr(): void
     {
-        $this->tags(self::TAG_CTR)->flush();
+        $this->flushTag(self::TAG_CTR);
     }
 
     public function flushTrends(): void
     {
-        $this->tags(self::TAG_TRENDS)->flush();
+        $this->flushTag(self::TAG_TRENDS);
     }
 
     public function flushTrending(): void
     {
-        $this->tags(self::TAG_TRENDING)->flush();
+        $this->flushTag(self::TAG_TRENDING);
     }
 
     private function remember(string $tag, string $segment, array $parameters, Closure $resolver): mixed
     {
+        $store = $this->store();
         $key = $this->buildKey($segment, $parameters);
 
-        return $this->tags($tag)->remember(
+        $this->rememberKey($store, $tag, $key);
+
+        return $store->remember(
             $key,
             now()->addSeconds(self::TTL_SECONDS),
             $resolver
         );
     }
 
-    private function tags(string $tag): TaggedCache
+    private function store(): Repository
     {
-        return Cache::store('redis')->tags([$tag]);
+        if (extension_loaded('redis')) {
+            try {
+                return Cache::store('redis');
+            } catch (\Throwable) {
+                // Fallback below.
+            }
+        }
+
+        try {
+            return Cache::store(config('cache.default'));
+        } catch (\Throwable) {
+            return Cache::store('array');
+        }
+    }
+
+    private function flushTag(string $tag): void
+    {
+        $store = $this->store();
+        $indexKey = $this->indexKey($tag);
+        $keys = $store->get($indexKey, []);
+
+        foreach ($keys as $key) {
+            $store->forget($key);
+        }
+
+        $store->forget($indexKey);
+    }
+
+    private function rememberKey(Repository $store, string $tag, string $key): void
+    {
+        $indexKey = $this->indexKey($tag);
+        $keys = $store->get($indexKey, []);
+
+        if (in_array($key, $keys, true)) {
+            return;
+        }
+
+        $keys[] = $key;
+
+        $store->forever($indexKey, $keys);
+    }
+
+    private function indexKey(string $tag): string
+    {
+        return $tag.':keys';
     }
 
     private function buildKey(string $segment, array $parameters): string

@@ -7,7 +7,11 @@ namespace App\Providers;
 use App\Models\Movie;
 use App\Models\User;
 use App\Observers\MovieObserver;
+use App\Services\Analytics\CtrAnalyticsService;
+use App\Services\Metrics\PrometheusMetricsService;
+use App\Support\MetricsCache;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use TomatoPHP\FilamentSubscriptions\Facades\FilamentSubscriptions;
@@ -20,7 +24,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(MetricsCache::class, static fn (): MetricsCache => new MetricsCache);
+
+        $this->app->singleton(PrometheusMetricsService::class, function (Application $app): PrometheusMetricsService {
+            return new PrometheusMetricsService(
+                $app->make(CtrAnalyticsService::class),
+                $app->make(MetricsCache::class),
+            );
+        });
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\Rss\NewReleasesFeedController;
 use App\Http\Controllers\Rss\UpcomingFeedController;
@@ -46,11 +47,12 @@ Route::get('/works', function () {
     return view('works', ['content' => $content]);
 })->name('works');
 
+Route::get('/metrics', MetricsController::class)->name('metrics');
+
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::permanentRedirect('/ctr', '/analytics/ctr')->name('ctr');
     Route::get('/ctr.svg', [CtrSvgController::class, 'line'])->name('ctr.svg');
     Route::get('/ctr/bars.svg', [CtrSvgBarsController::class, 'bars'])->name('ctr.bars.svg');
-    Route::permanentRedirect('/metrics', '/analytics/queue')->name('metrics');
     Route::get('/ssr/issues', SsrIssuesController::class)->name('ssr.issues');
 });
 
