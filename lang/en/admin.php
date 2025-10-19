@@ -88,5 +88,10 @@ return [
         'year_from_placeholder' => 'Year from',
         'year_to_placeholder' => 'Year to',
         'apply' => 'Show',
+        'period' => 'Top for :days days (:from — :to)',
+        'empty' => 'No items match the selected filters.',
+        'clicks' => 'Clicks: :count',
+        'imdb' => 'IMDb: :rating',
+        'votes' => 'Votes: :count',
     ],
 ];

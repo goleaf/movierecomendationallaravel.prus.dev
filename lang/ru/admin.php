@@ -88,5 +88,10 @@ return [
         'year_from_placeholder' => 'Год от',
         'year_to_placeholder' => 'Год до',
         'apply' => 'Показать',
+        'period' => 'Топ за :days дн. (:from — :to)',
+        'empty' => 'Нет данных по выбранным фильтрам.',
+        'clicks' => 'Клики: :count',
+        'imdb' => 'IMDb: :rating',
+        'votes' => 'Голосов: :count',
     ],
 ];
