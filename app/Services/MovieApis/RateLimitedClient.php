@@ -14,6 +14,10 @@ use Throwable;
 
 class RateLimitedClient
 {
+    protected string $baseUrl;
+
+    protected float $timeout;
+
     protected int $retryAttempts;
 
     protected int $retryDelayMs;
@@ -29,30 +33,30 @@ class RateLimitedClient
     protected string $rateLimiterKey;
 
     /**
-     * @param  array<string, mixed>  $retry
-     * @param  array<string, mixed>  $backoff
-     * @param  array<string, mixed>  $rateLimit
-     * @param  array<string, mixed>  $defaultQuery
-     * @param  array<string, mixed>  $defaultHeaders
+     * @var array<string, mixed>
      */
+    protected array $defaultQuery = [];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $defaultHeaders = [];
+
     public function __construct(
         protected HttpFactory $http,
-        protected string $baseUrl,
-        protected float $timeout,
-        array $retry = [],
-        array $backoff = [],
-        array $rateLimit = [],
-        protected array $defaultQuery = [],
-        protected array $defaultHeaders = [],
-        ?string $rateLimiterKey = null,
+        RateLimitedClientConfig $config,
     ) {
-        $this->retryAttempts = max(0, (int) ($retry['attempts'] ?? 0));
-        $this->retryDelayMs = max(0, (int) ($retry['delay_ms'] ?? 0));
-        $this->backoffMultiplier = (float) ($backoff['multiplier'] ?? 1.0);
-        $this->backoffMaxDelayMs = max(0, (int) ($backoff['max_delay_ms'] ?? 0));
-        $this->rateLimitWindow = max(1, (int) ($rateLimit['window'] ?? 60));
-        $this->rateLimitAllowance = max(1, (int) ($rateLimit['allowance'] ?? 60));
-        $this->rateLimiterKey = $rateLimiterKey ?? sprintf('movie-apis:%s', md5($this->baseUrl));
+        $this->baseUrl = $config->baseUrl();
+        $this->timeout = $config->timeout();
+        $this->retryAttempts = $config->retryAttempts();
+        $this->retryDelayMs = $config->retryDelayMs();
+        $this->backoffMultiplier = $config->backoffMultiplier();
+        $this->backoffMaxDelayMs = $config->backoffMaxDelayMs();
+        $this->rateLimitWindow = $config->rateLimitWindow();
+        $this->rateLimitAllowance = $config->rateLimitAllowance();
+        $this->defaultQuery = $config->defaultQuery();
+        $this->defaultHeaders = $config->defaultHeaders();
+        $this->rateLimiterKey = $config->rateLimiterKey();
     }
 
     /**

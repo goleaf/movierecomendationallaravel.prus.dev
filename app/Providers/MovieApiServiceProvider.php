@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
+use App\Services\MovieApis\RateLimitedClientConfig;
 use App\Services\MovieApis\TmdbClient;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
@@ -22,18 +23,22 @@ class MovieApiServiceProvider extends ServiceProvider
             ));
             $defaultLocale = (string) ($config['default_locale'] ?? ($acceptedLocales[0] ?? 'en-US'));
 
-            $client = new RateLimitedClient(
-                $app->make(HttpFactory::class),
-                $this->normaliseBaseUrl((string) ($config['base_url'] ?? 'https://api.themoviedb.org/3/')),
-                (float) ($config['timeout'] ?? 10),
-                (array) ($config['retry'] ?? []),
-                (array) ($config['backoff'] ?? []),
-                (array) ($config['rate_limit'] ?? []),
-                [
+            $clientConfig = new RateLimitedClientConfig(
+                baseUrl: (string) ($config['base_url'] ?? 'https://api.themoviedb.org/3/'),
+                timeout: (float) ($config['timeout'] ?? 10),
+                retry: (array) ($config['retry'] ?? []),
+                backoff: (array) ($config['backoff'] ?? []),
+                rateLimit: (array) ($config['rate_limit'] ?? []),
+                defaultQuery: [
                     'api_key' => $config['key'] ?? null,
                 ],
-                [],
-                'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
+                defaultHeaders: (array) ($config['headers'] ?? []),
+                rateLimiterKey: 'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
+            );
+
+            $client = new RateLimitedClient(
+                $app->make(HttpFactory::class),
+                $clientConfig,
             );
 
             return new TmdbClient($client, $defaultLocale, $acceptedLocales);
@@ -42,28 +47,25 @@ class MovieApiServiceProvider extends ServiceProvider
         $this->app->singleton(OmdbClient::class, function ($app): OmdbClient {
             $config = (array) config('services.omdb', []);
 
-            $client = new RateLimitedClient(
-                $app->make(HttpFactory::class),
-                $this->normaliseBaseUrl((string) ($config['base_url'] ?? 'https://www.omdbapi.com/')),
-                (float) ($config['timeout'] ?? 10),
-                (array) ($config['retry'] ?? []),
-                (array) ($config['backoff'] ?? []),
-                (array) ($config['rate_limit'] ?? []),
-                [
+            $clientConfig = new RateLimitedClientConfig(
+                baseUrl: (string) ($config['base_url'] ?? 'https://www.omdbapi.com/'),
+                timeout: (float) ($config['timeout'] ?? 10),
+                retry: (array) ($config['retry'] ?? []),
+                backoff: (array) ($config['backoff'] ?? []),
+                rateLimit: (array) ($config['rate_limit'] ?? []),
+                defaultQuery: [
                     'apikey' => $config['key'] ?? null,
                 ],
-                [],
-                'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
+                defaultHeaders: (array) ($config['headers'] ?? []),
+                rateLimiterKey: 'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
+            );
+
+            $client = new RateLimitedClient(
+                $app->make(HttpFactory::class),
+                $clientConfig,
             );
 
             return new OmdbClient($client, (array) ($config['default_params'] ?? []));
         });
-    }
-
-    protected function normaliseBaseUrl(string $baseUrl): string
-    {
-        $trimmed = rtrim($baseUrl, '/');
-
-        return $trimmed !== '' ? $trimmed.'/' : $baseUrl;
     }
 }
