@@ -10,6 +10,7 @@ use App\Services\RecommendationLogger;
 use App\Services\Recommender;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Mockery;
@@ -35,19 +36,21 @@ class RecommendationServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_variant_is_determined_by_crc32_parity(): void
+    public function test_variant_respects_ab_variant_cookie(): void
     {
-        $service = app(RecAb::class);
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
+        [$variantA] = app(RecAb::class)->forDevice('device-even-2', 3);
 
-        [$variantEven] = $service->forDevice('device-even-2', 3);
-        [$variantOdd] = $service->forDevice('device-odd', 3);
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'B']));
+        [$variantB] = app(RecAb::class)->forDevice('device-odd', 3);
 
-        $this->assertSame('A', $variantEven);
-        $this->assertSame('B', $variantOdd);
+        $this->assertSame('A', $variantA);
+        $this->assertSame('B', $variantB);
     }
 
     public function test_rec_ab_prioritises_recent_highly_rated_movies(): void
     {
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);
 
         [$variant, $list] = $service->forDevice('device-even-2', 5);

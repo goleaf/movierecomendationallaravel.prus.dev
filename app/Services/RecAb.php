@@ -6,16 +6,52 @@ namespace App\Services;
 
 use App\Models\Movie;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cookie;
 
 class RecAb
 {
+    private const COOKIE_NAME = 'ab_variant';
+
+    private const COOKIE_LIFETIME_MINUTES = 60 * 24 * 365 * 5;
+
     /** @return array{0:string,1:Collection<int,Movie>} */
     public function forDevice(string $deviceId, int $limit = 12): array
     {
-        $variant = (crc32($deviceId) % 2 === 0) ? 'A' : 'B';
+        $variant = $this->resolveVariant();
         $list = $this->score($variant, $deviceId, $limit);
 
         return [$variant, $list];
+    }
+
+    protected function resolveVariant(): string
+    {
+        $existing = request()->cookie(self::COOKIE_NAME);
+        if (in_array($existing, ['A', 'B'], true)) {
+            return $existing;
+        }
+
+        $variant = $this->pickVariant();
+
+        Cookie::queue(self::COOKIE_NAME, $variant, self::COOKIE_LIFETIME_MINUTES);
+
+        return $variant;
+    }
+
+    protected function pickVariant(): string
+    {
+        $weights = config('recs.ab_split', ['A' => 50.0, 'B' => 50.0]);
+        $weightA = (float) ($weights['A'] ?? 50.0);
+        $weightB = (float) ($weights['B'] ?? 50.0);
+        $total = $weightA + $weightB;
+
+        if ($total <= 0.0) {
+            return 'A';
+        }
+
+        $threshold = $weightA / $total;
+        $random = random_int(0, 10000) / 10000;
+
+        return $random < $threshold ? 'A' : 'B';
     }
 
     /** @return Collection<int,Movie> */
