@@ -24,9 +24,7 @@ class StoreSsrMetric implements ShouldQueue
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function __construct(public array $payload)
-    {
-    }
+    public function __construct(public array $payload) {}
 
     public function handle(): void
     {
@@ -74,9 +72,7 @@ class StoreSsrMetric implements ShouldQueue
                 $data['blocking_scripts'] = $this->payload['blocking_scripts'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'first_byte_ms') && isset($this->payload['first_byte_ms'])) {
-                $data['first_byte_ms'] = $this->payload['first_byte_ms'];
-            }
+            $data['first_byte_ms'] = $this->payload['first_byte_ms'] ?? 0;
 
             if (Schema::hasColumn('ssr_metrics', 'meta') && isset($this->payload['meta'])) {
                 $data['meta'] = json_encode($this->payload['meta'], JSON_THROW_ON_ERROR);
@@ -113,7 +109,7 @@ class StoreSsrMetric implements ShouldQueue
                 'ld' => $this->payload['ldjson_count'] ?? null,
                 'imgs' => $this->payload['img_count'] ?? null,
                 'blocking' => $this->payload['blocking_scripts'] ?? null,
-                'first_byte_ms' => $this->payload['first_byte_ms'] ?? null,
+                'first_byte_ms' => $this->payload['first_byte_ms'] ?? 0,
                 'has_json_ld' => ($this->payload['ldjson_count'] ?? 0) > 0,
                 'has_open_graph' => ($this->payload['og_count'] ?? 0) > 0,
             ];

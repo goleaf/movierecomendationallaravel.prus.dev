@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property int $ldjson_count
  * @property int $img_count
  * @property int $blocking_scripts
+ * @property int $first_byte_ms
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

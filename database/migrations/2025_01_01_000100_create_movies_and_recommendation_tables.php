@@ -78,6 +78,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('path');
                 $table->unsignedInteger('score');
+                $table->unsignedInteger('first_byte_ms')->default(0);
                 $table->json('meta')->nullable();
                 $table->timestamps();
 
