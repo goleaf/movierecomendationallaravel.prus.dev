@@ -14,8 +14,11 @@ class HomeController extends Controller
     public function __invoke(Recommender $recommender): View
     {
         $did = device_id();
-        $recommended = $recommender->recommendForDevice($did, 12);
+        $result = $recommender->recommendForDevice($did, 12, 'home');
+        $homeVariant = $result['variant'];
+        $recommended = $result['movies'];
         if ($recommended->isEmpty()) {
+            $homeVariant = 'fallback';
             $recommended = Movie::query()
                 ->orderByDesc('imdb_votes')
                 ->orderByDesc('imdb_rating')
@@ -33,21 +36,24 @@ class HomeController extends Controller
                 ->map(fn (Movie $movie) => [
                     'movie' => $movie,
                     'clicks' => null,
+                    'placement' => 'trends',
+                    'variant' => 'mixed',
                 ]);
         }
 
         return view('home.index', [
             'recommended' => $recommended,
+            'homeVariant' => $homeVariant,
             'trending' => $trending,
         ]);
     }
 
     /**
-     * @return Collection<int,array{movie:Movie,clicks:int|null}>
+     * @return Collection<int,array{movie:Movie,clicks:int|null,placement:string,variant:string}>
      */
     protected function fetchTrendingSnapshot(): Collection
     {
-        if (!Schema::hasTable('rec_clicks')) {
+        if (! Schema::hasTable('rec_clicks')) {
             return collect();
         }
 
@@ -74,13 +80,15 @@ class HomeController extends Controller
         return $top
             ->map(function (int $clicks, int $movieId) use ($movies) {
                 $movie = $movies->get($movieId);
-                if (!$movie) {
+                if (! $movie) {
                     return null;
                 }
 
                 return [
                     'movie' => $movie,
                     'clicks' => $clicks,
+                    'placement' => 'trends',
+                    'variant' => 'mixed',
                 ];
             })
             ->filter()

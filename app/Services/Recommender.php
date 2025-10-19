@@ -7,8 +7,14 @@ use Illuminate\Support\Collection;
 
 class Recommender
 {
-    public function __construct(protected RecAb $ab){}
-    /** @return Collection<int,Movie> */
-    public function recommendForDevice(string $deviceId, int $limit=12): Collection
-    { [$variant,$list]=$this->ab->forDevice($deviceId,$limit); return $list; }
+    public function __construct(protected RecAb $ab, protected RecommendationLogger $logger) {}
+
+    /** @return array{variant:string,movies:Collection<int,Movie>} */
+    public function recommendForDevice(string $deviceId, int $limit = 12, string $placement = 'home'): array
+    {
+        [$variant, $list] = $this->ab->forDevice($deviceId, $limit);
+        $this->logger->recordRecommendation($deviceId, $variant, $placement, $list);
+
+        return ['variant' => $variant, 'movies' => $list];
+    }
 }

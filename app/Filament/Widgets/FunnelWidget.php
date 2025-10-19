@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 class FunnelWidget extends Widget
 {
     protected static string $view = 'filament.widgets.funnel';
+
     protected static ?string $heading = 'Funnels (7 дней)';
 
     protected function getViewData(): array
@@ -16,22 +17,27 @@ class FunnelWidget extends Widget
         $from = now()->subDays(7)->format('Y-m-d');
         $to = now()->format('Y-m-d');
 
-        $impVariant = Schema::hasTable('rec_ab_logs')
+        $impPlacement = Schema::hasTable('rec_ab_logs')
             ? DB::table('rec_ab_logs')
-                ->selectRaw('variant, count(*) as imps')
+                ->selectRaw('placement, count(*) as imps')
                 ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-                ->groupBy('variant')
-                ->pluck('imps', 'variant')
+                ->groupBy('placement')
+                ->pluck('imps', 'placement')
                 ->all()
             : [];
 
-        $totalImps = array_sum($impVariant);
+        $totalImps = array_sum($impPlacement);
 
-        $totalViews = Schema::hasTable('device_history')
-            ? (int) DB::table('device_history')
+        $viewPlacement = Schema::hasTable('device_history')
+            ? DB::table('device_history')
+                ->selectRaw('page, count(*) as views')
                 ->whereBetween('viewed_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-                ->count()
-            : 0;
+                ->groupBy('page')
+                ->pluck('views', 'page')
+                ->all()
+            : [];
+
+        $totalViews = array_sum($viewPlacement);
 
         $totalClicks = Schema::hasTable('rec_clicks')
             ? (int) DB::table('rec_clicks')
@@ -51,11 +57,11 @@ class FunnelWidget extends Widget
 
             $rows[] = [
                 'label' => $placement,
-                'imps' => $totalImps,
+                'imps' => (int) ($impPlacement[$placement] ?? 0),
                 'clicks' => $clicks,
-                'views' => $totalViews,
-                'ctr' => $totalImps > 0 ? round(100 * $clicks / $totalImps, 2) : 0.0,
-                'view_rate' => $totalViews > 0 ? round(100 * $clicks / $totalViews, 2) : 0.0,
+                'views' => (int) ($viewPlacement[$placement] ?? 0),
+                'ctr' => ((int) ($impPlacement[$placement] ?? 0)) > 0 ? round(100 * $clicks / (int) $impPlacement[$placement], 2) : 0.0,
+                'view_rate' => ((int) ($viewPlacement[$placement] ?? 0)) > 0 ? round(100 * $clicks / (int) $viewPlacement[$placement], 2) : 0.0,
             ];
         }
 

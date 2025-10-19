@@ -45,7 +45,15 @@ class TrendsController extends Controller
                 $query->where('movies.year', '<=', $yt);
             }
 
-            $items = $query->limit(40)->get();
+            $items = $query
+                ->limit(40)
+                ->get()
+                ->map(function ($item) {
+                    $item->placement = 'trends';
+                    $item->variant = 'mixed';
+
+                    return $item;
+                });
         }
 
         if ($items->isEmpty()) {
@@ -68,6 +76,8 @@ class TrendsController extends Controller
                 'imdb_rating' => $movie->imdb_rating,
                 'imdb_votes' => $movie->imdb_votes,
                 'clicks' => null,
+                'placement' => 'trends',
+                'variant' => 'mixed',
             ]);
         }
 

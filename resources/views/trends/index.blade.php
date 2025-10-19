@@ -10,7 +10,7 @@
 @else
   <div class="grid grid-4">
     @foreach($items as $item)
-      <a class="card" href="{{ route('movies.show', ['movie'=>$item->id]) }}">
+      <a class="card" href="{{ route('movies.show', ['movie'=>$item->id, 'placement'=>$item->placement ?? 'trends', 'variant'=>$item->variant ?? 'mixed']) }}">
         @if($item->poster_url)
           <img src="{{ $item->poster_url }}" alt="{{ $item->title }}" loading="lazy"/>
         @endif

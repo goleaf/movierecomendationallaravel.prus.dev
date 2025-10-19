@@ -21,7 +21,7 @@
 @else
   <div class="grid grid-4" style="margin-top:10px;">
     @foreach($items as $m)
-      <a class="card" href="{{ route('movies.show',$m) }}">
+      <a class="card" href="{{ route('movies.show', ['movie'=>$m, 'placement'=>'search', 'variant'=>'search']) }}">
         @if($m->poster_url)<img src="{{ $m->poster_url }}" alt="{{ $m->title }}"/>@endif
         <div><strong>{{ $m->title }}</strong> ({{ $m->year ?? '—' }})</div>
         <div class="muted">IMDb: {{ $m->imdb_rating ?? '—' }} • {{ $m->imdb_votes ?? 0 }}</div>

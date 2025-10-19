@@ -11,8 +11,8 @@
 <meta property="og:url" content="{{ url()->current() }}">
 <meta property="og:image" content="@yield('og_image', asset('img/og_default.jpg'))">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","name":"MovieRec","url":"{{ url('/') }}",
-"potentialAction":{"@type":"SearchAction","target":"{{ url('/search') }}?q={query}","query-input":"required name=query"}}
+{"@@context":"https://schema.org","@@type":"WebSite","name":"MovieRec","url":"{{ url('/') }}",
+"potentialAction":{"@@type":"SearchAction","target":"{{ url('/search') }}?q={query}","query-input":"required name=query"}}
 </script>
 <style>
 :root{color-scheme:dark}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,Noto Sans;background:#0b0c0f;color:#e6e7e8}
