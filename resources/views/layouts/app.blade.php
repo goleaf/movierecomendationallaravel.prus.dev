@@ -10,19 +10,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', __('messages.app.default_title'))</title>
     <meta name="description" content="@yield('meta_description', __('messages.app.meta_description'))">
-    <link rel="canonical" href="{{ url()->current() }}">
+    @php
+        $defaultOgImage = asset('img/og-default.svg');
+        $canonicalUrl = trim($__env->yieldContent('canonical_url')) !== ''
+            ? $__env->yieldContent('canonical_url')
+            : url()->current();
+        $robotsDirective = trim($__env->yieldContent('robots')) !== ''
+            ? trim($__env->yieldContent('robots'))
+            : (string) request()->attributes->get('robotsDirective', 'index,follow');
+
+        if ($robotsDirective === '') {
+            $robotsDirective = 'index,follow';
+        }
+
+        $ogImage = trim($__env->yieldContent('og_image')) !== ''
+            ? trim($__env->yieldContent('og_image'))
+            : $defaultOgImage;
+    @endphp
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+    <meta name="robots" content="{{ $robotsDirective }}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="{{ $htmlLocale }}">
     <meta property="og:title" content="@yield('og_title', $__env->yieldContent('title', __('messages.app.default_title')))">
     <meta property="og:description" content="@yield('og_desc', $__env->yieldContent('meta_description', __('messages.app.og_description')))">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="@yield('og_image', asset('img/og_default.jpg'))">
+    <meta property="og:image" content="{{ $ogImage }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('og_title', $__env->yieldContent('title', __('messages.app.default_title')))">
     <meta name="twitter:description" content="@yield('og_desc', $__env->yieldContent('meta_description', __('messages.app.og_description')))">
-    <meta name="twitter:image" content="@yield('og_image', asset('img/og_default.jpg'))">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     @stack('meta')
     @php
+        $structuredDataStack = trim($__env->yieldPushContent('structured_data'));
         $defaultStructuredData = [
             '@context' => 'https://schema.org',
             '@type' => 'WebSite',
@@ -35,7 +54,9 @@
             ],
         ];
     @endphp
-    @hasSection('structured_data')
+    @if($structuredDataStack !== '')
+        {!! $structuredDataStack !!}
+    @elseif($__env->hasSection('structured_data'))
         @yield('structured_data')
     @else
         <script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode($defaultStructuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
