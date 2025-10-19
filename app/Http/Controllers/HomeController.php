@@ -14,7 +14,11 @@ class HomeController extends Controller
     public function __invoke(Recommender $recommender): View
     {
         $did = device_id();
-        $recommended = $recommender->recommendForDevice($did, 12);
+        [
+            'variant' => $recVariant,
+            'recommendations' => $recommended,
+        ] = $recommender->recommendForDevice($did, 12);
+
         if ($recommended->isEmpty()) {
             $recommended = Movie::query()
                 ->orderByDesc('imdb_votes')
@@ -39,6 +43,7 @@ class HomeController extends Controller
         return view('home.index', [
             'recommended' => $recommended,
             'trending' => $trending,
+            'recVariant' => $recVariant,
         ]);
     }
 
@@ -47,7 +52,7 @@ class HomeController extends Controller
      */
     protected function fetchTrendingSnapshot(): Collection
     {
-        if (!Schema::hasTable('rec_clicks')) {
+        if (! Schema::hasTable('rec_clicks')) {
             return collect();
         }
 
@@ -74,7 +79,7 @@ class HomeController extends Controller
         return $top
             ->map(function (int $clicks, int $movieId) use ($movies) {
                 $movie = $movies->get($movieId);
-                if (!$movie) {
+                if (! $movie) {
                     return null;
                 }
 
