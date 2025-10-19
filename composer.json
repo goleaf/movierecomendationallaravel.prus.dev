@@ -14,7 +14,7 @@
         "inertiajs/inertia-laravel": "^2.0",
         "predis/predis": "^3.2",
         "symfony/uid": "^7.3",
-        "tomatophp/filament-payments": "^1.0"
+        "tomatophp/filament-seo": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

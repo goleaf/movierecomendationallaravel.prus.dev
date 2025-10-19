@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
-use TomatoPHP\FilamentPayments\FilamentPaymentsPlugin;
+use TomatoPHP\FilamentSeo\FilamentSeoPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -26,6 +26,9 @@ class AnalyticsPanelProvider extends PanelProvider
             ->plugin(FilamentApiDocsBuilderPlugin::make())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
+            ->plugin(
+                FilamentSeoPlugin::make(),
+            )
             ->widgets([
                 \App\Filament\Widgets\QueueStatsWidget::class,
                 \App\Filament\Widgets\FunnelWidget::class,
