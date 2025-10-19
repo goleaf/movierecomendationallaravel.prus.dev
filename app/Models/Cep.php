@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Cep extends Model
 {
+    /** @use HasFactory<\Database\Factories\CepFactory> */
     use HasFactory;
 
     protected $table = 'cep';
@@ -38,6 +39,9 @@ class Cep extends Model
         'street',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

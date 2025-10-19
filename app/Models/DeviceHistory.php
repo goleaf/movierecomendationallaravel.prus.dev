@@ -27,10 +27,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DeviceHistory extends Model
 {
+    /** @use HasFactory<\Database\Factories\DeviceHistoryFactory> */
     use HasFactory;
 
     protected $guarded = [];
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -40,26 +44,36 @@ class DeviceHistory extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Movie, DeviceHistory>
+     */
     public function movie(): BelongsTo
     {
-        return $this->belongsTo(Movie::class);
+        /** @var BelongsTo<Movie, DeviceHistory> $relation */
+        $relation = $this->belongsTo(Movie::class);
+
+        return $relation;
     }
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeBetweenViewedAt(Builder $query, DateTimeInterface|string $from, DateTimeInterface|string $to): Builder
     {
         $column = $query->qualifyColumn('viewed_at');
 
-        return $query->whereBetween($column, [
+        $query->whereBetween($column, [
             $from instanceof DateTimeInterface ? $from->format('Y-m-d H:i:s') : $from,
             $to instanceof DateTimeInterface ? $to->format('Y-m-d H:i:s') : $to,
         ]);
+
+        return $query;
     }
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeForPlacement(Builder $query, ?string $placement): Builder
     {
@@ -67,7 +81,9 @@ class DeviceHistory extends Model
             return $query;
         }
 
-        return $query->where('placement', $placement);
+        $query->where('placement', $placement);
+
+        return $query;
     }
 
     protected static function newFactory(): DeviceHistoryFactory
