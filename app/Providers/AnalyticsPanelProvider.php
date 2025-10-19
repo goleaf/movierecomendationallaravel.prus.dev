@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
-use TomatoPHP\FilamentUsers\FilamentUsersPlugin;
+use TomatoPHP\FilamentAccounts\FilamentAccountsPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -21,7 +21,16 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Administration',
             ])
             ->plugin(
-                FilamentUsersPlugin::make()
+                FilamentAccountsPlugin::make()
+                    ->useTypes()
+                    ->useAvatar()
+                    ->showAddressField()
+                    ->showTypeField()
+                    ->useExport()
+                    ->useImport()
+                    ->useLoginBy()
+                    ->canLogin()
+                    ->canBlocked()
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
