@@ -14,8 +14,15 @@ class SsrMetricsMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
+        $startedAt = microtime(true);
+
         /** @var Response $response */
         $response = $next($request);
+
+        $ttfbMs = (int) round((microtime(true) - $startedAt) * 1000);
+        if ($ttfbMs < 0) {
+            $ttfbMs = 0;
+        }
 
         if (! config('ssrmetrics.enabled')) {
             return $response;
@@ -70,6 +77,7 @@ class SsrMetricsMiddleware
                 DB::table('ssr_metrics')->insert([
                     'path' => $path,
                     'score' => $score,
+                    'ttfb_ms' => $ttfbMs,
                     'size' => $size,
                     'meta_count' => $meta,
                     'og_count' => $og,
@@ -86,6 +94,7 @@ class SsrMetricsMiddleware
                     'ts' => now()->toIso8601String(),
                     'path' => $path,
                     'score' => $score,
+                    'ttfb_ms' => $ttfbMs,
                     'size' => $size,
                     'meta' => $meta,
                     'og' => $og,

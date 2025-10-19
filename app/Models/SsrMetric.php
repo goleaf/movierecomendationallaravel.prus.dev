@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $path
  * @property int $score
+ * @property int|null $ttfb_ms
  * @property int $size
  * @property int $meta_count
  * @property int $og_count

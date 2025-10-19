@@ -6,6 +6,7 @@ use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\Rss\NewReleasesFeedController;
 use App\Http\Controllers\Rss\UpcomingFeedController;
@@ -18,8 +19,11 @@ use App\Livewire\TrendsPage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Spatie\Csp\AddCspHeaders;
 
 Route::get('/', HomePage::class)->name('home');
+Route::get('/metrics', MetricsController::class)
+    ->withoutMiddleware([AddCspHeaders::class]);
 Route::get('/search', SearchPageController::class)->name('search');
 Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
