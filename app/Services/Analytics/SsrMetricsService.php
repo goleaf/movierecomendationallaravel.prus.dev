@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\SsrMetric;
+use App\Support\SsrMetricsFallbackStore;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class SsrMetricsService
 {
+    public function __construct(private SsrMetricsFallbackStore $fallbackStore) {}
+
     /**
      * @return array{label: string, score: int, paths: int, description: string}
      */
@@ -238,34 +240,7 @@ class SsrMetricsService
      */
     private function loadSsrFallback(): array
     {
-        if (! Storage::exists('metrics/ssr.jsonl')) {
-            return [];
-        }
-
-        $content = trim((string) Storage::get('metrics/ssr.jsonl'));
-
-        if ($content === '') {
-            return [];
-        }
-
-        $records = [];
-        $lines = preg_split("/\r?\n/", $content) ?: [];
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-
-            if ($line === '') {
-                continue;
-            }
-
-            $decoded = json_decode($line, true);
-
-            if (is_array($decoded)) {
-                $records[] = $decoded;
-            }
-        }
-
-        return $records;
+        return $this->fallbackStore->readIncoming();
     }
 
     /**

@@ -18,7 +18,13 @@ class SsrAnalyticsFallbackTest extends TestCase
 
     public function test_widgets_render_jsonl_fallback_when_table_missing(): void
     {
-        Storage::fake('local');
+        config()->set('ssrmetrics.storage.fallback.disk', 'local');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
+        $fallbackDisk = config('ssrmetrics.storage.fallback.disk');
+        $fallbackFile = config('ssrmetrics.storage.fallback.files.incoming');
+
+        Storage::fake($fallbackDisk);
 
         Schema::dropIfExists('ssr_metrics');
 
@@ -47,7 +53,7 @@ class SsrAnalyticsFallbackTest extends TestCase
 
         $lines = array_map(static fn (array $record): string => json_encode($record, JSON_THROW_ON_ERROR), $records);
 
-        Storage::disk('local')->put('metrics/ssr.jsonl', implode("\n", $lines));
+        Storage::disk($fallbackDisk)->put($fallbackFile, implode("\n", $lines));
 
         Livewire::test(SsrStatsWidget::class)
             ->assertSee('SSR Score')

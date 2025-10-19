@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Resources\SsrIssueCollection;
+use App\Support\SsrMetricsFallbackStore;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class SsrIssuesController extends Controller
 {
+    public function __construct(private readonly SsrMetricsFallbackStore $fallbackStore) {}
+
     public function __invoke(): SsrIssueCollection
     {
         $issues = [];
@@ -38,39 +40,54 @@ class SsrIssuesController extends Controller
                 }
                 $issues[] = ['path' => $r->path, 'avg_score' => round((float) $r->avg_score, 2), 'hints' => $advice];
             }
-        } elseif (Storage::exists('metrics/ssr.jsonl')) {
-            $lines = explode("\n", Storage::get('metrics/ssr.jsonl'));
-            $agg = [];
-            foreach ($lines as $ln) {
-                $ln = trim($ln);
-                if ($ln === '') {
-                    continue;
-                }
-                $j = json_decode($ln, true);
-                if (! $j) {
-                    continue;
-                }
-                $p = $j['path'];
-                $agg[$p] = $agg[$p] ?? ['sum' => 0, 'n' => 0, 'block' => 0, 'ld' => 0, 'og' => 0];
-                $agg[$p]['sum'] += (int) ($j['score'] ?? 0);
-                $agg[$p]['n'] += 1;
-                $agg[$p]['block'] += (int) ($j['blocking_scripts'] ?? $j['blocking'] ?? 0);
-                $agg[$p]['ld'] += (int) ($j['ldjson_count'] ?? $j['ld'] ?? 0);
-                $agg[$p]['og'] += (int) ($j['og_count'] ?? $j['og'] ?? 0);
+        } else {
+            $records = $this->fallbackStore->readIncoming();
+
+            if ($records === []) {
+                $records = $this->fallbackStore->readRecovery();
             }
-            foreach ($agg as $p => $a) {
-                $avg = $a['n'] ? $a['sum'] / $a['n'] : 0;
-                $advice = [];
-                if ($a['block'] > 0) {
-                    $advice[] = __('analytics.hints.ssr.add_defer');
+
+            if ($records !== []) {
+                $agg = [];
+
+                foreach ($records as $record) {
+                    if (! is_array($record)) {
+                        continue;
+                    }
+
+                    $path = (string) ($record['path'] ?? '');
+
+                    if ($path === '') {
+                        continue;
+                    }
+
+                    $score = (int) ($record['score'] ?? 0);
+                    $blocking = (int) ($record['blocking_scripts'] ?? $record['blocking'] ?? 0);
+                    $ld = (int) ($record['ldjson_count'] ?? $record['ld'] ?? 0);
+                    $og = (int) ($record['og_count'] ?? $record['og'] ?? 0);
+
+                    $agg[$path] = $agg[$path] ?? ['sum' => 0, 'n' => 0, 'block' => 0, 'ld' => 0, 'og' => 0];
+                    $agg[$path]['sum'] += $score;
+                    $agg[$path]['n'] += 1;
+                    $agg[$path]['block'] += $blocking;
+                    $agg[$path]['ld'] += $ld;
+                    $agg[$path]['og'] += $og;
                 }
-                if ($a['ld'] == 0) {
-                    $advice[] = __('analytics.hints.ssr.missing_json_ld');
+
+                foreach ($agg as $p => $a) {
+                    $avg = $a['n'] ? $a['sum'] / $a['n'] : 0;
+                    $advice = [];
+                    if ($a['block'] > 0) {
+                        $advice[] = __('analytics.hints.ssr.add_defer');
+                    }
+                    if ($a['ld'] == 0) {
+                        $advice[] = __('analytics.hints.ssr.missing_json_ld');
+                    }
+                    if ($a['og'] < 3) {
+                        $advice[] = __('analytics.hints.ssr.add_og');
+                    }
+                    $issues[] = ['path' => $p, 'avg_score' => round($avg, 2), 'hints' => $advice];
                 }
-                if ($a['og'] < 3) {
-                    $advice[] = __('analytics.hints.ssr.add_og');
-                }
-                $issues[] = ['path' => $p, 'avg_score' => round($avg, 2), 'hints' => $advice];
             }
         }
         usort($issues, fn ($a, $b) => $a['avg_score'] <=> $b['avg_score']);
