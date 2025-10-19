@@ -6,5 +6,15 @@
     "editors": [
         "cursor"
     ],
-    "guidelines": []
+    "guidelines": [],
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ],
+            "description": "Laravel Boost MCP server exposing artisan wrappers, documentation search, and analytics helpers."
+        }
+    }
 }
