@@ -85,6 +85,21 @@ return [
             'workload' => 'Нагрузка',
             'supervisors' => 'Супервайзеры',
             'empty' => 'Данные Horizon недоступны.',
+            'actions' => [
+                'pause' => [
+                    'label' => 'Поставить Horizon на паузу',
+                    'confirm' => 'Приостановить всех воркеров Horizon?',
+                    'success' => 'Очереди Horizon приостановлены.',
+                ],
+                'resume' => [
+                    'label' => 'Возобновить Horizon',
+                    'confirm' => 'Возобновить работу воркеров Horizon?',
+                    'success' => 'Очереди Horizon возобновлены.',
+                ],
+                'failed' => 'Не удалось обновить состояние очередей Horizon.',
+                'unauthorized' => 'У вас нет прав для управления очередями Horizon.',
+                'unavailable' => 'Horizon не установлен или недоступен.',
+            ],
         ],
         'horizon_workload' => 'Нагрузка Horizon',
         'horizon_supervisors' => 'Супервайзеры Horizon',
