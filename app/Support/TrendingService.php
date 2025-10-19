@@ -172,7 +172,7 @@ class TrendingService
             return $items->map(fn (object $item) => [
                 'id' => (int) $item->id,
                 'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => ProxyImageHelper::signedUrl($item->poster_url ?? null),
                 'year' => $item->year !== null ? (int) $item->year : null,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
@@ -194,7 +194,7 @@ class TrendingService
         return $fallback->map(fn (Movie $movie) => [
             'id' => $movie->id,
             'title' => $movie->title,
-            'poster_url' => $movie->poster_url,
+            'poster_url' => $movie->poster_proxy_url,
             'year' => $movie->year,
             'type' => $movie->type,
             'imdb_rating' => $movie->imdb_rating,

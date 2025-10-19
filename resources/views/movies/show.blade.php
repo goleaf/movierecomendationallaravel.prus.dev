@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $posterImage = $movie->poster_url ?: asset('img/og-default.svg');
+    $posterImage = $movie->poster_proxy_url ?: asset('img/og-default.svg');
     $canonicalUrl = route('movies.show', $movie);
     $descriptionSource = $movie->plot ?? '';
     $metaDescription = $descriptionSource !== ''

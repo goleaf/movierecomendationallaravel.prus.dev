@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 return [
 
+    'proxy_image_disk' => env('PROXY_IMAGE_DISK', 'proxy_images'),
+
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -58,6 +60,15 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'proxy_images' => [
+            'driver' => env('PROXY_IMAGE_DISK_DRIVER', 'local'),
+            'root' => env('PROXY_IMAGE_DISK_ROOT', storage_path('app/proxy-images')),
+            'url' => env('PROXY_IMAGE_DISK_URL'),
+            'visibility' => env('PROXY_IMAGE_DISK_VISIBILITY', 'private'),
             'throw' => false,
             'report' => false,
         ],

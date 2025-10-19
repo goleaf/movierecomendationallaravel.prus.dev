@@ -40,7 +40,7 @@ class MovieResource extends JsonResource
             'id' => $this->id, 'imdb_tt' => $this->imdb_tt, 'title' => $title, 'plot' => $plot, 'type' => $this->type,
             'year' => $this->year, 'release_date' => optional($this->release_date)->format('Y-m-d'),
             'imdb_rating' => $this->imdb_rating, 'imdb_votes' => $this->imdb_votes, 'runtime_min' => $this->runtime_min,
-            'genres' => $this->genres, 'poster_url' => $this->poster_url, 'backdrop_url' => $this->backdrop_url,
+            'genres' => $this->genres, 'poster_url' => $this->poster_proxy_url, 'backdrop_url' => $this->backdrop_proxy_url,
         ];
     }
 }

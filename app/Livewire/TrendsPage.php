@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
+use App\Support\ProxyImageHelper;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -189,7 +190,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => ProxyImageHelper::signedUrl($item->poster_url ?? null),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,
@@ -227,7 +228,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => ProxyImageHelper::signedUrl($item->poster_url ?? null),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,
@@ -252,7 +253,7 @@ class TrendsPage extends Component
                 return [
                     'id' => $movie->id,
                     'title' => $movie->title,
-                    'poster_url' => $movie->poster_url,
+                    'poster_url' => $movie->poster_proxy_url,
                     'year' => $movie->year,
                     'type' => $movie->type,
                     'imdb_rating' => $movie->imdb_rating,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\ProxyImageHelper;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -79,7 +81,7 @@ class Movie extends Model implements Commentable
 
     protected $guarded = [];
 
-    protected $appends = ['weighted_score'];
+    protected $appends = ['weighted_score', 'poster_proxy_url', 'backdrop_proxy_url'];
 
     protected function casts(): array
     {
@@ -139,6 +141,20 @@ class Movie extends Model implements Commentable
     public function deviceHistory(): HasMany
     {
         return $this->hasMany(DeviceHistory::class);
+    }
+
+    protected function posterProxyUrl(): Attribute
+    {
+        return Attribute::make(
+            get: static fn ($value, array $attributes): ?string => ProxyImageHelper::signedUrl($attributes['poster_url'] ?? null),
+        );
+    }
+
+    protected function backdropProxyUrl(): Attribute
+    {
+        return Attribute::make(
+            get: static fn ($value, array $attributes): ?string => ProxyImageHelper::signedUrl($attributes['backdrop_url'] ?? null),
+        );
     }
 
     /**
