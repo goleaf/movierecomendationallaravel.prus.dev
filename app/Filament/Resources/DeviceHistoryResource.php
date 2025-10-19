@@ -18,6 +18,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
+/**
+ * @extends Resource<DeviceHistory>
+ */
 class DeviceHistoryResource extends Resource
 {
     protected static ?string $model = DeviceHistory::class;

@@ -17,6 +17,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
+/**
+ * @extends Resource<RecClick>
+ */
 class RecClickResource extends Resource
 {
     protected static ?string $model = RecClick::class;

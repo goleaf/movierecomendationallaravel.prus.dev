@@ -30,6 +30,9 @@ use Kirschbaum\Commentions\Filament\Actions\CommentsTableAction;
 use Kirschbaum\Commentions\Filament\Actions\SubscriptionTableAction;
 use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
 
+/**
+ * @extends Resource<Movie>
+ */
 class MovieResource extends Resource
 {
     protected static ?string $model = Movie::class;

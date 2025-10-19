@@ -17,6 +17,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
+/**
+ * @extends Resource<RecAbLog>
+ */
 class RecAbLogResource extends Resource
 {
     protected static ?string $model = RecAbLog::class;
