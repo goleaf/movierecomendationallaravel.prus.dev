@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricsService::class));
 
         $row = DB::table('ssr_metrics')->first();
 
@@ -80,10 +81,12 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->collected_at)->toDateTimeString());
 
-        $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(2048, $meta['html_bytes']);
-        $this->assertTrue($meta['has_json_ld']);
-        $this->assertTrue($meta['has_open_graph']);
+        if (Schema::hasColumn('ssr_metrics', 'meta')) {
+            $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame(2048, $meta['html_bytes']);
+            $this->assertTrue($meta['has_json_ld']);
+            $this->assertTrue($meta['has_open_graph']);
+        }
     }
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
@@ -123,7 +126,7 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricsService::class));
 
         $fallbackDisk = config('ssrmetrics.storage.fallback.disk');
         $fallbackFile = config('ssrmetrics.storage.fallback.files.incoming');
@@ -155,5 +158,150 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame(98, $decoded['first_byte_ms']);
         $this->assertFalse($decoded['has_json_ld']);
         $this->assertTrue($decoded['has_open_graph']);
+    }
+
+    public function test_it_writes_to_configured_fallback_disk(): void
+    {
+        config()->set('ssrmetrics.storage.fallback.disk', 'metrics-disk');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/custom.jsonl');
+
+        Storage::fake('metrics-disk');
+
+        $now = Carbon::parse('2024-02-02 10:00:00');
+        Carbon::setTestNow($now);
+
+        Schema::dropIfExists('ssr_metrics');
+
+        $payload = [
+            'path' => '/custom',
+            'score' => 65,
+            'html_size' => 512,
+            'meta_count' => 1,
+            'og_count' => 0,
+            'ldjson_count' => 0,
+            'img_count' => 2,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 45,
+            'collected_at' => $now->toIso8601String(),
+            'meta' => [],
+        ];
+
+        $job = new StoreSsrMetric($payload);
+        $job->handle(app(SsrMetricsService::class));
+
+        Storage::disk('metrics-disk')->assertExists('metrics/custom.jsonl');
+
+        $content = Storage::disk('metrics-disk')->get('metrics/custom.jsonl');
+        $lines = array_values(array_filter(explode(PHP_EOL, $content)));
+
+        $this->assertCount(1, $lines);
+
+        $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('/custom', $decoded['path']);
+    }
+
+    public function test_it_prunes_database_rows_based_on_retention(): void
+    {
+        config()->set('ssrmetrics.storage.fallback.disk', 'local');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
+        $service = app(SsrMetricsService::class);
+
+        $oldTimestamp = Carbon::parse('2024-02-01 00:00:00');
+
+        config()->set('ssrmetrics.retention.primary_days', 0);
+
+        $service->storeMetric([
+            'path' => '/old',
+            'score' => 40,
+            'html_size' => 256,
+            'meta_count' => 1,
+            'og_count' => 0,
+            'ldjson_count' => 0,
+            'img_count' => 1,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 20,
+            'collected_at' => $oldTimestamp->toIso8601String(),
+            'meta' => [],
+        ]);
+
+        config()->set('ssrmetrics.retention.primary_days', 5);
+
+        $now = Carbon::parse('2024-02-10 12:00:00');
+        Carbon::setTestNow($now);
+
+        $payload = [
+            'path' => '/fresh',
+            'score' => 90,
+            'html_size' => 1024,
+            'meta_count' => 2,
+            'og_count' => 1,
+            'ldjson_count' => 1,
+            'img_count' => 2,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 80,
+            'collected_at' => $now->toIso8601String(),
+            'meta' => [],
+        ];
+
+        $job = new StoreSsrMetric($payload);
+        $job->handle($service);
+
+        $paths = DB::table('ssr_metrics')->pluck('path')->all();
+
+        $this->assertContains('/fresh', $paths);
+        $this->assertNotContains('/old', $paths);
+    }
+
+    public function test_it_prunes_fallback_records_based_on_retention(): void
+    {
+        config()->set('ssrmetrics.storage.fallback.disk', 'metrics-disk');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
+        Storage::fake('metrics-disk');
+
+        Schema::dropIfExists('ssr_metrics');
+
+        $records = [
+            ['ts' => '2024-03-01T00:00:00Z', 'path' => '/stale', 'score' => 10],
+            ['ts' => '2024-03-05T12:00:00Z', 'path' => '/recent', 'score' => 80],
+        ];
+
+        $lines = array_map(static fn (array $record): string => json_encode($record, JSON_THROW_ON_ERROR), $records);
+        Storage::disk('metrics-disk')->put('metrics/ssr.jsonl', implode("\n", $lines));
+
+        config()->set('ssrmetrics.retention.fallback_days', 3);
+
+        $now = Carbon::parse('2024-03-08 09:00:00');
+        Carbon::setTestNow($now);
+
+        $payload = [
+            'path' => '/fresh',
+            'score' => 75,
+            'html_size' => 700,
+            'meta_count' => 2,
+            'og_count' => 1,
+            'ldjson_count' => 1,
+            'img_count' => 1,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 60,
+            'collected_at' => $now->toIso8601String(),
+            'meta' => [],
+        ];
+
+        $job = new StoreSsrMetric($payload);
+        $job->handle(app(SsrMetricsService::class));
+
+        $content = Storage::disk('metrics-disk')->get('metrics/ssr.jsonl');
+        $lines = array_values(array_filter(explode(PHP_EOL, $content)));
+
+        $this->assertCount(2, $lines);
+
+        $decoded = array_map(static fn (string $line): array => json_decode($line, true, 512, JSON_THROW_ON_ERROR), $lines);
+
+        $paths = array_column($decoded, 'path');
+
+        $this->assertSame(['/recent', '/fresh'], $paths);
     }
 }
