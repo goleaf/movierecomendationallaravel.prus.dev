@@ -9,11 +9,16 @@ use App\Models\User;
 use App\Observers\MovieObserver;
 use App\Services\Ingestion\IdempotencyService;
 use App\Services\SsrMetricsService;
+use App\Support\Session\ReadOnlyAwareDatabaseSessionHandler;
 use App\Support\SsrMetricsFallbackStore;
 use Filament\Facades\Filament;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Cache\Repository;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Http\Request;
+use Illuminate\Session\DatabaseSessionHandler;
+use Illuminate\Session\FileSessionHandler;
+use Illuminate\Session\SessionManager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -35,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerHotPathCache('cache.hot_path.filters', 'hot_path_filters');
         $this->registerHotPathCache('cache.hot_path.genres', 'hot_path_genres');
+
+        $this->registerDatabaseSessionFallback();
     }
 
     /**
@@ -91,5 +98,41 @@ class AppServiceProvider extends ServiceProvider
     private function registerHotPathCache(string $serviceId, string $store): void
     {
         $this->app->singleton($serviceId, static fn (): Repository => Cache::store($store));
+    }
+
+    private function registerDatabaseSessionFallback(): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        $this->app->resolving(SessionManager::class, function (SessionManager $manager): void {
+            $manager->extend('database', function ($app): ReadOnlyAwareDatabaseSessionHandler {
+                $connectionName = config('session.connection');
+
+                if ($connectionName === null || $connectionName === '') {
+                    $connectionName = $app['config']['database.default'];
+                }
+
+                $connection = $app['db']->connection($connectionName);
+                $table = $app['config']->get('session.table', 'sessions');
+                $lifetime = (int) $app['config']->get('session.lifetime', 120);
+
+                $primaryHandler = new DatabaseSessionHandler($connection, $table, $lifetime, $app);
+
+                /** @var Filesystem $files */
+                $files = $app->make(Filesystem::class);
+                $filesPath = (string) $app['config']->get('session.files');
+                $files->ensureDirectoryExists($filesPath);
+
+                $fallbackHandler = new FileSessionHandler(
+                    $files,
+                    $filesPath,
+                    $lifetime
+                );
+
+                return new ReadOnlyAwareDatabaseSessionHandler($primaryHandler, $fallbackHandler);
+            });
+        });
     }
 }
