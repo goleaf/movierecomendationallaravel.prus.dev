@@ -55,6 +55,7 @@ class SsrDropWidget extends BaseWidget
                 DB::raw('coalesce(score_yesterday, 0) as score_yesterday'),
                 DB::raw('coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta'),
             ])
+            ->whereRaw('(coalesce(score_today, 0) - coalesce(score_yesterday, 0)) < 0')
             ->orderBy('delta')
             ->limit(10);
     }
