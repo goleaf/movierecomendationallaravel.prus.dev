@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Support\TranslationPayload;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class TmdbI18n
@@ -13,9 +14,12 @@ class TmdbI18n
 
     protected string $base = 'https://api.themoviedb.org/3';
 
+    protected int $cacheTtl;
+
     public function __construct()
     {
         $this->apiKey = config('services.tmdb.key', env('TMDB_API_KEY'));
+        $this->cacheTtl = max(1, (int) config('services.tmdb.cache_ttl', 3600));
     }
 
     public function enabled(): bool
@@ -73,21 +77,38 @@ class TmdbI18n
      */
     protected function one(string $type, int $id, string $lang): ?array
     {
-        $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
-        $resp = Http::timeout(20)->get("{$this->base}/{$path}", [
-            'api_key' => $this->apiKey,
-            'language' => $lang,
-        ]);
-        if ($resp->failed()) {
-            return null;
-        }
-        $o = $resp->json();
-        $title = $o['title'] ?? ($o['name'] ?? null);
-        $overview = $o['overview'] ?? null;
-        if (! $title && ! $overview) {
+        $key = $this->cacheKey($type, $id, $lang);
+        $payload = Cache::remember($key, now()->addSeconds($this->cacheTtl), function () use ($type, $id, $lang): array {
+            $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
+            $resp = Http::timeout(20)->get("{$this->base}/{$path}", [
+                'api_key' => $this->apiKey,
+                'language' => $lang,
+            ]);
+
+            if ($resp->failed()) {
+                return [];
+            }
+
+            $o = $resp->json();
+            $title = $o['title'] ?? ($o['name'] ?? null);
+            $overview = $o['overview'] ?? null;
+
+            if (! $title && ! $overview) {
+                return [];
+            }
+
+            return ['title' => $title, 'plot' => $overview];
+        });
+
+        if ($payload === []) {
             return null;
         }
 
-        return ['title' => $title, 'plot' => $overview];
+        return $payload;
+    }
+
+    protected function cacheKey(string $type, int $id, string $lang): string
+    {
+        return sprintf('tmdb:%s:%d:%s', $type, $id, $lang);
     }
 }

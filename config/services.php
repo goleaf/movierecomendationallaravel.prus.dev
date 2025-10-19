@@ -37,4 +37,9 @@ return [
         ],
     ],
 
+    'tmdb' => [
+        'key' => env('TMDB_API_KEY'),
+        'cache_ttl' => (int) env('TMDB_CACHE_TTL', 3600),
+    ],
+
 ];
