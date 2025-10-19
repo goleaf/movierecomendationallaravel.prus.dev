@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Analytics;
 
+use Illuminate\Redis\RedisManager;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class QueueMetricsService
 {
+    public function __construct(
+        private readonly RedisManager $redis,
+    ) {}
+
     /**
      * @var array<string, string>
      */
@@ -25,7 +29,7 @@ class QueueMetricsService
      *     jobs: int,
      *     failed: int,
      *     batches: int,
-     *     horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null},
+     *     horizon: array{workload: array<string, string>|null, supervisors: list<string>|null},
      * }
      */
     public function snapshot(): array
@@ -40,16 +44,18 @@ class QueueMetricsService
         ];
 
         try {
-            $connection = Redis::connection();
+            $connection = $this->redis->connection();
 
+            /** @var array<string, string>|false|int|string|null $workload */
             $workload = $connection->command('hgetall', ['horizon:workload']);
             if (is_array($workload) && $workload !== []) {
-                $horizon['workload'] = array_map(static fn ($value): string => (string) $value, $workload);
+                $horizon['workload'] = array_map(static fn (mixed $value): string => (string) $value, $workload);
             }
 
+            /** @var array<int, string>|false|int|string|null $supervisors */
             $supervisors = $connection->command('smembers', ['horizon:supervisors']);
             if (is_array($supervisors) && $supervisors !== []) {
-                $horizon['supervisors'] = array_values(array_map(static fn ($value): string => (string) $value, $supervisors));
+                $horizon['supervisors'] = array_values(array_map(static fn (mixed $value): string => (string) $value, $supervisors));
             }
         } catch (Throwable) {
             // Horizon might not be configured locally.
@@ -68,7 +74,7 @@ class QueueMetricsService
      *     queue: int,
      *     failed: int,
      *     processed: int,
-     *     horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null},
+     *     horizon: array{workload: array<string, string>|null, supervisors: list<string>|null},
      * }
      */
     public function getMetrics(): array
