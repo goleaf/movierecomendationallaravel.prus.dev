@@ -14,6 +14,9 @@ return [
             'to' => 'To',
             'placement' => 'Placement',
             'variant' => 'Variant',
+            'variant_all' => 'All variants',
+            'placement_all' => 'All placements',
+            'apply' => 'Update analytics',
             'placements' => [
                 'all' => 'All placements',
                 'home' => 'Home page',
@@ -25,7 +28,6 @@ return [
                 'a' => 'Variant A',
                 'b' => 'Variant B',
             ],
-            'refresh' => 'Update analytics',
         ],
         'charts' => [
             'daily_heading' => 'Daily CTR (A vs B)',
@@ -40,12 +42,16 @@ return [
             'heading' => 'Funnels',
             'total' => 'Total',
         ],
+        'empty_summary' => 'No summary data for the selected filters.',
     ],
     'metrics' => [
         'title' => 'Queues / Horizon',
         'heading' => 'Queues',
         'stats' => 'Jobs: :jobs, Failed: :failed, Batches: :batches',
         'refresh' => 'Refresh stats',
+        'queue_label' => 'Jobs queued',
+        'failed_label' => 'Failed jobs',
+        'processed_label' => 'Processed batches',
         'labels' => [
             'jobs' => 'Jobs queued',
             'failed' => 'Failed jobs',
@@ -57,6 +63,9 @@ return [
             'supervisors' => 'Supervisors',
             'empty' => 'No Horizon metrics available.',
         ],
+        'horizon_workload' => 'Horizon workload',
+        'horizon_supervisors' => 'Horizon supervisors',
+        'horizon_empty' => 'No Horizon metrics available.',
     ],
     'funnel' => [
         'period' => 'Period: :from — :to',
@@ -70,6 +79,7 @@ return [
         ],
     ],
     'trends' => [
+        'days_label' => 'Days',
         'filters' => [
             'days' => 'Days',
             'type' => 'Type',
@@ -88,5 +98,10 @@ return [
         'year_from_placeholder' => 'Year from',
         'year_to_placeholder' => 'Year to',
         'apply' => 'Show',
+        'period' => 'Period: :from — :to (:days days)',
+        'empty' => 'No trending titles found for the selected filters.',
+        'clicks' => 'Clicks: :count',
+        'imdb' => 'IMDb: :rating',
+        'votes' => 'Votes: :count',
     ],
 ];

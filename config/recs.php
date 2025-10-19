@@ -2,13 +2,13 @@
 
 return [
     'A' => [
-        'pop' => 0.7,
-        'recent' => 0.2,
-        'pref' => 0.1,
+        'pop' => (float) env('REC_A_POP', 0.55),
+        'recent' => (float) env('REC_A_RECENT', 0.20),
+        'pref' => (float) env('REC_A_PREF', 0.25),
     ],
     'B' => [
-        'pop' => 0.3,
-        'recent' => 0.6,
-        'pref' => 0.1,
+        'pop' => (float) env('REC_B_POP', 0.35),
+        'recent' => (float) env('REC_B_RECENT', 0.15),
+        'pref' => (float) env('REC_B_PREF', 0.50),
     ],
 ];
