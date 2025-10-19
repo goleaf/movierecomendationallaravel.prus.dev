@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Tables;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +21,7 @@ class SsrDropWidget extends BaseWidget
 
     protected function getTableQuery(): Builder|Relation|null
     {
-        return app(SsrAnalyticsService::class)->dropQuery();
+        return app(SsrMetricsService::class)->dropQuery();
     }
 
     protected function getTableColumns(): array

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Analytics;
 
-use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Pages\Page;
 
 class SsrPage extends Page
@@ -38,7 +38,7 @@ class SsrPage extends Page
 
     public function mount(): void
     {
-        $service = app(SsrAnalyticsService::class);
+        $service = app(SsrMetricsService::class);
 
         $this->headline = $service->headline();
         $this->trend = $service->trend();

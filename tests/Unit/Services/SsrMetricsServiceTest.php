@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
-use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\Analytics\SsrMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class SsrAnalyticsServiceTest extends TestCase
+class SsrMetricsServiceTest extends TestCase
 {
     use RefreshDatabase;
 
     public function test_trend_returns_latest_dates_in_chronological_order(): void
     {
-        $service = app(SsrAnalyticsService::class);
+        $service = app(SsrMetricsService::class);
 
         $startDate = Carbon::parse('2025-01-01')->startOfDay();
 

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\Analytics\SsrMetricsService;
 use Illuminate\Contracts\View\View;
 
 class AdminSsrController extends Controller
 {
-    public function __construct(private readonly SsrAnalyticsService $analytics) {}
+    public function __construct(private readonly SsrMetricsService $analytics) {}
 
     public function __invoke(): View
     {

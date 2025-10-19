@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-class SsrAnalyticsService
+class SsrMetricsService
 {
     /**
      * @return array{label: string, score: int, paths: int, description: string}
