@@ -11,6 +11,13 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Plan extends Model
 {
+    public const INTERVAL_DAY = 'day';
+
+    public const INTERVAL_WEEK = 'week';
+
+    public const INTERVAL_MONTH = 'month';
+
+    public const INTERVAL_YEAR = 'year';
 }
 
 /**
@@ -32,4 +39,14 @@ class Subscription extends Model
  */
 class SubscriptionUsage extends Model
 {
+}
+
+namespace {
+
+    use Laravelcm\Subscriptions\Models\Plan;
+
+    function plan(string $name): Plan
+    {
+        return new Plan();
+    }
 }
