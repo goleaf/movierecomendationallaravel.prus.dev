@@ -20,7 +20,7 @@ class CtrSvgController extends Controller
 
         $svg = $this->analytics->buildDailyCtrSvg($from, $to) ?? $this->emptyChart();
 
-        return response($svg)->header('Content-Type', 'image/svg+xml');
+        return $this->svgResponse($svg);
     }
 
     private function parseDate(?string $value, string $fallback): CarbonImmutable
@@ -38,5 +38,10 @@ class CtrSvgController extends Controller
             .'<rect x="0" y="0" width="720" height="260" fill="#0b0c0f"/>'
             .'<text x="50%" y="50%" fill="#889" font-size="14" dominant-baseline="middle" text-anchor="middle">No data</text>'
             .'</svg>';
+    }
+
+    private function svgResponse(string $svg): Response
+    {
+        return new Response($svg, Response::HTTP_OK, ['Content-Type' => 'image/svg+xml']);
     }
 }

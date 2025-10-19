@@ -25,7 +25,8 @@ class HomePage extends Component
         if ($hasMoviesTable) {
             $deviceId = $this->resolveDeviceId();
 
-            $this->recommended = $recommender->recommendForDevice($deviceId, 12);
+            $recommendation = $recommender->recommendForDevice($deviceId, 12);
+            $this->recommended = $recommendation->movies();
 
             if ($this->recommended->isEmpty()) {
                 $this->recommended = Movie::query()

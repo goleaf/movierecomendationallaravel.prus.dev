@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Services\RecommendationLogger;
 use App\Services\Recommender;
 use Illuminate\Support\Collection;
 use Mockery;
@@ -39,11 +40,17 @@ class RecommenderTest extends TestCase
             ->with('device-even-2', 5)
             ->andReturn(['B', $movies]);
 
-        $service = new Recommender($recAb);
+        $logger = Mockery::mock(RecommendationLogger::class);
+        $logger->shouldReceive('recordRecommendation')
+            ->once()
+            ->with('device-even-2', 'B', 'home', $movies);
+
+        $service = new Recommender($recAb, $logger);
 
         $result = $service->recommendForDevice('device-even-2', 5);
 
-        $this->assertInstanceOf(Collection::class, $result);
-        $this->assertSame(['Signal Lost', 'Echo Ridge'], $result->pluck('title')->all());
+        $this->assertSame('B', $result->variant());
+        $this->assertInstanceOf(Collection::class, $result->movies());
+        $this->assertSame(['Signal Lost', 'Echo Ridge'], $result->movies()->pluck('title')->all());
     }
 }
