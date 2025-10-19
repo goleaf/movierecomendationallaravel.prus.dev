@@ -4,16 +4,15 @@ includes:
 parameters:
     level: 7
     paths:
-        - app
-        - bootstrap/app.php
-        - routes
-        - database
-        - config
+        - app/Models
+        - app/Services
+        - app/Support
     bootstrapFiles:
         - app/Support/PhpStanBootstrap.php
         - app/Support/TypeAssert.php
     stubFiles:
         - stubs/laravel-settings.php
+        - stubs/filament-subscriptions.php
     inferPrivatePropertyTypeFromConstructor: true
     parallel:
         maximumNumberOfProcesses: 1
