@@ -4,6 +4,13 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ---
 
+## Project trackers
+
+- [TODO backlog](TODO.md)
+- [Works log](WORKS.md)
+
+---
+
 ## Feature overview
 
 - **Data ingestion & enrichment** – ready-to-run import jobs for TMDB/OMDb metadata with translation support and background queues.
