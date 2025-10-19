@@ -44,6 +44,8 @@ return [
         'imdb_only' => 'IMDb :rating',
         'imdb_with_votes' => 'IMDb :rating • :votes',
         'imdb_with_votes_colon' => 'IMDb: :rating • :votes',
+        'poster_alt' => 'Постер фильма «:title»',
+        'poster_alt_generic' => 'Постер фильма',
     ],
     'home' => [
         'title' => 'Рекомендации',
@@ -62,6 +64,7 @@ return [
         'empty' => 'Нет данных — проверьте сбор кликов или измените фильтры.',
         'votes' => ':count голосов',
         'filters' => [
+            'period' => 'Период',
             'heading' => 'Фильтры',
             'days' => 'Дней',
             'type' => 'Тип',
@@ -71,6 +74,8 @@ return [
             'from' => 'От',
             'to' => 'До',
             'any' => 'Любой',
+            'days_option' => '{0}0 дней|{1}:count день|[2,4]:count дня|[5,*]:count дней',
+            'genre_hint' => 'sci-fi, драма, комедия',
         ],
     ],
     'search' => [
@@ -92,5 +97,21 @@ return [
         'imdb_caption' => 'IMDb :rating • :votes • Взвешенный индекс :score',
         'votes' => ':count голосов',
         'genres' => 'Жанры: :genres',
+        'discussion_heading' => 'Обсуждение',
+        'comments_label' => '{0}Нет комментариев|{1}:formatted комментарий|[2,4]:formatted комментария|[5,*]:formatted комментариев',
+    ],
+    'works' => [
+        'title' => 'Журнал работ',
+        'heading' => 'Выполненные работы',
+        'description_html' => 'Эта страница отображает файл репозитория <code>WORKS.md</code> для быстрого доступа в админке.',
+    ],
+    'welcome' => [
+        'get_started' => 'Приступим',
+        'intro_html' => 'У Laravel богатая экосистема. <br>Рекомендуем начать со следующего.',
+        'links' => [
+            'documentation' => 'Документация',
+            'laracasts' => 'Laracasts',
+            'deploy_now' => 'Развернуть сейчас',
+        ],
     ],
 ];

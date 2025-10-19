@@ -12,7 +12,7 @@
     @foreach($recommended as $movie)
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>'home', 'variant'=>$homeVariant]) }}">
         @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? __('messages.common.poster_alt', ['title' => $movie->title]) : __('messages.common.poster_alt_generic') }}" loading="lazy"/>
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">{{ __('messages.common.imdb_with_votes_colon', ['rating' => $movie->imdb_rating ?? __('messages.common.dash'), 'votes' => number_format($movie->imdb_votes ?? 0, 0, '.', ' ')]) }}</div>
@@ -33,12 +33,12 @@
       @php($movie = $row['movie'])
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>$row['placement'], 'variant'=>$row['variant']]) }}">
         @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? __('messages.common.poster_alt', ['title' => $movie->title]) : __('messages.common.poster_alt_generic') }}" loading="lazy"/>
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">
           @if(!is_null($row['clicks']))
-            {{ __('messages.common.clicks', ['count' => $row['clicks']]) }}
+            {{ __('messages.common.clicks', ['count' => number_format($row['clicks'], 0, '.', ' ')]) }}
             @if($movie->imdb_rating)
               • {{ __('messages.common.imdb_only', ['rating' => $movie->imdb_rating]) }}
             @endif

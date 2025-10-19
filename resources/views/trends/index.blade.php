@@ -25,11 +25,11 @@
     @foreach($items as $item)
       <a class="card" href="{{ route('movies.show', ['movie'=>$item->id, 'placement'=>$item->placement ?? 'trends', 'variant'=>$item->variant ?? 'mixed']) }}">
         @if($item->poster_url)
-          <img src="{{ $item->poster_url }}" alt="{{ $item->title ? 'Постер фильма «' . $item->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          <img src="{{ $item->poster_url }}" alt="{{ $item->title ? __('messages.common.poster_alt', ['title' => $item->title]) : __('messages.common.poster_alt_generic') }}" loading="lazy"/>
         @endif
         <div><strong>{{ $item->title }}</strong> ({{ $item->year ?? __('messages.common.dash') }})</div>
         <div class="muted">
-          {{ __('messages.common.clicks', ['count' => $item->clicks ?? __('messages.common.dash')]) }}
+          {{ __('messages.common.clicks', ['count' => isset($item->clicks) ? number_format($item->clicks, 0, '.', ' ') : __('messages.common.dash')]) }}
           @if($item->imdb_rating)
             • {{ __('messages.common.imdb_only', ['rating' => $item->imdb_rating]) }}
           @endif
