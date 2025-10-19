@@ -8,12 +8,17 @@
     "require": {
         "php": "^8.2",
         "filament/filament": "^3.0",
+        "inertiajs/inertia-laravel": "^2.0",
         "kirschbaum-development/commentions": "^0.7.4",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "inertiajs/inertia-laravel": "^2.0",
         "predis/predis": "^3.2",
-        "symfony/uid": "^7.3"
+        "ralphjsmit/laravel-filament-seo": "*",
+        "symfony/uid": "^7.3",
+        "tomatophp/filament-language-switcher": "*",
+        "tomatophp/filament-payments": "*",
+        "tomatophp/filament-seo": "*",
+        "tomatophp/filament-subscriptions": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

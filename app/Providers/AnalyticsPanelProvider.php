@@ -6,6 +6,10 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
+use TomatoPHP\FilamentPayments\FilamentPaymentsPlugin;
+use TomatoPHP\FilamentSeo\FilamentSeoPlugin;
+use TomatoPHP\FilamentSubscriptions\Filament\Pages\Billing;
 
 final class AnalyticsPanelProvider extends PanelProvider
 {
@@ -29,9 +33,9 @@ final class AnalyticsPanelProvider extends PanelProvider
 
         $plugins = array_values(array_filter([
             $this->instantiatePlugin('TomatoPHP\\FilamentTranslations\\FilamentTranslationsPlugin'),
-            $this->instantiatePlugin('TomatoPHP\\FilamentLanguageSwitcher\\FilamentLanguageSwitcherPlugin'),
-            $this->instantiatePlugin('RalphJSmit\\Filament\\Seo\\FilamentSeoPlugin'),
-            $this->instantiatePlugin('TomatoPHP\\FilamentPayments\\FilamentPaymentsPlugin'),
+            $this->instantiatePlugin(FilamentLanguageSwitcherPlugin::class),
+            $this->instantiatePlugin(FilamentSeoPlugin::class),
+            $this->instantiatePlugin(FilamentPaymentsPlugin::class),
         ]));
 
         if ($plugins !== []) {
@@ -43,6 +47,7 @@ final class AnalyticsPanelProvider extends PanelProvider
             'App\\Filament\\Pages\\Analytics\\TrendsPage',
             'App\\Filament\\Pages\\Analytics\\TrendsAdvancedPage',
             'App\\Filament\\Pages\\Analytics\\QueuePage',
+            Billing::class,
         ], static fn (string $class): bool => class_exists($class)));
 
         if ($pages !== []) {
