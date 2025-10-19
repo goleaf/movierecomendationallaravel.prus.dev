@@ -8,6 +8,7 @@ use App\Models\Movie;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DemoContentSeeder extends Seeder
 {
@@ -101,14 +102,15 @@ class DemoContentSeeder extends Seeder
         }
 
         $impressionLogs = collect([
-            ['device_id' => 'device-even-2', 'variant' => 'A'],
-            ['device_id' => 'device-odd', 'variant' => 'B'],
-            ['device_id' => 'device-alt-1', 'variant' => 'A'],
-            ['device_id' => 'device-alt-2', 'variant' => 'B'],
-            ['device_id' => 'device-alt-3', 'variant' => 'A'],
-            ['device_id' => 'device-alt-4', 'variant' => 'A'],
+            ['device_id' => 'device-even-2', 'variant' => 'A', 'movie_id' => 1],
+            ['device_id' => 'device-odd', 'variant' => 'B', 'movie_id' => 2],
+            ['device_id' => 'device-alt-1', 'variant' => 'A', 'movie_id' => 1],
+            ['device_id' => 'device-alt-2', 'variant' => 'B', 'movie_id' => 2],
+            ['device_id' => 'device-alt-3', 'variant' => 'A', 'movie_id' => 3],
+            ['device_id' => 'device-alt-4', 'variant' => 'A', 'movie_id' => 1],
         ])->map(function (array $row) use ($now): array {
             return [
+                'movie_id' => $row['movie_id'],
                 'device_id' => $row['device_id'],
                 'variant' => $row['variant'],
                 'placement' => 'home',
@@ -140,16 +142,16 @@ class DemoContentSeeder extends Seeder
         }, $clicks));
 
         $views = [
-            ['device_id' => 'device-even-2', 'path' => '/'],
-            ['device_id' => 'device-even-2', 'path' => '/movies/1'],
-            ['device_id' => 'device-odd', 'path' => '/'],
-            ['device_id' => 'device-odd', 'path' => '/trends'],
+            ['device_id' => 'device-even-2', 'page' => '/'],
+            ['device_id' => 'device-even-2', 'page' => '/movies/1'],
+            ['device_id' => 'device-odd', 'page' => '/'],
+            ['device_id' => 'device-odd', 'page' => '/trends'],
         ];
 
         DB::table('device_history')->insert(array_map(function (array $row) use ($now): array {
             return [
                 'device_id' => $row['device_id'],
-                'path' => $row['path'],
+                'page' => $row['page'],
                 'viewed_at' => $now->subDays(1),
                 'created_at' => $now->subDays(1),
                 'updated_at' => $now->subDays(1),
@@ -163,25 +165,67 @@ class DemoContentSeeder extends Seeder
             ['path' => '/trends', 'score' => 72, 'delta' => 0, 'first_byte_ms' => 265],
         ];
 
-        DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
-            return [
+        $ssrMetricColumns = Schema::hasTable('ssr_metrics')
+            ? Schema::getColumnListing('ssr_metrics')
+            : [];
+
+        DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now, $ssrMetricColumns): array {
+            $record = [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
-                'size' => 350000,
-                'html_bytes' => 350000,
-                'meta_count' => 12,
-                'og_count' => 3,
-                'ldjson_count' => 1,
-                'img_count' => 8,
-                'blocking_scripts' => 1,
-                'has_json_ld' => true,
-                'has_open_graph' => true,
-                'first_byte_ms' => $row['first_byte_ms'],
                 'created_at' => $now->subDays($row['delta']),
                 'updated_at' => $now->subDays($row['delta']),
-                'collected_at' => $now->subDays($row['delta']),
             ];
+
+            if (in_array('first_byte_ms', $ssrMetricColumns, true)) {
+                $record['first_byte_ms'] = $row['first_byte_ms'];
+            }
+
+            if (in_array('meta', $ssrMetricColumns, true)) {
+                $record['meta'] = null;
+            }
+
+            if (in_array('size', $ssrMetricColumns, true)) {
+                $record['size'] = 350000;
+            }
+
+            if (in_array('html_bytes', $ssrMetricColumns, true)) {
+                $record['html_bytes'] = 350000;
+            }
+
+            if (in_array('meta_count', $ssrMetricColumns, true)) {
+                $record['meta_count'] = 12;
+            }
+
+            if (in_array('og_count', $ssrMetricColumns, true)) {
+                $record['og_count'] = 3;
+            }
+
+            if (in_array('ldjson_count', $ssrMetricColumns, true)) {
+                $record['ldjson_count'] = 1;
+            }
+
+            if (in_array('img_count', $ssrMetricColumns, true)) {
+                $record['img_count'] = 8;
+            }
+
+            if (in_array('blocking_scripts', $ssrMetricColumns, true)) {
+                $record['blocking_scripts'] = 1;
+            }
+
+            if (in_array('has_json_ld', $ssrMetricColumns, true)) {
+                $record['has_json_ld'] = true;
+            }
+
+            if (in_array('has_open_graph', $ssrMetricColumns, true)) {
+                $record['has_open_graph'] = true;
+            }
+
+            if (in_array('collected_at', $ssrMetricColumns, true)) {
+                $record['collected_at'] = $now->subDays($row['delta']);
+            }
+
+            return $record;
         }, $ssrMetrics));
     }
 }

@@ -8,13 +8,13 @@ use Spatie\LaravelSettings\Settings;
 
 final class RecommendationWeightsSettings extends Settings
 {
-    /** @var array<string, float|int> */
+    /** @var array<string, float> */
     public array $A = [];
 
-    /** @var array<string, float|int> */
+    /** @var array<string, float> */
     public array $B = [];
 
-    /** @var array<string, float|int> */
+    /** @var array<string, float> */
     public array $ab_split = [];
 
     public ?string $seed;

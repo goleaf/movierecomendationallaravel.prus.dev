@@ -68,12 +68,15 @@
                     class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                 >
                     @if ($item['poster_url'])
-                        <img
-                            src="{{ $item['poster_url'] }}"
-                            alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}"
-                            loading="lazy"
-                            class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
-                        />
+                        @php($poster = artwork_url($item['poster_url']))
+                        @if ($poster)
+                            <img
+                                src="{{ $poster }}"
+                                alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}"
+                                loading="lazy"
+                                class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
+                            />
+                        @endif
                     @endif
 
                     <div class="space-y-1">
