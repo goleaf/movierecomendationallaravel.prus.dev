@@ -8,8 +8,12 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-final class CtrFiltersRequest extends FormRequest
+final class CtrRangeRequest extends FormRequest
 {
+    private ?CarbonImmutable $from = null;
+
+    private ?CarbonImmutable $to = null;
+
     public function authorize(): bool
     {
         return true;
@@ -29,26 +33,46 @@ final class CtrFiltersRequest extends FormRequest
     }
 
     /**
-     * @return array{0:CarbonImmutable,1:CarbonImmutable}
+     * @return array{from: CarbonImmutable, to: CarbonImmutable}
      */
-    public function dateRange(): array
+    public function range(): array
     {
-        $validated = $this->validated();
-
         return [
-            CarbonImmutable::parse($validated['from']),
-            CarbonImmutable::parse($validated['to']),
+            'from' => $this->from(),
+            'to' => $this->to(),
         ];
+    }
+
+    public function from(): CarbonImmutable
+    {
+        if ($this->from === null) {
+            $this->from = CarbonImmutable::parse($this->validated()['from']);
+        }
+
+        return $this->from;
+    }
+
+    public function to(): CarbonImmutable
+    {
+        if ($this->to === null) {
+            $this->to = CarbonImmutable::parse($this->validated()['to']);
+        }
+
+        return $this->to;
     }
 
     public function placement(): ?string
     {
-        return $this->validated()['p'] ?? null;
+        $value = $this->validated()['p'] ?? null;
+
+        return $value === '' ? null : $value;
     }
 
     public function variant(): ?string
     {
-        return $this->validated()['v'] ?? null;
+        $value = $this->validated()['v'] ?? null;
+
+        return $value === '' ? null : $value;
     }
 
     protected function prepareForValidation(): void

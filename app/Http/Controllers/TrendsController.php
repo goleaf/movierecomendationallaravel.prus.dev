@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\TrendsFiltersRequest;
+use App\Http\Requests\TrendsRequest;
 use App\Http\Resources\TrendCollection;
 use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
@@ -13,20 +13,18 @@ class TrendsController extends Controller
 {
     public function __construct(private readonly TrendsAnalyticsService $analytics) {}
 
-    public function __invoke(TrendsFiltersRequest $request): View|TrendCollection
+    public function __invoke(TrendsRequest $request): View|TrendCollection
     {
-        $filters = $request->filters();
-
         [
             'items' => $items,
             'filters' => $responseFilters,
             'period' => $period,
         ] = $this->analytics->getTrendsData(
-            $filters['days'],
-            $filters['type'],
-            $filters['genre'],
-            $filters['yf'] ?? 0,
-            $filters['yt'] ?? 0,
+            $request->days(),
+            $request->type(),
+            $request->genre(),
+            $request->yearFrom(),
+            $request->yearTo(),
         );
 
         if ($request->wantsJson()) {

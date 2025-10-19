@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\SearchFiltersRequest;
+use App\Http\Requests\SearchRequest;
 use App\Http\Resources\SearchResultCollection;
 use App\Models\Movie;
 use Illuminate\Contracts\View\View;
@@ -13,7 +13,7 @@ use Illuminate\Http\JsonResponse;
 
 class SearchPageController extends Controller
 {
-    public function __invoke(SearchFiltersRequest $request): View|SearchResultCollection|JsonResponse
+    public function __invoke(SearchRequest $request): View|SearchResultCollection|JsonResponse
     {
         $filters = $request->filters();
 

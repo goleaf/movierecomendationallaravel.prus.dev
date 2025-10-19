@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SearchFiltersRequest;
+use App\Http\Requests\SearchRequest;
 use App\Http\Resources\SearchResultCollection;
 use App\Models\Movie;
 use Illuminate\Database\Eloquent\Builder;
 
 class SearchController extends Controller
 {
-    public function index(SearchFiltersRequest $request): SearchResultCollection
+    public function index(SearchRequest $request): SearchResultCollection
     {
         $filters = $request->filters();
 

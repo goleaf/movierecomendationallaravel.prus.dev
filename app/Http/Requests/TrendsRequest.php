@@ -7,8 +7,13 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-final class TrendsFiltersRequest extends FormRequest
+final class TrendsRequest extends FormRequest
 {
+    /**
+     * @var array{days:int,type:string,genre:string,yf:int,yt:int}|null
+     */
+    private ?array $filters = null;
+
     public function authorize(): bool
     {
         return true;
@@ -33,22 +38,51 @@ final class TrendsFiltersRequest extends FormRequest
      */
     public function filters(): array
     {
-        $validated = $this->validated();
+        if ($this->filters === null) {
+            $validated = $this->validated();
 
-        $yearFrom = $validated['yf'] ?? null;
-        $yearTo = $validated['yt'] ?? null;
+            $yearFrom = $validated['yf'] ?? null;
+            $yearTo = $validated['yt'] ?? null;
 
-        if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
-            [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
+            if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
+                [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
+            }
+
+            $this->filters = [
+                'days' => (int) $validated['days'],
+                'type' => $validated['type'] ?? '',
+                'genre' => $validated['genre'] ?? '',
+                'yf' => $yearFrom ?? 0,
+                'yt' => $yearTo ?? 0,
+            ];
         }
 
-        return [
-            'days' => (int) $validated['days'],
-            'type' => $validated['type'] ?? '',
-            'genre' => $validated['genre'] ?? '',
-            'yf' => $yearFrom ?? 0,
-            'yt' => $yearTo ?? 0,
-        ];
+        return $this->filters;
+    }
+
+    public function days(): int
+    {
+        return $this->filters()['days'];
+    }
+
+    public function type(): string
+    {
+        return $this->filters()['type'];
+    }
+
+    public function genre(): string
+    {
+        return $this->filters()['genre'];
+    }
+
+    public function yearFrom(): int
+    {
+        return $this->filters()['yf'];
+    }
+
+    public function yearTo(): int
+    {
+        return $this->filters()['yt'];
     }
 
     protected function prepareForValidation(): void
