@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Movie;
 use App\Models\User;
+use App\Observers\MovieObserver;
 use Filament\Facades\Filament;
 use Illuminate\Support\ServiceProvider;
 use TomatoPHP\FilamentSubscriptions\Facades\FilamentSubscriptions;
@@ -25,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Movie::observe(MovieObserver::class);
+
         Filament::serving(function (): void {
             if (FilamentSubscriptions::getOptions()->doesntContain(
                 fn (Subscriber $subscriber): bool => $subscriber->model === User::class

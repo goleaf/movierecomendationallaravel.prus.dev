@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\Movie;
+use App\Support\AnalyticsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -89,43 +90,56 @@ class TrendsAnalyticsService
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
-        if (Schema::hasTable('rec_clicks')) {
-            $query = DB::table('rec_clicks')
-                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
-                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
-                ->whereBetween('rec_clicks.created_at', [$period['from']->toDateTimeString(), $period['to']->toDateTimeString()])
-                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
-                ->orderByDesc('clicks');
-
-            if ($filters['type'] !== '') {
-                $query->where('movies.type', $filters['type']);
-            }
-
-            if ($filters['genre'] !== '') {
-                $query->whereJsonContains('movies.genres', $filters['genre']);
-            }
-
-            if ($filters['year_from'] > 0) {
-                $query->where('movies.year', '>=', $filters['year_from']);
-            }
-
-            if ($filters['year_to'] > 0) {
-                $query->where('movies.year', '<=', $filters['year_to']);
-            }
-
-            $items = $query->limit(40)->get();
-
-            if ($items->isNotEmpty()) {
-                return $items;
-            }
-        }
-
-        return $this->fallback(
-            $filters['type'],
-            $filters['genre'],
+        $cacheKey = implode(':', [
+            'trends',
+            $period['from']->toDateString(),
+            $period['to']->toDateString(),
+            $filters['days'],
+            $filters['type'] === '' ? '-' : $filters['type'],
+            $filters['genre'] === '' ? '-' : $filters['genre'],
             $filters['year_from'],
             $filters['year_to'],
-        );
+        ]);
+
+        return AnalyticsCache::rememberTrends($cacheKey, function () use ($filters, $period): Collection {
+            if (Schema::hasTable('rec_clicks')) {
+                $query = DB::table('rec_clicks')
+                    ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
+                    ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
+                    ->whereBetween('rec_clicks.created_at', [$period['from']->toDateTimeString(), $period['to']->toDateTimeString()])
+                    ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                    ->orderByDesc('clicks');
+
+                if ($filters['type'] !== '') {
+                    $query->where('movies.type', $filters['type']);
+                }
+
+                if ($filters['genre'] !== '') {
+                    $query->whereJsonContains('movies.genres', $filters['genre']);
+                }
+
+                if ($filters['year_from'] > 0) {
+                    $query->where('movies.year', '>=', $filters['year_from']);
+                }
+
+                if ($filters['year_to'] > 0) {
+                    $query->where('movies.year', '<=', $filters['year_to']);
+                }
+
+                $items = $query->limit(40)->get();
+
+                if ($items->isNotEmpty()) {
+                    return $items;
+                }
+            }
+
+            return $this->fallback(
+                $filters['type'],
+                $filters['genre'],
+                $filters['year_from'],
+                $filters['year_to'],
+            );
+        });
     }
 
     /**

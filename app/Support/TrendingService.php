@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\Movie;
+use App\Support\AnalyticsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,43 +22,47 @@ class TrendingService
             return collect();
         }
 
-        [$from, $to] = $this->timeframe($days);
+        $cacheKey = implode(':', ['trending-snapshot', $days, $limit]);
 
-        if (! Schema::hasTable('rec_clicks')) {
-            return $this->fallbackSnapshot($limit);
-        }
+        return AnalyticsCache::rememberTrends($cacheKey, function () use ($days, $limit): Collection {
+            [$from, $to] = $this->timeframe($days);
 
-        $top = DB::table('rec_clicks')
-            ->selectRaw('movie_id, count(*) as clicks')
-            ->whereBetween('created_at', [$from, $to])
-            ->groupBy('movie_id')
-            ->orderByDesc('clicks')
-            ->limit($limit)
-            ->pluck('clicks', 'movie_id');
+            if (! Schema::hasTable('rec_clicks')) {
+                return $this->fallbackSnapshot($limit);
+            }
 
-        if ($top->isEmpty()) {
-            return $this->fallbackSnapshot($limit);
-        }
+            $top = DB::table('rec_clicks')
+                ->selectRaw('movie_id, count(*) as clicks')
+                ->whereBetween('created_at', [$from, $to])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit($limit)
+                ->pluck('clicks', 'movie_id');
 
-        $movies = Movie::query()
-            ->whereIn('id', $top->keys()->all())
-            ->get()
-            ->keyBy('id');
+            if ($top->isEmpty()) {
+                return $this->fallbackSnapshot($limit);
+            }
 
-        return $top
-            ->map(function (int $clicks, int $movieId) use ($movies) {
-                $movie = $movies->get($movieId);
-                if (! $movie) {
-                    return null;
-                }
+            $movies = Movie::query()
+                ->whereIn('id', $top->keys()->all())
+                ->get()
+                ->keyBy('id');
 
-                return [
-                    'movie' => $movie,
-                    'clicks' => $clicks,
-                ];
-            })
-            ->filter()
-            ->values();
+            return $top
+                ->map(function (int $clicks, int $movieId) use ($movies) {
+                    $movie = $movies->get($movieId);
+                    if (! $movie) {
+                        return null;
+                    }
+
+                    return [
+                        'movie' => $movie,
+                        'clicks' => $clicks,
+                    ];
+                })
+                ->filter()
+                ->values();
+        });
     }
 
     /**
@@ -89,70 +94,82 @@ class TrendingService
             return collect();
         }
 
-        [$from, $to] = $this->timeframe($days);
-
-        $items = collect();
-
-        if (Schema::hasTable('rec_clicks')) {
-            $query = DB::table('rec_clicks')
-                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
-                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
-                ->whereBetween('rec_clicks.created_at', [$from, $to])
-                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
-                ->orderByDesc('clicks');
-
-            if ($type !== '') {
-                $query->where('movies.type', $type);
-            }
-
-            if ($genre !== '') {
-                $query->whereJsonContains('movies.genres', $genre);
-            }
-
-            if (! is_null($yearFrom)) {
-                $query->where('movies.year', '>=', $yearFrom);
-            }
-
-            if (! is_null($yearTo)) {
-                $query->where('movies.year', '<=', $yearTo);
-            }
-
-            $items = $query->limit($limit)->get();
-        }
-
-        if ($items->isNotEmpty()) {
-            return $items->map(fn (object $item) => [
-                'id' => (int) $item->id,
-                'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
-                'year' => $item->year !== null ? (int) $item->year : null,
-                'type' => $item->type,
-                'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
-                'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
-                'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
-            ]);
-        }
-
-        $fallback = Movie::query()
-            ->when($type !== '', fn ($query) => $query->where('type', $type))
-            ->when($genre !== '', fn ($query) => $query->whereJsonContains('genres', $genre))
-            ->when(! is_null($yearFrom), fn ($query) => $query->where('year', '>=', $yearFrom))
-            ->when(! is_null($yearTo), fn ($query) => $query->where('year', '<=', $yearTo))
-            ->orderByDesc('imdb_votes')
-            ->orderByDesc('imdb_rating')
-            ->limit($limit)
-            ->get();
-
-        return $fallback->map(fn (Movie $movie) => [
-            'id' => $movie->id,
-            'title' => $movie->title,
-            'poster_url' => $movie->poster_url,
-            'year' => $movie->year,
-            'type' => $movie->type,
-            'imdb_rating' => $movie->imdb_rating,
-            'imdb_votes' => $movie->imdb_votes,
-            'clicks' => null,
+        $cacheKey = implode(':', [
+            'trending-filtered',
+            $days,
+            $type === '' ? '-' : $type,
+            $genre === '' ? '-' : $genre,
+            $yearFrom ?? '-',
+            $yearTo ?? '-',
+            $limit,
         ]);
+
+        return AnalyticsCache::rememberTrends($cacheKey, function () use ($days, $type, $genre, $yearFrom, $yearTo, $limit): Collection {
+            [$from, $to] = $this->timeframe($days);
+
+            $items = collect();
+
+            if (Schema::hasTable('rec_clicks')) {
+                $query = DB::table('rec_clicks')
+                    ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
+                    ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
+                    ->whereBetween('rec_clicks.created_at', [$from, $to])
+                    ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                    ->orderByDesc('clicks');
+
+                if ($type !== '') {
+                    $query->where('movies.type', $type);
+                }
+
+                if ($genre !== '') {
+                    $query->whereJsonContains('movies.genres', $genre);
+                }
+
+                if (! is_null($yearFrom)) {
+                    $query->where('movies.year', '>=', $yearFrom);
+                }
+
+                if (! is_null($yearTo)) {
+                    $query->where('movies.year', '<=', $yearTo);
+                }
+
+                $items = $query->limit($limit)->get();
+            }
+
+            if ($items->isNotEmpty()) {
+                return $items->map(fn (object $item) => [
+                    'id' => (int) $item->id,
+                    'title' => (string) $item->title,
+                    'poster_url' => $item->poster_url,
+                    'year' => $item->year !== null ? (int) $item->year : null,
+                    'type' => $item->type,
+                    'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                    'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                    'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+                ]);
+            }
+
+            $fallback = Movie::query()
+                ->when($type !== '', fn ($query) => $query->where('type', $type))
+                ->when($genre !== '', fn ($query) => $query->whereJsonContains('genres', $genre))
+                ->when(! is_null($yearFrom), fn ($query) => $query->where('year', '>=', $yearFrom))
+                ->when(! is_null($yearTo), fn ($query) => $query->where('year', '<=', $yearTo))
+                ->orderByDesc('imdb_votes')
+                ->orderByDesc('imdb_rating')
+                ->limit($limit)
+                ->get();
+
+            return $fallback->map(fn (Movie $movie) => [
+                'id' => $movie->id,
+                'title' => $movie->title,
+                'poster_url' => $movie->poster_url,
+                'year' => $movie->year,
+                'type' => $movie->type,
+                'imdb_rating' => $movie->imdb_rating,
+                'imdb_votes' => $movie->imdb_votes,
+                'clicks' => null,
+            ]);
+        });
     }
 
     /**

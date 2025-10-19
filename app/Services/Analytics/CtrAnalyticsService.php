@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Analytics;
 
+use App\Support\AnalyticsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -106,76 +107,86 @@ class CtrAnalyticsService
      */
     public function variantSummary(CarbonImmutable $from, CarbonImmutable $to, ?string $placement = null, ?string $variant = null): array
     {
-        if (! Schema::hasTable('rec_ab_logs') || ! Schema::hasTable('rec_clicks')) {
+        $cacheKey = implode(':', [
+            'variant-summary',
+            $from->toDateString(),
+            $to->toDateString(),
+            $placement ?? '-',
+            $variant ?? '-',
+        ]);
+
+        return AnalyticsCache::rememberCtr($cacheKey, function () use ($from, $to, $placement, $variant): array {
+            if (! Schema::hasTable('rec_ab_logs') || ! Schema::hasTable('rec_clicks')) {
+                return [
+                    'summary' => [],
+                    'impressions' => [],
+                    'clicks' => [],
+                    'placementClicks' => [],
+                ];
+            }
+
+            [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+
+            $logs = DB::table('rec_ab_logs')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
+            $clicks = DB::table('rec_clicks')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
+
+            if ($placement !== null && $placement !== '') {
+                $logs->where('placement', $placement);
+                $clicks->where('placement', $placement);
+            }
+
+            if ($variant !== null && $variant !== '') {
+                $logs->where('variant', $variant);
+                $clicks->where('variant', $variant);
+            }
+
+            /** @var array<string, int> $impVariant */
+            $impVariant = $logs
+                ->select('variant', DB::raw('count(*) as imps'))
+                ->groupBy('variant')
+                ->pluck('imps', 'variant')
+                ->map(fn ($value) => (int) $value)
+                ->all();
+
+            /** @var array<string, int> $clkVariant */
+            $clkVariant = $clicks
+                ->select('variant', DB::raw('count(*) as clks'))
+                ->groupBy('variant')
+                ->pluck('clks', 'variant')
+                ->map(fn ($value) => (int) $value)
+                ->all();
+
+            $variants = $variant && $variant !== '' ? [$variant] : ['A', 'B'];
+            $summary = [];
+            foreach ($variants as $code) {
+                $imps = (int) ($impVariant[$code] ?? 0);
+                $clks = (int) ($clkVariant[$code] ?? 0);
+                $summary[] = [
+                    'variant' => $code,
+                    'impressions' => $imps,
+                    'clicks' => $clks,
+                    'ctr' => $imps > 0 ? round(100 * $clks / $imps, 2) : 0.0,
+                ];
+            }
+
+            /** @var array<string, int> $placementClicks */
+            $placementClicks = DB::table('rec_clicks')
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->when($variant !== null && $variant !== '', fn ($query) => $query->where('variant', $variant))
+                ->when($placement !== null && $placement !== '', fn ($query) => $query->where('placement', $placement))
+                ->select('placement', DB::raw('count(*) as clks'))
+                ->groupBy('placement')
+                ->pluck('clks', 'placement')
+                ->map(fn ($value) => (int) $value)
+                ->all();
+
             return [
-                'summary' => [],
-                'impressions' => [],
-                'clicks' => [],
-                'placementClicks' => [],
+                'summary' => $summary,
+                'impressions' => $impVariant,
+                'clicks' => $clkVariant,
+                'placementClicks' => $placementClicks,
             ];
-        }
-
-        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
-
-        $logs = DB::table('rec_ab_logs')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
-        $clicks = DB::table('rec_clicks')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
-
-        if ($placement !== null && $placement !== '') {
-            $logs->where('placement', $placement);
-            $clicks->where('placement', $placement);
-        }
-
-        if ($variant !== null && $variant !== '') {
-            $logs->where('variant', $variant);
-            $clicks->where('variant', $variant);
-        }
-
-        /** @var array<string, int> $impVariant */
-        $impVariant = $logs
-            ->select('variant', DB::raw('count(*) as imps'))
-            ->groupBy('variant')
-            ->pluck('imps', 'variant')
-            ->map(fn ($value) => (int) $value)
-            ->all();
-
-        /** @var array<string, int> $clkVariant */
-        $clkVariant = $clicks
-            ->select('variant', DB::raw('count(*) as clks'))
-            ->groupBy('variant')
-            ->pluck('clks', 'variant')
-            ->map(fn ($value) => (int) $value)
-            ->all();
-
-        $variants = $variant && $variant !== '' ? [$variant] : ['A', 'B'];
-        $summary = [];
-        foreach ($variants as $code) {
-            $imps = (int) ($impVariant[$code] ?? 0);
-            $clks = (int) ($clkVariant[$code] ?? 0);
-            $summary[] = [
-                'variant' => $code,
-                'impressions' => $imps,
-                'clicks' => $clks,
-                'ctr' => $imps > 0 ? round(100 * $clks / $imps, 2) : 0.0,
-            ];
-        }
-
-        /** @var array<string, int> $placementClicks */
-        $placementClicks = DB::table('rec_clicks')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->when($variant !== null && $variant !== '', fn ($query) => $query->where('variant', $variant))
-            ->when($placement !== null && $placement !== '', fn ($query) => $query->where('placement', $placement))
-            ->select('placement', DB::raw('count(*) as clks'))
-            ->groupBy('placement')
-            ->pluck('clks', 'placement')
-            ->map(fn ($value) => (int) $value)
-            ->all();
-
-        return [
-            'summary' => $summary,
-            'impressions' => $impVariant,
-            'clicks' => $clkVariant,
-            'placementClicks' => $placementClicks,
-        ];
+        });
     }
 
     /**
@@ -183,101 +194,106 @@ class CtrAnalyticsService
      */
     public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
     {
-        if (! Schema::hasTable('rec_ab_logs')) {
-            return [];
-        }
+        $cacheKey = implode(':', [
+            'funnels',
+            $from->toDateString(),
+            $to->toDateString(),
+            implode(',', $placements),
+        ]);
 
-        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+        return AnalyticsCache::rememberCtr($cacheKey, function () use ($from, $to, $placements): array {
+            if (! Schema::hasTable('rec_ab_logs')) {
+                return [];
+            }
 
-        $impressionsQuery = DB::table('rec_ab_logs')
-            ->select('placement', DB::raw('count(*) as imps'))
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime]);
+            [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
-        if ($placements !== []) {
-            $impressionsQuery->whereIn('placement', $placements);
-        }
-
-        /** @var array<string, int> $impressions */
-        $impressions = $impressionsQuery
-            ->groupBy('placement')
-            ->pluck('imps', 'placement')
-            ->map(fn ($value) => (int) $value)
-            ->all();
-
-        /** @var array<string, int> $clicks */
-        $clicks = [];
-        if (Schema::hasTable('rec_clicks')) {
-            $clicksQuery = DB::table('rec_clicks')
-                ->select('placement', DB::raw('count(*) as clks'))
+            $impressionsQuery = DB::table('rec_ab_logs')
+                ->select('placement', DB::raw('count(*) as imps'))
                 ->whereBetween('created_at', [$fromDateTime, $toDateTime]);
 
             if ($placements !== []) {
-                $clicksQuery->whereIn('placement', $placements);
+                $impressionsQuery->whereIn('placement', $placements);
             }
 
-            $clicks = $clicksQuery
+            /** @var array<string, int> $impressions */
+            $impressions = $impressionsQuery
                 ->groupBy('placement')
-                ->pluck('clks', 'placement')
+                ->pluck('imps', 'placement')
                 ->map(fn ($value) => (int) $value)
                 ->all();
-        }
 
-        /** @var array<string, int> $views */
-        $views = [];
-        if (Schema::hasTable('device_history')) {
-            $viewsQuery = DB::table('device_history')
-                ->select('page', DB::raw('count(*) as views'))
-                ->whereBetween('viewed_at', [$fromDateTime, $toDateTime]);
+            /** @var array<string, int> $clicks */
+            $clicks = [];
+            if (Schema::hasTable('rec_clicks')) {
+                $clicksQuery = DB::table('rec_clicks')
+                    ->select('placement', DB::raw('count(*) as clks'))
+                    ->whereBetween('created_at', [$fromDateTime, $toDateTime]);
 
-            if ($placements !== []) {
-                $viewsQuery->whereIn('page', $placements);
+                if ($placements !== []) {
+                    $clicksQuery->whereIn('placement', $placements);
+                }
+
+                $clicks = $clicksQuery
+                    ->groupBy('placement')
+                    ->pluck('clks', 'placement')
+                    ->map(fn ($value) => (int) $value)
+                    ->all();
             }
 
-            $views = $viewsQuery
-                ->groupBy('page')
-                ->pluck('views', 'page')
-                ->map(fn ($value) => (int) $value)
-                ->all();
-        }
+            /** @var array<string, int> $views */
+            $views = [];
+            if (Schema::hasTable('device_history')) {
+                $viewsQuery = DB::table('device_history')
+                    ->select('page', DB::raw('count(*) as views'))
+                    ->whereBetween('viewed_at', [$fromDateTime, $toDateTime]);
 
-        $rows = [];
-        $totalImps = 0;
-        $totalClicks = 0;
-        $totalViews = 0;
+                if ($placements !== []) {
+                    $viewsQuery->whereIn('page', $placements);
+                }
 
-        foreach ($placements as $placement) {
-            $placementImps = (int) ($impressions[$placement] ?? 0);
-            $placementClicks = (int) ($clicks[$placement] ?? 0);
-            $placementViews = (int) ($views[$placement] ?? 0);
+                $views = $viewsQuery
+                    ->groupBy('page')
+                    ->pluck('views', 'page')
+                    ->map(fn ($value) => (int) $value)
+                    ->all();
+            }
+
+            $rows = [];
+            $totalImps = 0;
+            $totalClicks = 0;
+            $totalViews = 0;
+
+            foreach ($placements as $placement) {
+                $placementImps = (int) ($impressions[$placement] ?? 0);
+                $placementClicks = (int) ($clicks[$placement] ?? 0);
+                $placementViews = (int) ($views[$placement] ?? 0);
+
+                $rows[] = [
+                    'label' => $this->translatePlacement($placement),
+                    'imps' => $placementImps,
+                    'clicks' => $placementClicks,
+                    'views' => $placementViews,
+                    'ctr' => $placementImps > 0 ? round(100 * $placementClicks / $placementImps, 2) : 0.0,
+                    'view_rate' => $placementViews > 0 ? round(100 * $placementClicks / $placementViews, 2) : 0.0,
+                ];
+
+                $totalImps += $placementImps;
+                $totalClicks += $placementClicks;
+                $totalViews += $placementViews;
+            }
 
             $rows[] = [
-                'label' => $this->translatePlacement($placement),
-                'imps' => $placementImps,
-                'clicks' => $placementClicks,
-                'views' => $placementViews,
-                'ctr' => $placementImps > 0 ? round(100 * $placementClicks / $placementImps, 2) : 0.0,
-                'view_rate' => $placementViews > 0 ? round(100 * $placementClicks / $placementViews, 2) : 0.0,
+                'label' => __('admin.ctr.funnels.total'),
+                'imps' => $totalImps,
+                'clicks' => $totalClicks,
+                'views' => $totalViews,
+                'ctr' => $totalImps > 0 ? round(100 * $totalClicks / $totalImps, 2) : 0.0,
+                'view_rate' => $totalViews > 0 ? round(100 * $totalClicks / $totalViews, 2) : 0.0,
             ];
 
-            $totalImps += $placementImps;
-            $totalClicks += $placementClicks;
-            $totalViews += $placementViews;
-        }
-
-        $totalImps = array_sum($impressionsByPlacement);
-        $totalClicks = array_sum($clicksByPlacement);
-        $totalViews = array_sum($viewsByPlacement);
-
-        $rows[] = [
-            'label' => __('admin.ctr.funnels.total'),
-            'imps' => $totalImps,
-            'clicks' => $totalClicks,
-            'views' => $totalViews,
-            'ctr' => $totalImps > 0 ? round(100 * $totalClicks / $totalImps, 2) : 0.0,
-            'view_rate' => $totalViews > 0 ? round(100 * $totalClicks / $totalViews, 2) : 0.0,
-        ];
-
-        return $rows;
+            return $rows;
+        });
     }
 
     /**
@@ -285,65 +301,73 @@ class CtrAnalyticsService
      */
     public function dailySeries(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        if (! Schema::hasTable('rec_ab_logs') || ! Schema::hasTable('rec_clicks')) {
+        $cacheKey = implode(':', [
+            'daily-series',
+            $from->toDateString(),
+            $to->toDateString(),
+        ]);
+
+        return AnalyticsCache::rememberCtr($cacheKey, function () use ($from, $to): array {
+            if (! Schema::hasTable('rec_ab_logs') || ! Schema::hasTable('rec_clicks')) {
+                return [
+                    'days' => [],
+                    'series' => ['A' => [], 'B' => []],
+                    'max' => 0.0,
+                ];
+            }
+
+            [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+
+            $logs = DB::table('rec_ab_logs')
+                ->selectRaw('date(created_at) as d, variant, count(*) as imps')
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->groupBy('d', 'variant')
+                ->get();
+
+            $clicks = DB::table('rec_clicks')
+                ->selectRaw('date(created_at) as d, variant, count(*) as clks')
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->groupBy('d', 'variant')
+                ->get();
+
+            $days = [];
+            $current = $from->startOfDay();
+            $end = $to->endOfDay();
+
+            while ($current->lessThanOrEqualTo($end)) {
+                $days[] = $current->format('Y-m-d');
+                $current = $current->addDay();
+            }
+
+            $series = ['A' => [], 'B' => []];
+            $max = 0.0;
+            foreach ($days as $day) {
+                $logA = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'A');
+                $logB = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'B');
+                $clkA = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'A');
+                $clkB = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'B');
+
+                $impsA = (int) ($logA->imps ?? 0);
+                $impsB = (int) ($logB->imps ?? 0);
+                $clksA = (int) ($clkA->clks ?? 0);
+                $clksB = (int) ($clkB->clks ?? 0);
+
+                $ctrA = $impsA > 0 ? 100.0 * $clksA / $impsA : 0.0;
+                $ctrB = $impsB > 0 ? 100.0 * $clksB / $impsB : 0.0;
+
+                $series['A'][] = round($ctrA, 2);
+                $series['B'][] = round($ctrB, 2);
+                $max = max($max, $ctrA, $ctrB);
+            }
+
+            $max = max(5.0, ceil($max / 5.0) * 5.0);
+
             return [
-                'days' => [],
-                'series' => ['A' => [], 'B' => []],
-                'max' => 0.0,
+                'days' => $days,
+                'series' => $series,
+                'max' => $max,
             ];
-        }
-
-        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
-
-        $logs = DB::table('rec_ab_logs')
-            ->selectRaw('date(created_at) as d, variant, count(*) as imps')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('d', 'variant')
-            ->get();
-
-        $clicks = DB::table('rec_clicks')
-            ->selectRaw('date(created_at) as d, variant, count(*) as clks')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('d', 'variant')
-            ->get();
-
-        $days = [];
-        $current = $from->startOfDay();
-        $end = $to->endOfDay();
-
-        while ($current->lessThanOrEqualTo($end)) {
-            $days[] = $current->format('Y-m-d');
-            $current = $current->addDay();
-        }
-
-        $series = ['A' => [], 'B' => []];
-        $max = 0.0;
-        foreach ($days as $day) {
-            $logA = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $logB = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'B');
-            $clkA = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $clkB = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'B');
-
-            $impsA = (int) ($logA->imps ?? 0);
-            $impsB = (int) ($logB->imps ?? 0);
-            $clksA = (int) ($clkA->clks ?? 0);
-            $clksB = (int) ($clkB->clks ?? 0);
-
-            $ctrA = $impsA > 0 ? 100.0 * $clksA / $impsA : 0.0;
-            $ctrB = $impsB > 0 ? 100.0 * $clksB / $impsB : 0.0;
-
-            $series['A'][] = round($ctrA, 2);
-            $series['B'][] = round($ctrB, 2);
-            $max = max($max, $ctrA, $ctrB);
-        }
-
-        $max = max(5.0, ceil($max / 5.0) * 5.0);
-
-        return [
-            'days' => $days,
-            'series' => $series,
-            'max' => $max,
-        ];
+        });
     }
 
     public function buildDailyCtrSvg(CarbonImmutable $from, CarbonImmutable $to): ?string
@@ -443,45 +467,53 @@ class CtrAnalyticsService
      */
     public function placementCtrs(CarbonImmutable $from, CarbonImmutable $to): Collection
     {
-        if (! Schema::hasTable('rec_clicks') || ! Schema::hasTable('rec_ab_logs')) {
-            return collect();
-        }
+        $cacheKey = implode(':', [
+            'placement-ctrs',
+            $from->toDateString(),
+            $to->toDateString(),
+        ]);
 
-        [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+        return AnalyticsCache::rememberCtr($cacheKey, function () use ($from, $to): Collection {
+            if (! Schema::hasTable('rec_clicks') || ! Schema::hasTable('rec_ab_logs')) {
+                return collect();
+            }
 
-        $clickRows = DB::table('rec_clicks')
-            ->selectRaw('placement, variant, count(*) as clicks')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('placement', 'variant')
-            ->get();
+            [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
-        $impressions = DB::table('rec_ab_logs')
-            ->selectRaw('placement, variant, count(*) as impressions')
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupBy('placement', 'variant')
-            ->get();
+            $clickRows = DB::table('rec_clicks')
+                ->selectRaw('placement, variant, count(*) as clicks')
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->groupBy('placement', 'variant')
+                ->get();
 
-        $placements = $impressions->pluck('placement')
-            ->merge($clicks->pluck('placement'))
-            ->unique()
-            ->values();
+            $impressions = DB::table('rec_ab_logs')
+                ->selectRaw('placement, variant, count(*) as impressions')
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->groupBy('placement', 'variant')
+                ->get();
 
-        $variants = ['A', 'B'];
+            $placements = $impressions->pluck('placement')
+                ->merge($clickRows->pluck('placement'))
+                ->unique()
+                ->values();
 
-        return $placements->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
-            return collect($variants)->map(function (string $variant) use ($placement, $clicks, $impressions) {
-                $clickRow = $clicks->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
-                $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+            $variants = ['A', 'B'];
 
-                $clickCount = (int) ($clickRow->clicks ?? 0);
-                $imps = (int) ($impressionRow->impressions ?? 0);
+            return $placements->flatMap(function (string $placement) use ($variants, $clickRows, $impressions) {
+                return collect($variants)->map(function (string $variant) use ($placement, $clickRows, $impressions) {
+                    $clickRow = $clickRows->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+                    $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
 
-                return [
-                    'label' => $placement.'-'.$variant,
-                    'ctr' => $imps > 0 ? round(100 * $clickCount / $imps, 2) : 0.0,
-                ];
-            });
-        })->values();
+                    $clickCount = (int) ($clickRow->clicks ?? 0);
+                    $imps = (int) ($impressionRow->impressions ?? 0);
+
+                    return [
+                        'label' => $placement.'-'.$variant,
+                        'ctr' => $imps > 0 ? round(100 * $clickCount / $imps, 2) : 0.0,
+                    ];
+                });
+            })->values();
+        });
     }
 
     /**

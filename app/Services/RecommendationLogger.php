@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Movie;
+use App\Support\AnalyticsCache;
 use Carbon\CarbonInterface;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Collection;
@@ -43,6 +44,7 @@ class RecommendationLogger
 
             if ($rows !== []) {
                 $this->db->table('rec_ab_logs')->insert($rows);
+                AnalyticsCache::flushCtr();
             }
         }
 
@@ -63,6 +65,9 @@ class RecommendationLogger
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            AnalyticsCache::flushCtr();
+            AnalyticsCache::flushTrends();
         }
 
         $this->recordPageView($deviceId, 'movie', $movieId, $now);
