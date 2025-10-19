@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Console\Commands\AggregateCtrDailySnapshotsCommand;
 use App\Console\Commands\LogsTail;
 use App\Console\Commands\SsrCollectCommand;
+use App\Exceptions\Handler as ExceptionHandler;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
 use App\Http\Middleware\EnsureDeviceCookie;
@@ -48,5 +49,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', SsrMetricsMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        ExceptionHandler::register($exceptions);
     })->create();
