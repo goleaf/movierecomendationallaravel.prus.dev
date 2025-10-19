@@ -40,6 +40,9 @@ class DeviceHistory extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Movie>
+     */
     public function movie(): BelongsTo
     {
         return $this->belongsTo(Movie::class);
@@ -47,19 +50,23 @@ class DeviceHistory extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeBetweenViewedAt(Builder $query, DateTimeInterface|string $from, DateTimeInterface|string $to): Builder
     {
         $column = $query->qualifyColumn('viewed_at');
 
-        return $query->whereBetween($column, [
+        $query->whereBetween($column, [
             $from instanceof DateTimeInterface ? $from->format('Y-m-d H:i:s') : $from,
             $to instanceof DateTimeInterface ? $to->format('Y-m-d H:i:s') : $to,
         ]);
+
+        return $query;
     }
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeForPlacement(Builder $query, ?string $placement): Builder
     {
@@ -67,7 +74,9 @@ class DeviceHistory extends Model
             return $query;
         }
 
-        return $query->where('placement', $placement);
+        $query->where('placement', $placement);
+
+        return $query;
     }
 
     protected static function newFactory(): DeviceHistoryFactory
