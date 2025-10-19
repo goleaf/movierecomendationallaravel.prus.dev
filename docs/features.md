@@ -18,6 +18,11 @@ This catalog highlights the major product surfaces in MovieRec so newcomers can 
 - **Features:** Aggregates the most-clicked items over a configurable window, while falling back to IMDb popularity when no click data exists. The Blade view shows click totals alongside rating and vote context for each tile.
 - **Data dependencies:** Pulls rolling metrics from `rec_clicks` and joins against `movies` for artwork and metadata.
 
+### Artwork proxy cache
+- **Entry point:** Poster URLs across the public site and Filament dashboards call the global [`proxy_image_url()` helper](../app/Support/helpers.php), which signs requests to [`ImageProxyController`](../app/Http/Controllers/ImageProxyController.php).
+- **How it works:** The controller normalises remote artwork URLs, stores them on the `public` disk using [`ImageProxyStorage`](../app/Support/ImageProxyStorage.php), and serves the cached file. Misses and manual refreshes dispatch the [`CacheProxyImage` job](../app/Jobs/CacheProxyImage.php) to refetch artwork.
+- **Operational notes:** Deployments must expose `storage/app/public` via `php artisan storage:link` (or equivalent web server mapping) so `/proxy/image` responses can stream cached files. When working across multiple web nodes share the `public` disk, otherwise each node will miss independently. Append `?refresh_proxy_images=1` to any page URL to force regeneration of artwork caches after external poster updates.
+
 ## API Surfaces
 
 ### Search API

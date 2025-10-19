@@ -54,7 +54,7 @@ class QueuePage extends Page
      */
     protected function getHeaderActions(): array
     {
-        if (! $this->canManageHorizonQueues()) {
+        if (! $this->canManageHorizonQueues() || ! $this->horizonIsAvailable()) {
             return [];
         }
 

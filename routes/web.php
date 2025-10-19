@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AdminSsrController;
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MetricsController;
@@ -20,6 +21,10 @@ use App\Livewire\TrendsPage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+
+Route::get('/proxy/image', ImageProxyController::class)
+    ->middleware('signed')
+    ->name('image-proxy.show');
 
 Route::get('/', HomePage::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
