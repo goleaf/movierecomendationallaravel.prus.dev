@@ -6,14 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use TomatoPHP\FilamentLanguageSwitcher\Traits\InteractsWithLanguages;
+use Laravelcm\Subscriptions\Traits\HasPlanSubscriptions;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
 
-    use InteractsWithLanguages;
+    use HasPlanSubscriptions;
     use Notifiable;
 
     /**
