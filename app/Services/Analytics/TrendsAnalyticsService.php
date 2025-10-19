@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Schema;
 
 class TrendsAnalyticsService
 {
+    /**
+     * @return Collection<int, array{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string|null,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null,
+     * }>
+     */
     public function trending(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): Collection
     {
         $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo);
@@ -17,8 +29,21 @@ class TrendsAnalyticsService
         return $this->buildTrendingItems($normalized['filters'], $normalized['period']);
     }
 
+    /**
+     * @return Collection<int, array{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string|null,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null,
+     * }>
+     */
     private function fallback(string $type, string $genre, int $yearFrom, int $yearTo): Collection
     {
+        /** @var Collection<int, Movie> $fallback */
         $fallback = Movie::query()
             ->when($type !== '', fn ($q) => $q->where('type', $type))
             ->when($genre !== '', fn ($q) => $q->whereJsonContains('genres', $genre))
@@ -29,23 +54,34 @@ class TrendsAnalyticsService
             ->limit(40)
             ->get();
 
-        return $fallback->map(function (Movie $movie) {
-            return (object) [
-                'id' => $movie->id,
-                'title' => $movie->title,
-                'poster_url' => $movie->poster_url,
-                'year' => $movie->year,
-                'type' => $movie->type,
-                'imdb_rating' => $movie->imdb_rating,
-                'imdb_votes' => $movie->imdb_votes,
-                'clicks' => null,
-            ];
-        });
+        return $fallback
+            ->map(static function (Movie $movie): array {
+                return [
+                    'id' => $movie->id,
+                    'title' => $movie->title,
+                    'poster_url' => $movie->poster_url,
+                    'year' => $movie->year,
+                    'type' => $movie->type,
+                    'imdb_rating' => $movie->imdb_rating,
+                    'imdb_votes' => $movie->imdb_votes,
+                    'clicks' => null,
+                ];
+            })
+            ->values();
     }
 
     /**
      * @return array{
-     *     items: Collection<int, object>,
+     *     items: Collection<int, array{
+     *         id: int,
+     *         title: string,
+     *         poster_url: string|null,
+     *         year: int|null,
+     *         type: string|null,
+     *         imdb_rating: float|null,
+     *         imdb_votes: int|null,
+     *         clicks: int|null,
+     *     }>,
      *     filters: array{days: int, type: string, genre: string, year_from: int, year_to: int},
      *     period: array{from: string, to: string, days: int}
      * }
@@ -70,6 +106,16 @@ class TrendsAnalyticsService
     /**
      * @param  array{days: int, type: string, genre: string, year_from: int, year_to: int}  $filters
      * @param  array{from: CarbonImmutable, to: CarbonImmutable}  $period
+     * @return Collection<int, array{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string|null,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null,
+     * }>
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
@@ -100,7 +146,18 @@ class TrendsAnalyticsService
             $items = $query->limit(40)->get();
 
             if ($items->isNotEmpty()) {
-                return $items;
+                return $items->map(static function (object $item): array {
+                    return [
+                        'id' => (int) $item->id,
+                        'title' => (string) $item->title,
+                        'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                        'year' => $item->year !== null ? (int) $item->year : null,
+                        'type' => $item->type !== null ? (string) $item->type : null,
+                        'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                        'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                        'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+                    ];
+                });
             }
         }
 

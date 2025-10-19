@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\MovieFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,10 +33,15 @@ use Kirschbaum\Commentions\HasComments;
 class Movie extends Model implements Commentable
 {
     use HasComments;
+
+    /** @use HasFactory<MovieFactory> */
     use HasFactory;
 
     protected $guarded = [];
 
+    /**
+     * @var list<string>
+     */
     protected $appends = ['weighted_score'];
 
     protected function casts(): array
@@ -68,18 +74,36 @@ class Movie extends Model implements Commentable
         return round($weighted, 4);
     }
 
+    /**
+     * @return HasMany<RecAbLog, Movie>
+     */
     public function recAbLogs(): HasMany
     {
-        return $this->hasMany(RecAbLog::class);
+        /** @var HasMany<RecAbLog, Movie> $relation */
+        $relation = $this->hasMany(RecAbLog::class);
+
+        return $relation;
     }
 
+    /**
+     * @return HasMany<RecClick, Movie>
+     */
     public function recClicks(): HasMany
     {
-        return $this->hasMany(RecClick::class);
+        /** @var HasMany<RecClick, Movie> $relation */
+        $relation = $this->hasMany(RecClick::class);
+
+        return $relation;
     }
 
+    /**
+     * @return HasMany<DeviceHistory, Movie>
+     */
     public function deviceHistory(): HasMany
     {
-        return $this->hasMany(DeviceHistory::class);
+        /** @var HasMany<DeviceHistory, Movie> $relation */
+        $relation = $this->hasMany(DeviceHistory::class);
+
+        return $relation;
     }
 }

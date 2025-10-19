@@ -32,8 +32,14 @@ class CtrAnalyticsService
         $summaryData = $this->variantSummary($fromDate, $toDate, $placement, $variant);
 
         $placementCtrData = $this->placementCtrs($fromDate, $toDate);
+
+        /** @var array<int, string> $placements */
         $placements = $placementCtrData
-            ->map(static fn (array $row) => explode('-', $row['label'])[0])
+            ->map(static function (array $row): string {
+                $parts = explode('-', $row['label'], 2);
+
+                return $parts[0];
+            })
             ->unique()
             ->values()
             ->all();
@@ -61,7 +67,8 @@ class CtrAnalyticsService
             })
             ->all();
 
-        $totalLabel = __('admin.ctr.funnels.total');
+        $totalLabelTranslation = __('admin.ctr.funnels.total');
+        $totalLabel = is_string($totalLabelTranslation) ? $totalLabelTranslation : 'total';
         $totalViews = $funnels[$totalLabel]['views'] ?? 0;
 
         $summary = $summaryData['summary'];
@@ -100,7 +107,12 @@ class CtrAnalyticsService
     }
 
     /**
-     * @return array{summary: array<int, array<string, mixed>>, impressions: array<string, int>, clicks: array<string, int>, placementClicks: array<string, int>}
+     * @return array{
+     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     impressions: array<string, int>,
+     *     clicks: array<string, int>,
+     *     placementClicks: array<string, int>
+     * }
      */
     public function variantSummary(CarbonImmutable $from, CarbonImmutable $to, ?string $placement = null, ?string $variant = null): array
     {
@@ -177,6 +189,7 @@ class CtrAnalyticsService
     }
 
     /**
+     * @param  array<int, string>  $placements
      * @return array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float}>
      */
     public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
@@ -262,12 +275,11 @@ class CtrAnalyticsService
             $totalViews += $placementViews;
         }
 
-        $totalImps = array_sum($impressionsByPlacement);
-        $totalClicks = array_sum($clicksByPlacement);
-        $totalViews = array_sum($viewsByPlacement);
+        $totalLabelTranslation = __('admin.ctr.funnels.total');
+        $totalLabel = is_string($totalLabelTranslation) ? $totalLabelTranslation : 'Total';
 
         $rows[] = [
-            'label' => __('admin.ctr.funnels.total'),
+            'label' => $totalLabel,
             'imps' => $totalImps,
             'clicks' => $totalClicks,
             'views' => $totalViews,
@@ -447,29 +459,32 @@ class CtrAnalyticsService
 
         [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
+        /** @var Collection<int, object{placement: string, variant: string, clicks: int}> $clickRows */
         $clickRows = DB::table('rec_clicks')
             ->selectRaw('placement, variant, count(*) as clicks')
             ->whereBetween('created_at', [$fromDateTime, $toDateTime])
             ->groupBy('placement', 'variant')
             ->get();
 
+        /** @var Collection<int, object{placement: string, variant: string, impressions: int}> $impressions */
         $impressions = DB::table('rec_ab_logs')
             ->selectRaw('placement, variant, count(*) as impressions')
             ->whereBetween('created_at', [$fromDateTime, $toDateTime])
             ->groupBy('placement', 'variant')
             ->get();
 
+        /** @var Collection<int, string> $placements */
         $placements = $impressions->pluck('placement')
-            ->merge($clicks->pluck('placement'))
+            ->merge($clickRows->pluck('placement'))
             ->unique()
             ->values();
 
         $variants = ['A', 'B'];
 
-        return $placements->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
-            return collect($variants)->map(function (string $variant) use ($placement, $clicks, $impressions) {
-                $clickRow = $clicks->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
-                $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+        return $placements->flatMap(function (string $placement) use ($variants, $clickRows, $impressions): Collection {
+            return collect($variants)->map(static function (string $variant) use ($placement, $clickRows, $impressions): array {
+                $clickRow = $clickRows->first(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+                $impressionRow = $impressions->first(fn ($item) => $item->placement === $placement && $item->variant === $variant);
 
                 $clickCount = (int) ($clickRow->clicks ?? 0);
                 $imps = (int) ($impressionRow->impressions ?? 0);
@@ -502,6 +517,10 @@ class CtrAnalyticsService
         $key = "admin.ctr.filters.placements.$placement";
         $translated = __($key);
 
-        return $translated === $key ? ucfirst($placement) : $translated;
+        if (! is_string($translated) || $translated === $key) {
+            return ucfirst($placement);
+        }
+
+        return $translated;
     }
 }

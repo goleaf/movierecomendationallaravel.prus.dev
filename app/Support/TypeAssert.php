@@ -2,15 +2,40 @@
 
 namespace App\Support;
 
-function assert_string_non_empty(mixed $v): string {
-    if (!is_string($v) || $v==='') throw new \InvalidArgumentException('Expected non-empty string');
-    return $v;
+use InvalidArgumentException;
+
+function assert_string_non_empty(mixed $value): string
+{
+    if (! is_string($value) || $value === '') {
+        throw new InvalidArgumentException('Expected non-empty string.');
+    }
+
+    return $value;
 }
+
 /**
  * @template T of object
- * @param mixed $v
- * @param class-string<T> $cls
+ *
+ * @param  class-string<T>  $class
  * @return T
  */
-function assert_instanceof(mixed $v,string $cls){ if(!($v instanceof $cls)) throw new \InvalidArgumentException('instance'); return $v; }
-function assert_array(mixed $v): array { if(!is_array($v)) throw new \InvalidArgumentException('array'); return $v; }
+function assert_instanceof(mixed $value, string $class)
+{
+    if (! $value instanceof $class) {
+        throw new InvalidArgumentException('Expected instance of '.$class.'.');
+    }
+
+    return $value;
+}
+
+/**
+ * @return array<array-key, mixed>
+ */
+function assert_array(mixed $value): array
+{
+    if (! is_array($value)) {
+        throw new InvalidArgumentException('Expected array.');
+    }
+
+    return $value;
+}

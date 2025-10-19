@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class RecAbLog extends Model
 {
+    /** @use HasFactory<\Database\Factories\RecAbLogFactory> */
     use HasFactory;
 
     protected $guarded = [];
@@ -34,26 +35,36 @@ class RecAbLog extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Movie, RecAbLog>
+     */
     public function movie(): BelongsTo
     {
-        return $this->belongsTo(Movie::class);
+        /** @var BelongsTo<Movie, RecAbLog> $relation */
+        $relation = $this->belongsTo(Movie::class);
+
+        return $relation;
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param  Builder<RecAbLog>  $query
+     * @return Builder<RecAbLog>
      */
     public function scopeBetweenCreatedAt(Builder $query, DateTimeInterface|string $from, DateTimeInterface|string $to): Builder
     {
         $column = $query->qualifyColumn('created_at');
 
-        return $query->whereBetween($column, [
+        $query->whereBetween($column, [
             $from instanceof DateTimeInterface ? $from->format('Y-m-d H:i:s') : $from,
             $to instanceof DateTimeInterface ? $to->format('Y-m-d H:i:s') : $to,
         ]);
+
+        return $query;
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param  Builder<RecAbLog>  $query
+     * @return Builder<RecAbLog>
      */
     public function scopeForVariant(Builder $query, ?string $variant): Builder
     {
@@ -61,11 +72,14 @@ class RecAbLog extends Model
             return $query;
         }
 
-        return $query->where('variant', $variant);
+        $query->where('variant', $variant);
+
+        return $query;
     }
 
     /**
-     * @param  Builder<self>  $query
+     * @param  Builder<RecAbLog>  $query
+     * @return Builder<RecAbLog>
      */
     public function scopeForPlacement(Builder $query, ?string $placement): Builder
     {
@@ -73,6 +87,8 @@ class RecAbLog extends Model
             return $query;
         }
 
-        return $query->where('placement', $placement);
+        $query->where('placement', $placement);
+
+        return $query;
     }
 }

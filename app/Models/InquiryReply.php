@@ -32,8 +32,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|InquiryReply whereUpdatedAt($value)
  * @method static Builder<static>|InquiryReply whereUserAgent($value)
  * @method static Builder<static>|InquiryReply whereUserId($value)
- *
- * @mixin \Eloquent
  */
 final class InquiryReply extends Model
 {
@@ -51,20 +49,26 @@ final class InquiryReply extends Model
     /**
      * The inquiry that the reply belongs to.
      *
-     * @return BelongsTo<Inquiry>
+     * @return BelongsTo<Inquiry, InquiryReply>
      */
     public function inquiry(): BelongsTo
     {
-        return $this->belongsTo(Inquiry::class);
+        /** @var BelongsTo<Inquiry, InquiryReply> $relation */
+        $relation = $this->belongsTo(Inquiry::class);
+
+        return $relation;
     }
 
     /**
      * The user that replied to the inquiry.
      *
-     * @return BelongsTo<User>
+     * @return BelongsTo<User, InquiryReply>
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        /** @var BelongsTo<User, InquiryReply> $relation */
+        $relation = $this->belongsTo(User::class);
+
+        return $relation;
     }
 }

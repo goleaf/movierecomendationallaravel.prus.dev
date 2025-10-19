@@ -2,21 +2,14 @@
 
 namespace App\Services\Analytics;
 
+use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\Connections\PredisConnection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Schema;
 
 class QueueMetricsService
 {
-    /**
-     * @var array<string, string>
-     */
-    private const METRIC_KEY_MAP = [
-        'queue' => 'jobs',
-        'failed' => 'failed',
-        'processed' => 'batches',
-    ];
-
     /**
      * @return array{
      *     jobs: int,
@@ -37,8 +30,36 @@ class QueueMetricsService
         ];
 
         try {
-            $workload = Redis::hgetall('horizon:workload');
-            $supervisors = Redis::smembers('horizon:supervisors');
+            $redis = Redis::connection();
+
+            /** @var array<string, string>|null $workload */
+            $workload = null;
+            /** @var array<int, string>|null $supervisors */
+            $supervisors = null;
+
+            if ($redis instanceof PhpRedisConnection) {
+                /** @var \Redis $client */
+                $client = $redis->client();
+                $workloadData = $client->hGetAll('horizon:workload');
+                if (is_array($workloadData) && $workloadData !== []) {
+                    $workload = array_map(static fn ($value): string => (string) $value, $workloadData);
+                }
+                $supervisorData = $client->sMembers('horizon:supervisors');
+                if (is_array($supervisorData) && $supervisorData !== []) {
+                    $supervisors = array_map(static fn ($value): string => (string) $value, $supervisorData);
+                }
+            } elseif ($redis instanceof PredisConnection) {
+                /** @var \Predis\ClientInterface $client */
+                $client = $redis->client();
+                $workloadData = $client->hgetall('horizon:workload');
+                if ($workloadData !== []) {
+                    $workload = array_map(static fn ($value): string => (string) $value, $workloadData);
+                }
+                $supervisorData = $client->smembers('horizon:supervisors');
+                if ($supervisorData !== []) {
+                    $supervisors = array_map(static fn ($value): string => (string) $value, $supervisorData);
+                }
+            }
 
             if (! empty($workload)) {
                 $horizon['workload'] = $workload;
@@ -71,14 +92,11 @@ class QueueMetricsService
     {
         $snapshot = $this->snapshot();
 
-        $metrics = [];
-
-        foreach (self::METRIC_KEY_MAP as $uiKey => $snapshotKey) {
-            $metrics[$uiKey] = $snapshot[$snapshotKey];
-        }
-
-        $metrics['horizon'] = $snapshot['horizon'];
-
-        return $metrics;
+        return [
+            'queue' => (int) $snapshot['jobs'],
+            'failed' => (int) $snapshot['failed'],
+            'processed' => (int) $snapshot['batches'],
+            'horizon' => $snapshot['horizon'],
+        ];
     }
 }

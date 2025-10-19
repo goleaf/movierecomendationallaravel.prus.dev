@@ -1,0 +1,15 @@
+parameters:
+    level: 7
+    paths:
+        - app/Models
+        - app/Services
+        - app/Support
+    excludePaths:
+        analyse:
+            - app/Services/Concerns
+    tmpDir: storage/framework/cache/phpstan
+    inferPrivatePropertyTypeFromConstructor: true
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: true
+    checkMissingVarTagTypehint: true
+    reportUnmatchedIgnoredErrors: true

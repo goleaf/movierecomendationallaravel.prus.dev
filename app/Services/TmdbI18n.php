@@ -63,6 +63,9 @@ class TmdbI18n
         return TranslationPayload::prepare($out);
     }
 
+    /**
+     * @return array{title: string|null, plot: string|null}|null
+     */
     protected function one(string $type, int $id, string $lang): ?array
     {
         $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
