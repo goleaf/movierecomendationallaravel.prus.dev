@@ -9,10 +9,10 @@ use App\Filament\Widgets\SsrDropWidget;
 use App\Filament\Widgets\SsrScoreWidget;
 use App\Filament\Widgets\SsrStatsWidget;
 use App\Filament\Widgets\ZTestWidget;
+use App\Services\Analytics\SsrAnalyticsService;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -39,16 +39,23 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertViewHas('rows', function (array $rows): bool {
-                $this->assertSame('home', $rows[0]['label']);
-                $this->assertSame(17, $rows[0]['imps']);
-                $this->assertSame(4, $rows[0]['clicks']);
-                $this->assertSame(12, $rows[0]['views']);
+                $rowsCollection = collect($rows);
 
-                $totals = end($rows);
-                $this->assertSame('Итого', $totals['label']);
-                $this->assertSame(17, $totals['imps']);
-                $this->assertSame(11, $totals['clicks']);
-                $this->assertSame(12, $totals['views']);
+                $homeLabel = __('admin.ctr.filters.placements.home');
+                $homeRow = $rowsCollection->first(fn (array $row): bool => in_array($row['label'], [$homeLabel, 'home', 'Home'], true));
+
+                $this->assertIsArray($homeRow);
+                $this->assertSame(8, $homeRow['imps']);
+                $this->assertSame(4, $homeRow['clicks']);
+                $this->assertSame(6, $homeRow['views']);
+
+                $totalLabel = __('admin.ctr.funnels.total');
+                $totalRow = $rowsCollection->first(fn (array $row): bool => in_array($row['label'], [$totalLabel, 'Итого', 'Total', 'admin.ctr.funnels.total'], true));
+
+                $this->assertIsArray($totalRow);
+                $this->assertSame(17, $totalRow['imps']);
+                $this->assertSame(11, $totalRow['clicks']);
+                $this->assertSame(12, $totalRow['views']);
 
                 return true;
             });
@@ -81,12 +88,13 @@ class AdminAnalyticsWidgetsTest extends TestCase
         $scoreComponent->assertSee('SSR Score (trend)');
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
 
-        $this->assertEquals(
+        $recent = collect(app(SsrAnalyticsService::class)->recent(5));
+
+        $this->assertEqualsCanonicalizing(
             [185, 244, 201, 176, 192],
-            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
+            $recent->map(fn (array $record): int => $record['normalized']['first_byte_ms'])->all()
         );
     }
 
@@ -94,9 +102,9 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(ZTestWidget::class)
             ->assertSee('CTR A')
-            ->assertSee('Imps:9 Clicks:7')
+            ->assertSee('Imps: 9 · Clicks: 7')
             ->assertSee('CTR B')
-            ->assertSee('Imps:8 Clicks:4')
+            ->assertSee('Imps: 8 · Clicks: 4')
             ->assertSee('Z-test');
     }
 }

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Movie;
+use App\Support\SsrMetricPayload;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -59,34 +61,90 @@ class MetricsEndpointTest extends TestCase
             ],
         ]);
 
-        DB::table('ssr_metrics')->insert([
+        $resolveColumn = static function (array $candidates): ?string {
+            foreach ($candidates as $candidate) {
+                if (Schema::hasColumn('ssr_metrics', $candidate)) {
+                    return $candidate;
+                }
+            }
+
+            return null;
+        };
+
+        $payloadColumn = $resolveColumn(['payload', 'raw_payload']);
+        $normalizedColumn = $resolveColumn(['normalized_payload', 'payload_normalized']);
+        $hasRecordedAt = Schema::hasColumn('ssr_metrics', 'recorded_at');
+
+        $metricRows = [
             [
                 'path' => '/home',
                 'score' => 88,
-                'size' => 1024,
+                'html_size' => 1024,
                 'meta_count' => 4,
                 'og_count' => 2,
                 'ldjson_count' => 1,
                 'img_count' => 6,
                 'blocking_scripts' => 0,
                 'first_byte_ms' => 120,
-                'created_at' => $capturedAt,
-                'updated_at' => $capturedAt,
             ],
             [
                 'path' => '/movie',
                 'score' => 92,
-                'size' => 2048,
+                'html_size' => 2048,
                 'meta_count' => 5,
                 'og_count' => 3,
                 'ldjson_count' => 1,
                 'img_count' => 8,
                 'blocking_scripts' => 1,
                 'first_byte_ms' => 150,
+            ],
+        ];
+
+        DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($capturedAt, $payloadColumn, $normalizedColumn, $hasRecordedAt): array {
+            $raw = $row + [
+                'meta' => [
+                    'first_byte_ms' => $row['first_byte_ms'],
+                    'html_size' => $row['html_size'],
+                    'meta_count' => $row['meta_count'],
+                    'og_count' => $row['og_count'],
+                    'ldjson_count' => $row['ldjson_count'],
+                    'img_count' => $row['img_count'],
+                    'blocking_scripts' => $row['blocking_scripts'],
+                    'has_json_ld' => $row['ldjson_count'] > 0,
+                    'has_open_graph' => $row['og_count'] > 0,
+                ],
+            ];
+
+            $normalized = SsrMetricPayload::normalize($raw);
+
+            $data = [
+                'path' => $row['path'],
+                'score' => $normalized['score'],
+                'size' => $row['html_size'],
+                'meta_count' => $normalized['counts']['meta'],
+                'og_count' => $normalized['counts']['open_graph'],
+                'ldjson_count' => $normalized['counts']['ldjson'],
+                'img_count' => $normalized['counts']['images'],
+                'blocking_scripts' => $normalized['counts']['blocking_scripts'],
+                'first_byte_ms' => $normalized['first_byte_ms'],
                 'created_at' => $capturedAt,
                 'updated_at' => $capturedAt,
-            ],
-        ]);
+            ];
+
+            if ($hasRecordedAt) {
+                $data['recorded_at'] = $capturedAt;
+            }
+
+            if ($payloadColumn !== null) {
+                $data[$payloadColumn] = json_encode($raw, JSON_THROW_ON_ERROR);
+            }
+
+            if ($normalizedColumn !== null) {
+                $data[$normalizedColumn] = json_encode($normalized, JSON_THROW_ON_ERROR);
+            }
+
+            return $data;
+        }, $metricRows));
 
         DB::table('failed_jobs')->insert([
             'uuid' => (string) Str::uuid(),

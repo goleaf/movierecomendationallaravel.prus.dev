@@ -6,7 +6,9 @@ namespace App\Services;
 
 use App\Services\Analytics\CtrAnalyticsService;
 use App\Support\MetricsCache;
+use App\Support\SsrMetricPayload;
 use Carbon\CarbonImmutable;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -200,11 +202,37 @@ class PrometheusMetricsService
      */
     private function loadSsrFallback(): array
     {
-        if (Storage::exists('metrics/ssr.jsonl')) {
-            $content = trim((string) Storage::get('metrics/ssr.jsonl'));
+        $records = [];
+        $disk = $this->storage();
+
+        $upgrade = static function (array $record): array {
+            if (! isset($record['html_size']) && isset($record['size'])) {
+                $record['html_size'] = $record['size'];
+            }
+
+            if (! isset($record['og_count']) && isset($record['og'])) {
+                $record['og_count'] = $record['og'];
+            }
+
+            if (! isset($record['ldjson_count']) && isset($record['ld'])) {
+                $record['ldjson_count'] = $record['ld'];
+            }
+
+            if (! isset($record['img_count']) && isset($record['imgs'])) {
+                $record['img_count'] = $record['imgs'];
+            }
+
+            if (! isset($record['blocking_scripts']) && isset($record['blocking'])) {
+                $record['blocking_scripts'] = $record['blocking'];
+            }
+
+            return $record;
+        };
+
+        if ($disk->exists('metrics/ssr.jsonl')) {
+            $content = trim((string) $disk->get('metrics/ssr.jsonl'));
             if ($content !== '') {
                 $lines = preg_split('/\r?\n/', $content) ?: [];
-                $records = [];
 
                 foreach ($lines as $line) {
                     if ($line === '') {
@@ -213,24 +241,42 @@ class PrometheusMetricsService
 
                     $decoded = json_decode($line, true);
                     if (is_array($decoded)) {
-                        $records[] = $decoded;
+                        $records[] = $upgrade($decoded);
                     }
                 }
+            }
+        }
 
-                if ($records !== []) {
-                    return $records;
+        if ($records === [] && $disk->exists('metrics/last.json')) {
+            $decoded = json_decode((string) $disk->get('metrics/last.json'), true);
+            if (is_array($decoded)) {
+                $items = array_is_list($decoded) ? $decoded : [$decoded];
+                foreach ($items as $item) {
+                    if (is_array($item)) {
+                        $records[] = $upgrade($item);
+                    }
                 }
             }
         }
 
-        if (Storage::exists('metrics/last.json')) {
-            $decoded = json_decode((string) Storage::get('metrics/last.json'), true);
-            if (is_array($decoded)) {
-                return $decoded;
+        return array_map(static function (array $record): array {
+            $raw = $record['raw'] ?? [];
+            if (! is_array($raw)) {
+                $raw = [];
             }
-        }
 
-        return [];
+            $normalized = SsrMetricPayload::normalize(array_merge($record, $raw));
+
+            return [
+                'score' => $normalized['score'],
+                'first_byte_ms' => $normalized['first_byte_ms'],
+            ];
+        }, $records);
+    }
+
+    private function storage(): FilesystemAdapter
+    {
+        return Storage::disk(config('filesystems.default', 'local'));
     }
 
     private function metric(string $name, string $type, string $help, int|float $value): array

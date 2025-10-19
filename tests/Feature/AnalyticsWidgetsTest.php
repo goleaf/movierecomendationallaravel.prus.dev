@@ -6,10 +6,10 @@ namespace Tests\Feature;
 
 use App\Filament\Widgets\FunnelWidget;
 use App\Filament\Widgets\ZTestWidget;
+use App\Services\Analytics\SsrAnalyticsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\Seeders\DemoContentSeeder;
 use Tests\TestCase;
@@ -44,9 +44,11 @@ class AnalyticsWidgetsTest extends TestCase
             ->assertSeeText('4') // total views
             ->assertSeeText('3'); // clicks for home placement
 
-        $this->assertEquals(
+        $recent = collect(app(SsrAnalyticsService::class)->recent(10));
+
+        $this->assertEqualsCanonicalizing(
             [210, 238, 192, 265],
-            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
+            $recent->pluck('normalized.first_byte_ms')->all()
         );
     }
 

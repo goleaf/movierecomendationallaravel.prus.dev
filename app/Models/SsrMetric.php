@@ -20,6 +20,9 @@ use Illuminate\Support\Carbon;
  * @property int $img_count
  * @property int $blocking_scripts
  * @property int $first_byte_ms
+ * @property array|null $payload
+ * @property array|null $normalized_payload
+ * @property Carbon|null $recorded_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -32,6 +35,14 @@ class SsrMetric extends Model
     protected $table = 'ssr_metrics';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'payload' => 'array',
+        'raw_payload' => 'array',
+        'normalized_payload' => 'array',
+        'payload_normalized' => 'array',
+        'recorded_at' => 'datetime',
+    ];
 
     protected static function newFactory(): SsrMetricFactory
     {

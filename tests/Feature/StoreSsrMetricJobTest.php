@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
-use Carbon\Carbon;
+use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\Analytics\SsrMetricRecorder;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -18,7 +19,7 @@ class StoreSsrMetricJobTest extends TestCase
 
     protected function tearDown(): void
     {
-        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
 
         parent::tearDown();
     }
@@ -26,9 +27,10 @@ class StoreSsrMetricJobTest extends TestCase
     public function test_it_inserts_metric_into_database_when_table_exists(): void
     {
         Storage::fake('local');
+        config()->set('filesystems.default', 'local');
 
-        $now = Carbon::parse('2024-01-01 12:00:00');
-        Carbon::setTestNow($now);
+        $now = CarbonImmutable::parse('2024-01-01 12:00:00');
+        CarbonImmutable::setTestNow($now);
 
         $payload = [
             'path' => '/movies',
@@ -54,30 +56,54 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricRecorder::class));
 
-        $row = DB::table('ssr_metrics')->first();
+        $records = app(SsrAnalyticsService::class)->recent();
 
-        $this->assertNotNull($row);
-        $this->assertSame('/movies', $row->path);
-        $this->assertSame(85, (int) $row->score);
-        $this->assertSame(2048, (int) $row->size);
-        $this->assertSame(5, (int) $row->meta_count);
-        $this->assertSame(3, (int) $row->og_count);
-        $this->assertSame(1, (int) $row->ldjson_count);
-        $this->assertSame(4, (int) $row->img_count);
-        $this->assertSame(2, (int) $row->blocking_scripts);
-        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
+        $this->assertCount(1, $records);
+
+        $record = $records[0];
+
+        $this->assertSame('/movies', $record['path']);
+        $this->assertSame(85, $record['score']);
+        $this->assertInstanceOf(CarbonImmutable::class, $record['recorded_at']);
+        $this->assertSame($now->toDateTimeString(), $record['recorded_at']->toDateTimeString());
+
+        $normalized = $record['normalized'];
+
+        $this->assertSame(2048, $normalized['html_bytes']);
+        $this->assertSame(5, $normalized['counts']['meta']);
+        $this->assertSame(3, $normalized['counts']['open_graph']);
+        $this->assertSame(1, $normalized['counts']['ldjson']);
+        $this->assertSame(4, $normalized['counts']['images']);
+        $this->assertSame(2, $normalized['counts']['blocking_scripts']);
+        $this->assertSame(123, $normalized['first_byte_ms']);
+        $this->assertTrue($normalized['flags']['has_json_ld']);
+        $this->assertTrue($normalized['flags']['has_open_graph']);
+
+        $raw = $record['raw'];
+
+        $this->assertSame('/movies', $raw['path']);
+        $this->assertSame(85, $raw['score']);
+        $this->assertSame(2048, $raw['html_size']);
+        $this->assertSame(5, $raw['meta_count']);
+        $this->assertSame(3, $raw['og_count']);
+        $this->assertSame(1, $raw['ldjson_count']);
+        $this->assertSame(4, $raw['img_count']);
+        $this->assertSame(2, $raw['blocking_scripts']);
+        $this->assertSame(123, $raw['first_byte_ms']);
     }
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
     {
         Storage::fake('local');
+        config()->set('filesystems.default', 'local');
 
-        $now = Carbon::parse('2024-01-02 08:30:00');
-        Carbon::setTestNow($now);
+        $now = CarbonImmutable::parse('2024-01-02 08:30:00');
+        CarbonImmutable::setTestNow($now);
 
         Schema::dropIfExists('ssr_metrics');
+        $this->assertFalse(Schema::hasTable('ssr_metrics'));
 
         $payload = [
             'path' => '/movies',
@@ -103,29 +129,32 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricRecorder::class));
+
+        $records = app(SsrAnalyticsService::class)->recent();
+
+        $this->assertCount(1, $records);
+
+        $record = $records[0];
+
+        $this->assertSame('/movies', $record['path']);
+        $this->assertSame(70, $record['score']);
+        $this->assertSame($now->toDateTimeString(), $record['recorded_at']->toDateTimeString());
+
+        $normalized = $record['normalized'];
+
+        $this->assertSame(1024, $normalized['html_bytes']);
+        $this->assertSame(2, $normalized['counts']['meta']);
+        $this->assertSame(1, $normalized['counts']['open_graph']);
+        $this->assertSame(0, $normalized['counts']['ldjson']);
+        $this->assertSame(3, $normalized['counts']['images']);
+        $this->assertSame(1, $normalized['counts']['blocking_scripts']);
+        $this->assertSame(98, $normalized['first_byte_ms']);
+        $this->assertFalse($normalized['flags']['has_json_ld']);
+        $this->assertTrue($normalized['flags']['has_open_graph']);
+
+        $this->assertSame($payload, $record['raw']);
 
         Storage::disk('local')->assertExists('metrics/ssr.jsonl');
-
-        $contents = Storage::disk('local')->get('metrics/ssr.jsonl');
-        $lines = array_values(array_filter(explode(PHP_EOL, $contents)));
-
-        $this->assertCount(1, $lines);
-
-        $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
-
-        $this->assertSame($now->toIso8601String(), $decoded['ts']);
-        $this->assertSame('/movies', $decoded['path']);
-        $this->assertSame(70, $decoded['score']);
-        $this->assertSame(1024, $decoded['size']);
-        $this->assertSame(1024, $decoded['html_size']);
-        $this->assertSame(2, $decoded['meta_count']);
-        $this->assertSame(1, $decoded['og']);
-        $this->assertSame(0, $decoded['ld']);
-        $this->assertSame(3, $decoded['imgs']);
-        $this->assertSame(1, $decoded['blocking']);
-        $this->assertSame(98, $decoded['first_byte_ms']);
-        $this->assertFalse($decoded['has_json_ld']);
-        $this->assertTrue($decoded['has_open_graph']);
     }
 }
