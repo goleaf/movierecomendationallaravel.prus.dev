@@ -19,7 +19,16 @@ class TrendsAnalyticsService
     ) {}
 
     /**
-     * @return Collection<int, object>
+     * @return Collection<int, object{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null
+     * }>
      */
     public function trending(
         int $days,
@@ -36,7 +45,16 @@ class TrendsAnalyticsService
     }
 
     /**
-     * @return Collection<int, object>
+     * @return Collection<int, array{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null
+     * }>
      */
     private function fallback(string $type, string $genre, int $yearFrom, int $yearTo): Collection
     {
@@ -50,21 +68,54 @@ class TrendsAnalyticsService
             ->limit(40)
             ->get();
 
-        return $fallback->map(static fn (Movie $movie): object => (object) [
-            'id' => $movie->id,
-            'title' => $movie->title,
-            'poster_url' => $movie->poster_url,
-            'year' => $movie->year,
-            'type' => $movie->type,
-            'imdb_rating' => $movie->imdb_rating,
-            'imdb_votes' => $movie->imdb_votes,
-            'clicks' => null,
-        ]);
+        $rows = $fallback
+            ->map(static function (Movie $movie): array {
+                /** @var int|null $clicks */
+                $clicks = null;
+
+                return [
+                    'id' => (int) $movie->id,
+                    'title' => (string) $movie->title,
+                    'poster_url' => $movie->poster_url !== null ? (string) $movie->poster_url : null,
+                    'year' => $movie->year !== null ? (int) $movie->year : null,
+                    'type' => (string) $movie->type,
+                    'imdb_rating' => $movie->imdb_rating !== null ? (float) $movie->imdb_rating : null,
+                    'imdb_votes' => $movie->imdb_votes !== null ? (int) $movie->imdb_votes : null,
+                    'clicks' => $clicks,
+                ];
+            })
+            ->values()
+            ->all();
+
+        /**
+         * @var Collection<int, array{
+         *     id: int,
+         *     title: string,
+         *     poster_url: string|null,
+         *     year: int|null,
+         *     type: string,
+         *     imdb_rating: float|null,
+         *     imdb_votes: int|null,
+         *     clicks: int|null
+         * }> $collection
+         */
+        $collection = collect($rows);
+
+        return $collection;
     }
 
     /**
      * @return array{
-     *     items: Collection<int, object>,
+     *     items: Collection<int, object{
+     *         id: int,
+     *         title: string,
+     *         poster_url: string|null,
+     *         year: int|null,
+     *         type: string,
+     *         imdb_rating: float|null,
+     *         imdb_votes: int|null,
+     *         clicks: int|null
+     *     }>,
      *     filters: array{days: int, type: string, genre: string, year_from: int, year_to: int},
      *     period: array{from: string, to: string, days: int}
      * }
@@ -96,7 +147,16 @@ class TrendsAnalyticsService
     /**
      * @param  array{days: int, type: string, genre: string, year_from: int, year_to: int}  $filters
      * @param  array{from: CarbonImmutable, to: CarbonImmutable}  $period
-     * @return Collection<int, object>
+     * @return Collection<int, object{
+     *     id: int,
+     *     title: string,
+     *     poster_url: string|null,
+     *     year: int|null,
+     *     type: string,
+     *     imdb_rating: float|null,
+     *     imdb_votes: int|null,
+     *     clicks: int|null
+     * }>
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
@@ -133,7 +193,21 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(static fn (object $item): array => (array) $item)->all();
+                    return $items
+                        ->map(static function (object $item): array {
+                            return [
+                                'id' => (int) $item->id,
+                                'title' => (string) $item->title,
+                                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                                'year' => $item->year !== null ? (int) $item->year : null,
+                                'type' => (string) $item->type,
+                                'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                                'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                                'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+                            ];
+                        })
+                        ->values()
+                        ->all();
                 }
             }
 
@@ -164,7 +238,21 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(static fn (object $item): array => (array) $item)->all();
+                    return $items
+                        ->map(static function (object $item): array {
+                            return [
+                                'id' => (int) $item->id,
+                                'title' => (string) $item->title,
+                                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                                'year' => $item->year !== null ? (int) $item->year : null,
+                                'type' => (string) $item->type,
+                                'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                                'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                                'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+                            ];
+                        })
+                        ->values()
+                        ->all();
                 }
             }
 
@@ -173,12 +261,21 @@ class TrendsAnalyticsService
                 $filters['genre'],
                 $filters['year_from'],
                 $filters['year_to'],
-            )
-                ->map(static fn (object $item): array => (array) $item)
-                ->all();
+            )->all();
         });
 
-        /** @var list<array<string, mixed>> $cached */
+        /**
+         * @var list<array{
+         *     id: int,
+         *     title: string,
+         *     poster_url: string|null,
+         *     year: int|null,
+         *     type: string,
+         *     imdb_rating: float|null,
+         *     imdb_votes: int|null,
+         *     clicks: int|null
+         * }> $cached
+         */
         return collect($cached)
             ->map(static fn (array $row): object => (object) $row)
             ->values();
