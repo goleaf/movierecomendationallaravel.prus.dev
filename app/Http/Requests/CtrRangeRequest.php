@@ -77,9 +77,11 @@ final class CtrRangeRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $now = now()->toImmutable();
+
         $this->merge([
-            'from' => $this->prepareDate($this->query('from'), now()->subDays(7)),
-            'to' => $this->prepareDate($this->query('to'), now()),
+            'from' => $this->prepareDate($this->query('from'), $now->subDays(7)),
+            'to' => $this->prepareDate($this->query('to'), $now),
             'p' => $this->prepareNullableString($this->query('p')),
             'v' => $this->prepareNullableString($this->query('v')),
         ]);
