@@ -106,6 +106,24 @@ return [
         'horizon_supervisors' => 'Супервайзеры Horizon',
         'horizon_empty' => 'Данные Horizon недоступны.',
     ],
+    'queues' => [
+        'title' => 'Пропускная способность очередей',
+        'heading' => 'Узкие места очередей',
+        'description' => 'Следите за скоростью ingestion и рекомендаций, свежими сбоями и временем обработки, чтобы раньше замечать деградацию.',
+        'download_csv' => 'Экспорт CSV',
+        'empty' => 'Метрики очередей пока недоступны.',
+        'generated_at' => 'Снимок снят :timestamp.',
+        'table' => [
+            'queue' => 'Очередь',
+            'in_flight' => 'В работе',
+            'failures' => 'Ошибки',
+            'avg_runtime' => 'Среднее время',
+            'jobs_per_minute' => 'Заданий / мин',
+            'processed' => 'Обработано',
+            'batches' => 'Пакеты',
+            'total' => 'Итого',
+        ],
+    ],
     'ssr' => [
         'title' => 'SSR аналитика',
         'headline' => [
