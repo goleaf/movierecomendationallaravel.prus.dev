@@ -65,21 +65,27 @@ class QueuePage extends Page
                 ->icon('heroicon-o-pause-circle')
                 ->color('warning')
                 ->requiresConfirmation()
-                ->action(fn (): void => $this->pauseHorizonQueues()),
+                ->action(function (): void {
+                    $this->pauseHorizonQueues();
+                }),
             Action::make('resume-horizon')
                 ->label(__('admin.metrics.horizon.actions.resume.label'))
                 ->modalHeading(__('admin.metrics.horizon.actions.resume.confirm'))
                 ->icon('heroicon-o-play-circle')
                 ->color('success')
                 ->requiresConfirmation()
-                ->action(fn (): void => $this->resumeHorizonQueues()),
+                ->action(function (): void {
+                    $this->resumeHorizonQueues();
+                }),
         ];
     }
 
     private function pauseHorizonQueues(): void
     {
         $this->handleHorizonAction(
-            action: static fn (): void => Horizon::pause(),
+            action: static function (): void {
+                Horizon::pause();
+            },
             successMessage: __('admin.metrics.horizon.actions.pause.success'),
         );
     }
@@ -87,13 +93,15 @@ class QueuePage extends Page
     private function resumeHorizonQueues(): void
     {
         $this->handleHorizonAction(
-            action: static fn (): void => Horizon::continue(),
+            action: static function (): void {
+                Horizon::continue();
+            },
             successMessage: __('admin.metrics.horizon.actions.resume.success'),
         );
     }
 
     /**
-     * @param callable(): void $action
+     * @param  callable(): void  $action
      */
     private function handleHorizonAction(callable $action, string $successMessage): void
     {
