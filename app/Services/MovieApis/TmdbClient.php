@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use Illuminate\Support\Uri;
+
 class TmdbClient
 {
     /**
@@ -30,10 +32,15 @@ class TmdbClient
     {
         $locale = $this->resolveLocale($language);
 
-        return $this->client->get("find/{$imdbId}", [
+        $uri = $this->buildUri([
+            'find',
+            $imdbId,
+        ], [
             'external_source' => 'imdb_id',
             'language' => $locale,
         ]);
+
+        return $this->send($uri);
     }
 
     /**
@@ -45,11 +52,14 @@ class TmdbClient
         $mediaType = $this->normalizeMediaType($mediaType);
         $locale = $this->resolveLocale($language);
 
-        $query = $additionalQuery + [
+        $uri = $this->buildUri([
+            $mediaType,
+            $id,
+        ], $additionalQuery + [
             'language' => $locale,
-        ];
+        ]);
 
-        return $this->client->get("{$mediaType}/{$id}", $query);
+        return $this->send($uri);
     }
 
     protected function resolveLocale(?string $locale): string
@@ -67,5 +77,35 @@ class TmdbClient
             'tv' => 'tv',
             default => 'movie',
         };
+    }
+
+    protected function buildUri(array $segments, array $query = []): Uri
+    {
+        $uri = Uri::of()->withPath($this->buildPath($segments));
+
+        if ($query !== []) {
+            $uri = $uri->withQuery($query);
+        }
+
+        return $uri;
+    }
+
+    protected function buildPath(array $segments): string
+    {
+        if ($segments === []) {
+            return '/';
+        }
+
+        $encodedSegments = array_map(
+            static fn (string|int $segment): string => rawurlencode((string) $segment),
+            $segments,
+        );
+
+        return implode('/', $encodedSegments);
+    }
+
+    protected function send(Uri $uri): array
+    {
+        return $this->client->get($uri->path(), $uri->query()->all());
     }
 }

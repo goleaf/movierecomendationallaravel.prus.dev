@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use Illuminate\Support\Uri;
+
 class OmdbClient
 {
     /**
@@ -20,9 +22,9 @@ class OmdbClient
      */
     public function findByImdbId(string $imdbId, array $parameters = []): array
     {
-        $query = $this->buildQuery(['i' => $imdbId], $parameters);
+        $uri = $this->buildUri(['i' => $imdbId], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->send($uri);
     }
 
     /**
@@ -31,9 +33,9 @@ class OmdbClient
      */
     public function findByTitle(string $title, array $parameters = []): array
     {
-        $query = $this->buildQuery(['t' => $title], $parameters);
+        $uri = $this->buildUri(['t' => $title], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->send($uri);
     }
 
     /**
@@ -42,9 +44,9 @@ class OmdbClient
      */
     public function search(string $search, array $parameters = []): array
     {
-        $query = $this->buildQuery(['s' => $search], $parameters);
+        $uri = $this->buildUri(['s' => $search], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->send($uri);
     }
 
     /**
@@ -60,5 +62,27 @@ class OmdbClient
             $merged,
             static fn ($value) => $value !== null && $value !== ''
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>  $overrides
+     */
+    protected function buildUri(array $query, array $overrides = []): Uri
+    {
+        $uri = Uri::of('/');
+
+        $parameters = $this->buildQuery($query, $overrides);
+
+        if ($parameters !== []) {
+            $uri = $uri->withQuery($parameters);
+        }
+
+        return $uri;
+    }
+
+    protected function send(Uri $uri): array
+    {
+        return $this->client->get($uri->path(), $uri->query()->all());
     }
 }
