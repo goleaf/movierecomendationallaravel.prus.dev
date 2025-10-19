@@ -26,6 +26,9 @@ Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
 
+Route::view('/privacy', 'privacy')->name('privacy');
+Route::view('/terms', 'terms')->name('terms');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemaps.index');
 Route::get('/sitemaps/{type}.xml', [SitemapController::class, 'type'])
     ->where('type', '[A-Za-z0-9_-]+')
