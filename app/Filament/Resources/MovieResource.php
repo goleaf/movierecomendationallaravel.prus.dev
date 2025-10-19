@@ -8,7 +8,6 @@ use App\Filament\Resources\MovieResource\RelationManagers\RecAbLogsRelationManag
 use App\Filament\Resources\MovieResource\RelationManagers\RecClicksRelationManager;
 use App\Models\Movie;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -21,9 +20,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkAction as BookmarkTableAction;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkAction;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkClearAction;
+use TomatoPHP\FilamentTranslationComponent\Components\Translation;
 
 class MovieResource extends Resource
 {
@@ -93,64 +90,16 @@ class MovieResource extends Resource
                     ->columns(2),
                 Section::make('Translations')
                     ->schema([
-                        Repeater::make('translations')
-                            ->columns(3)
-                            ->schema([
-                                TextInput::make('locale')
-                                    ->required()
-                                    ->maxLength(5)
-                                    ->label('Locale'),
-                                TextInput::make('title')
-                                    ->label('Title')
-                                    ->maxLength(255),
-                                Textarea::make('plot')
-                                    ->label('Plot')
-                                    ->rows(3)
-                                    ->columnSpanFull(),
-                            ])
-                            ->mutateDehydratedStateUsing(function (?array $state): ?array {
-                                if ($state === null) {
-                                    return null;
-                                }
-
-                                $translations = collect($state)
-                                    ->filter(fn (array $item): bool => filled($item['locale'] ?? null))
-                                    ->mapWithKeys(function (array $item): array {
-                                        $payload = array_filter([
-                                            'title' => $item['title'] ?? null,
-                                            'plot' => $item['plot'] ?? null,
-                                        ], fn ($value) => $value !== null && $value !== '');
-
-                                        return [
-                                            $item['locale'] => $payload,
-                                        ];
-                                    })
-                                    ->filter();
-
-                                return $translations->isEmpty() ? null : $translations->toArray();
-                            })
-                            ->afterStateHydrated(function (Repeater $component, $state): void {
-                                if (! is_array($state)) {
-                                    $component->state([]);
-
-                                    return;
-                                }
-
-                                $component->state(
-                                    collect($state)
-                                        ->map(function ($value, $locale) {
-                                            return [
-                                                'locale' => $locale,
-                                                'title' => $value['title'] ?? null,
-                                                'plot' => $value['plot'] ?? null,
-                                            ];
-                                        })
-                                        ->values()
-                                        ->all()
-                                );
-                            })
+                        Translation::make('translations.title')
+                            ->label('Title Translations')
+                            ->default([])
                             ->columnSpanFull(),
-                    ]),
+                        Translation::make('translations.plot')
+                            ->label('Plot Translations')
+                            ->default([])
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(1),
                 Section::make('Raw Payload')
                     ->schema([
                         Textarea::make('raw')
