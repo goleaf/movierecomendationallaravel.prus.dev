@@ -12,14 +12,12 @@ use Illuminate\Support\Facades\Bus;
 
 class MovieTranslationImporter
 {
-    public function __construct(private readonly TmdbI18n $tmdb)
-    {
-    }
+    public function __construct(private readonly TmdbI18n $tmdb) {}
 
     /**
      * @param  array<int, string>  $locales
      */
-    public function dispatch(Movie $movie, array $locales): ?Batch
+    public function dispatch(Movie $movie, array $locales, bool $force = false): ?Batch
     {
         if (! $this->tmdb->enabled()) {
             return null;
@@ -32,7 +30,7 @@ class MovieTranslationImporter
         }
 
         return Bus::batch([
-            new ImportMovieTranslations($movie->id, $normalized),
+            new ImportMovieTranslations($movie->id, $normalized, $force),
         ])
             ->name(sprintf('movie-%d-translations', $movie->id))
             ->onQueue('importers')
