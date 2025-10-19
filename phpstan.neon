@@ -6,6 +6,8 @@ parameters:
         - routes
         - database
         - config
+    bootstrapFiles:
+        - app/Support/TypeAssert.php
     inferPrivatePropertyTypeFromConstructor: true
     checkMissingIterableValueType: true
     checkGenericClassInNonGenericObjectType: true
