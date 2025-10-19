@@ -1,3 +1,3 @@
 <x-filament-panels::page>
-  <iframe src="{{ route('admin.ctr') }}" style="width:100%;height:1200px;border:0;"></iframe>
+    <livewire:analytics.ctr-overview />
 </x-filament-panels::page>

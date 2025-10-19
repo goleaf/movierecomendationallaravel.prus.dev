@@ -8,11 +8,28 @@ return [
         'bars_alt' => 'CTR bar chart',
         'ab_summary_heading' => 'A/B Summary',
         'ab_summary_item' => 'Variant :variant — Imps: :impressions, Clicks: :clicks, CTR: :ctr%',
+        'empty_summary' => 'No data available for the selected period.',
+        'filters' => [
+            'from' => 'From',
+            'to' => 'To',
+            'variant' => 'Variant',
+            'variant_all' => 'All variants',
+            'placement' => 'Placement',
+            'placement_all' => 'All placements',
+            'apply' => 'Apply filters',
+        ],
     ],
     'metrics' => [
         'title' => 'Queues / Horizon',
         'heading' => 'Queues',
         'stats' => 'Jobs: :jobs, Failed: :failed, Batches: :batches',
+        'refresh' => 'Refresh metrics',
+        'queue_label' => 'Queued jobs',
+        'failed_label' => 'Failed jobs',
+        'processed_label' => 'Processed batches',
+        'horizon_workload' => 'Horizon workload',
+        'horizon_supervisors' => 'Horizon supervisors',
+        'horizon_empty' => 'Horizon telemetry is not available.',
     ],
     'funnel' => [
         'period' => 'Period: :from — :to',
@@ -26,6 +43,7 @@ return [
         ],
     ],
     'trends' => [
+        'days_label' => 'Period length',
         'days_option' => ':days days',
         'type_placeholder' => 'Type',
         'types' => [
@@ -37,5 +55,10 @@ return [
         'year_from_placeholder' => 'Year from',
         'year_to_placeholder' => 'Year to',
         'apply' => 'Show',
+        'period' => 'Showing top items for :days days (:from — :to)',
+        'empty' => 'No trending items were found for the selected filters.',
+        'clicks' => 'Clicks: :count',
+        'imdb' => 'IMDb: :rating',
+        'votes' => 'Votes: :count',
     ],
 ];
