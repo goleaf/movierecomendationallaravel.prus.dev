@@ -1,23 +1,38 @@
-# MovieRec Outstanding Work
+# Delivery Backlog — Updated 2025-02-14
 
-## Data ingestion & localisation
-- [ ] Scaffold TMDB and OMDb import commands under `app/Console/Commands/` and queueable jobs so the "ready-to-run" ingestion pipelines promised in `README.md` actually populate `movies` and related tables.
-- [ ] Wire `App\Services\TmdbI18n` into the import flow and persist translated titles/plots (e.g. via new jobs queued from the import command) instead of leaving the service unused.
+Keep this checklist current so onboarding engineers can quickly identify active gaps. Group owners are suggestions based on the
+skills required to land the work.
 
-## Analytics
-- [ ] Align the Filament analytics blades in `resources/views/filament/analytics/*` with the parity checklist so CTR, funnel, and z-test widgets share copy, accessible labelling, and data contracts. (Owner: Maya — Data Insights)
-- [ ] Extend Filament dashboards with uptime notifications for the SSR metrics API responses (currently only CTR trends are monitored). (Owner: Ben — Product Analytics)
-- [ ] Produce runbooks for the analytics widgets (CTR lines/bars, funnels, z-test) so on-call engineers know expected behaviour and alert thresholds. (Owner: Liam — Ops Enablement)
+## Frontend / Admin Experience
+- [ ] **Filament polish (Analytics specialist)** — Refactor the CTR and SSR widgets in `app/Filament/Widgets` so shared colour
+      scales and axis helpers live in a single trait, reducing duplication across `CtrLineWidget.php`, `CtrBarsWidget.php`, and
+      `SsrStatsWidget.php`.
+- [ ] **SSR surface telemetry (Full-stack SSR)** — Extend the SSR insights card within the Filament dashboard to surface
+      middleware timings captured by `app/Http/Middleware/SsrMetricsMiddleware.php`, including percentiles and alert badges.
+- [ ] **User segmentation toggles (Product-minded dev)** — Add audience filters to the analytics panel page in `app/Filament/Pages`
+      so we can switch between global CTR data and cohort-specific ingestion metrics without reloading the dashboard.
 
-## Observability
-- [ ] Deepen instrumentation inside `app/Http/Middleware/SsrMetricsMiddleware.php` to capture hydration latency, queue spillover, and Horizon tag correlation. (Owner: Priya — Observability)
-- [ ] Backfill docs covering SSR metrics sampling knobs and alert routes so instrumentation owners can triage noise quickly. (Owner: Ben — Product Analytics)
-- [ ] Add smoke tests for the TMDB/OMDb ingestion commands in `app/Console/Commands` to guarantee queue wiring survives future refactors. (Owner: Taylor — Backend Guild)
+## Analytics & Instrumentation
+- [ ] **Pipeline attribution (Data engineer)** — Rework the ingestion summary emitted from `app/Services/TmdbI18n.php` to include
+      source attribution fields before the data reaches the widgets, ensuring funnels in `FunnelWidget.php` can differentiate TMDB
+      translations from OMDb fallbacks.
+- [ ] **SSR drop classifier (Observability)** — Capture error fingerprints inside `app/Http/Middleware/SsrMetricsMiddleware.php`
+      and persist them so `SsrDropWidget.php` can highlight repeat offenders and suggest remediation playbooks.
+- [ ] **Clickstream reconciliation (Analytics engineer)** — Add a background job that reconciles daily CTR rollups against raw
+      events, exposing drift warnings through `ZTestWidget.php` and `QueueStatsWidget.php`.
 
-## Infrastructure
-- [ ] Install Laravel Boost locally (`composer require laravel/boost --dev` + `php artisan boost:install`) and commit the generated scaffolding. (Owner: Platform)
-- [ ] Audit the Boost installation output and document any non-default files inside `.cursor/` so editors can attach to the MCP server without guesswork. (Owner: Platform)
-- [ ] Verify CI covers `vendor/bin/pint`, `php artisan test`, and `phpstan` to match the quality gates described in the README. (Owner: Platform)
-- [ ] Create feature tests that exercise both recommendation strategies exposed in `routes/web.php` and assert the correct environment flags are honoured. (Owner: Taylor — Backend Guild)
-- [ ] Expand `README.md` with a quickstart focused on Horizon/Redis since those steps are only hinted at today. (Owner: Docs — Nina)
-- [ ] Publish a `.cursor/rules.json` primer describing preferred generators/prompts for controllers, Livewire components, and Filament resources. (Owner: Docs — Nina)
+## Infrastructure & Data Ingestion
+- [ ] **Backfill scheduler (Platform)** — Create a queued job pipeline to rerun stale imports when `app/Models/Movie.php`
+      indicates missing localisation metadata, wiring it into `schedule:work` and notifying the Filament queue widgets.
+- [ ] **TMDB/OMDb retry strategy (Backend)** — Implement exponential backoff and circuit-breaking within the ingestion services
+      so we stop hammering third-party APIs during outages, with instrumentation hooks for the SSR middleware alerts.
+- [ ] **Environment parity tests (QA lead)** — Add end-to-end feature coverage in `tests/Feature` that verifies SSR metrics,
+      ingestion pipelines, and Filament dashboards stay consistent across `local`, `staging`, and `production` environment configs.
+
+## Testing & Quality Gates
+- [ ] **Middleware contract tests (QA engineer)** — Write targeted tests in `tests/Unit` for `SsrMetricsMiddleware.php` to ensure
+      request attributes, sampling configuration, and downstream logging stay stable during refactors.
+- [ ] **Analytics UI snapshots (Frontend QA)** — Capture Livewire-powered snapshots for the widgets under `app/Filament/Widgets`
+      so UI regressions are caught before merges.
+- [ ] **Data ingestion smoke suite (Ops)** — Build lightweight smoke tests for the TMDB/OMDb pathways using the existing
+      service classes in `app/Services` to validate queue configuration, retries, and guardrail metrics.
