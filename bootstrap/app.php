@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 use App\Console\Commands\AggregateCtrDailySnapshotsCommand;
 use App\Console\Commands\SsrCollectCommand;
+use App\Exceptions\Handler as HttpExceptionHandler;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
 use App\Http\Middleware\EnsureDeviceCookie;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\NoIndex;
+use App\Http\Middleware\RequestId;
 use App\Http\Middleware\SsrMetricsMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Spatie\Csp\AddCspHeaders;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -34,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureDeviceCookie::class);
         $middleware->prepend(AttachRequestContext::class);
+        $middleware->prepend(RequestId::class);
 
         $middleware->alias([
             'noindex' => NoIndex::class,
@@ -46,5 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', SsrMetricsMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Throwable $throwable, Request $request) {
+            return HttpExceptionHandler::render($request, $throwable);
+        });
     })->create();
