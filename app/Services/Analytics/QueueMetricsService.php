@@ -49,4 +49,24 @@ class QueueMetricsService
             'horizon' => $horizon,
         ];
     }
+
+    /**
+     * @return array{
+     *     queue: int,
+     *     failed: int,
+     *     processed: int,
+     *     horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null},
+     * }
+     */
+    public function getMetrics(): array
+    {
+        $snapshot = $this->snapshot();
+
+        return [
+            'queue' => $snapshot['jobs'],
+            'failed' => $snapshot['failed'],
+            'processed' => $snapshot['batches'],
+            'horizon' => $snapshot['horizon'],
+        ];
+    }
 }
