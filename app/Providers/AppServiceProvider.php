@@ -8,7 +8,10 @@ use App\Models\Movie;
 use App\Models\User;
 use App\Observers\MovieObserver;
 use Filament\Facades\Filament;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use TomatoPHP\FilamentSubscriptions\Facades\FilamentSubscriptions;
 use TomatoPHP\FilamentSubscriptions\Services\Contracts\Subscriber;
@@ -28,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('contact-submissions', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()));
+        });
+
         Movie::observe(MovieObserver::class);
 
         $horizonAdmins = array_values(array_unique(array_filter(
