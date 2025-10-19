@@ -1,11 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Support\CepFormatter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string $cep
+ * @property string|null $state
+ * @property string|null $city
+ * @property string|null $neighborhood
+ * @property string|null $street
+ */
 class Cep extends Model
 {
     use HasFactory;
@@ -26,14 +35,20 @@ class Cep extends Model
         'street',
     ];
 
-    protected $casts = [
-        'cep' => 'string',
-        'state' => 'string',
-        'city' => 'string',
-        'neighborhood' => 'string',
-        'street' => 'string',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'cep' => 'string',
+            'state' => 'string',
+            'city' => 'string',
+            'neighborhood' => 'string',
+            'street' => 'string',
+        ];
+    }
 
+    /**
+     * Persist the provided address information keyed by the normalized CEP code.
+     */
     public static function upsertFromAddress(
         ?string $cep,
         ?string $state,
