@@ -20,7 +20,7 @@ class MovieGenreNormalizationTest extends TestCase
             'action',
             'adventure',
             'drama',
-        ], $movie->genres);
+        ], $movie->genres?->values()->all());
     }
 
     public function test_duplicate_and_empty_genres_removed(): void
@@ -31,6 +31,6 @@ class MovieGenreNormalizationTest extends TestCase
         $this->assertSame([
             'romance',
             'comedy',
-        ], $movie->genres);
+        ], $movie->genres?->values()->all());
     }
 }

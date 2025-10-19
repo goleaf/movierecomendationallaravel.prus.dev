@@ -19,7 +19,7 @@ final class MovieTest extends TestCase
 
         self::assertSame(
             ['science fiction', 'action', 'adventure', 'romance', 'comedy', 'documentary'],
-            $movie->genres,
+            $movie->genres?->values()->all(),
         );
     }
 
@@ -31,7 +31,7 @@ final class MovieTest extends TestCase
 
         self::assertSame(
             ['science fiction', 'thriller', 'family'],
-            $movie->genres,
+            $movie->genres?->values()->all(),
         );
     }
 

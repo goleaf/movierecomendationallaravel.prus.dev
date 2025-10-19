@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
@@ -14,17 +15,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int|null $year
  * @property float|null $imdb_rating
  * @property int|null $imdb_votes
- * @property array<int,string>|null $genres
+ * @property Collection<int, string>|null $genres
  * @property string|null $poster_url
  */
 class SearchResultResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $genres = $this->genres instanceof Collection
+            ? $this->genres->values()->all()
+            : $this->genres;
+
         return [
-            'id'=>$this->id,'imdb_tt'=>$this->imdb_tt,'title'=>$this->title,'type'=>$this->type,
-            'year'=>$this->year,'imdb_rating'=>$this->imdb_rating,'imdb_votes'=>$this->imdb_votes,
-            'genres'=>$this->genres,'poster_url'=>$this->poster_url,
+            'id' => $this->id, 'imdb_tt' => $this->imdb_tt, 'title' => $this->title, 'type' => $this->type,
+            'year' => $this->year, 'imdb_rating' => $this->imdb_rating, 'imdb_votes' => $this->imdb_votes,
+            'genres' => $genres, 'poster_url' => $this->poster_url,
         ];
     }
 }
