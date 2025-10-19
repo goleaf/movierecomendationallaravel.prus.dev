@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Services\MovieApis\Exceptions\MovieApiException;
+use App\Services\MovieApis\Exceptions\MovieApiRateLimitException;
+use App\Services\MovieApis\Exceptions\MovieApiRetryException;
+use App\Services\MovieApis\Exceptions\MovieApiTransportException;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\RateLimiter;
-use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
 
@@ -74,24 +77,32 @@ class RateLimitedClient
     {
         $result = null;
 
-        $executed = RateLimiter::attempt(
-            $this->rateLimiterKey,
-            $this->rateLimitAllowance,
-            function () use (&$result, $method, $path, $query, $options): void {
-                $result = $this->performRequest($method, $path, $query, $options);
-            },
-            $this->rateLimitWindow,
-        );
+        try {
+            $executed = RateLimiter::attempt(
+                $this->rateLimiterKey,
+                $this->rateLimitAllowance,
+                function () use (&$result, $method, $path, $query, $options): void {
+                    $result = $this->performRequest($method, $path, $query, $options);
+                },
+                $this->rateLimitWindow,
+            );
+        } catch (MovieApiException $exception) {
+            throw $exception;
+        } catch (Throwable $throwable) {
+            throw MovieApiTransportException::requestFailed($method, $path, $throwable);
+        }
 
         if ($executed === false) {
-            throw new TooManyRequestsHttpException($this->rateLimitWindow, sprintf(
+            $previous = new TooManyRequestsHttpException($this->rateLimitWindow, sprintf(
                 'Rate limit exceeded for %s',
                 $this->rateLimiterKey,
             ));
+
+            throw MovieApiRateLimitException::forKey($this->rateLimiterKey, $this->rateLimitWindow, $previous);
         }
 
         if ($result === null) {
-            throw new RuntimeException('Request did not return a result.');
+            throw MovieApiTransportException::missingResult($method, $path);
         }
 
         return $result;
@@ -106,8 +117,6 @@ class RateLimitedClient
     {
         $maxAttempts = max(1, $this->retryAttempts + 1);
         $delay = $this->retryDelayMs;
-        $lastException = null;
-        $lastResponse = null;
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             try {
@@ -124,13 +133,17 @@ class RateLimitedClient
                 if (! $this->shouldRetryResponse($response) || $attempt === $maxAttempts - 1) {
                     $response->throw();
                 }
+            } catch (MovieApiException $exception) {
+                throw $exception;
+            } catch (Throwable $throwable) {
+                $finalAttempt = $attempt === $maxAttempts - 1;
 
-                $lastResponse = $response;
-            } catch (Throwable $exception) {
-                $lastException = $exception;
+                if ($finalAttempt && $this->retryAttempts > 0) {
+                    throw MovieApiRetryException::exhausted($method, $path, $maxAttempts, $throwable);
+                }
 
-                if ($attempt === $maxAttempts - 1) {
-                    throw $lastException;
+                if ($finalAttempt) {
+                    throw MovieApiTransportException::requestFailed($method, $path, $throwable);
                 }
             }
 
@@ -141,15 +154,7 @@ class RateLimitedClient
             $delay = $this->nextDelay($delay);
         }
 
-        if ($lastResponse instanceof Response) {
-            return $lastResponse->json() ?? [];
-        }
-
-        if ($lastException instanceof Throwable) {
-            throw $lastException;
-        }
-
-        throw new RuntimeException('Unable to complete the HTTP request.');
+        throw MovieApiTransportException::requestFailed($method, $path);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\MovieApis;
 
+use App\Services\MovieApis\Exceptions\MovieApiTransportException;
 use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
 use Mockery;
@@ -71,5 +72,24 @@ class OmdbClientTest extends TestCase
         ]);
 
         $this->assertSame([], $result['Search']);
+    }
+
+    public function test_find_by_imdb_id_propagates_movie_api_exceptions(): void
+    {
+        $client = Mockery::mock(RateLimitedClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('get')
+                ->once()
+                ->with('/', [
+                    'i' => 'tt1234567',
+                ])
+                ->andThrow(MovieApiTransportException::requestFailed('GET', '/'));
+        });
+
+        $service = new OmdbClient($client);
+
+        $this->expectException(MovieApiTransportException::class);
+        $this->expectExceptionMessage('Movie API request GET / failed.');
+
+        $service->findByImdbId('tt1234567');
     }
 }

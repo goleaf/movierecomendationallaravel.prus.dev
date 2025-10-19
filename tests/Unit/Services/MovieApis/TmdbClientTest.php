@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\MovieApis;
 
+use App\Services\MovieApis\Exceptions\MovieApiTransportException;
 use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\TmdbClient;
 use Mockery;
@@ -57,5 +58,25 @@ class TmdbClientTest extends TestCase
         ]);
 
         $this->assertSame(42, $result['id']);
+    }
+
+    public function test_find_by_imdb_id_propagates_movie_api_exceptions(): void
+    {
+        $client = Mockery::mock(RateLimitedClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('get')
+                ->once()
+                ->with('find/tt0123456', [
+                    'external_source' => 'imdb_id',
+                    'language' => 'en-US',
+                ])
+                ->andThrow(MovieApiTransportException::requestFailed('GET', 'find/tt0123456'));
+        });
+
+        $service = new TmdbClient($client, 'en-US', ['en-US']);
+
+        $this->expectException(MovieApiTransportException::class);
+        $this->expectExceptionMessage('Movie API request GET find/tt0123456 failed.');
+
+        $service->findByImdbId('tt0123456');
     }
 }
