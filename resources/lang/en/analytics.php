@@ -61,7 +61,7 @@ return [
             'description' => '{0}No tracked paths|{1}:count path|[2,*]:count paths',
         ],
         'ssr_drop' => [
-            'heading' => 'Top SSR Score Drops (day over day)',
+            'heading' => 'Top pages by SSR score drop (day over day)',
             'columns' => [
                 'path' => 'Path',
                 'yesterday' => 'Yesterday',

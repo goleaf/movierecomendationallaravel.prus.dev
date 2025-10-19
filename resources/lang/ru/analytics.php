@@ -61,7 +61,7 @@ return [
             'description' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
         ],
         'ssr_drop' => [
-            'heading' => 'Топ падений SSR (день к дню)',
+            'heading' => 'Топ страниц по просадке SSR (день к дню)',
             'columns' => [
                 'path' => 'Путь',
                 'yesterday' => 'Вчера',

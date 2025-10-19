@@ -78,7 +78,7 @@ class AdminAnalyticsWidgetsTest extends TestCase
         $scoreComponent->assertSee('SSR Score (trend)');
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top SSR Score Drops')
+            ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
     }
 
