@@ -21,6 +21,9 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkAction as BookmarkTableAction;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkAction;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkClearAction;
 
 class MovieResource extends Resource
 {
@@ -244,11 +247,16 @@ class MovieResource extends Resource
                     }),
             ])
             ->actions([
+                BookmarkTableAction::make()->page('view'),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\BulkActionGroup::make([
+                    BookmarkBulkAction::make()->page('view'),
+                    BookmarkBulkClearAction::make()->page('view'),
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
     }
 

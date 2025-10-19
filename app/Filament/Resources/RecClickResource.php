@@ -15,6 +15,9 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkAction as BookmarkTableAction;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkAction;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkClearAction;
 
 class RecClickResource extends Resource
 {
@@ -97,9 +100,15 @@ class RecClickResource extends Resource
                     ->label('Movie'),
             ])
             ->actions([
+                BookmarkTableAction::make()->page('view'),
                 Tables\Actions\ViewAction::make(),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    BookmarkBulkAction::make()->page('view'),
+                    BookmarkBulkClearAction::make()->page('view'),
+                ]),
+            ]);
     }
 
     public static function infolist(Infolist $infolist): Infolist

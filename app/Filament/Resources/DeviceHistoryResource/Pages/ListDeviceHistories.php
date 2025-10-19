@@ -4,6 +4,7 @@ namespace App\Filament\Resources\DeviceHistoryResource\Pages;
 
 use App\Filament\Resources\DeviceHistoryResource;
 use Filament\Resources\Pages\ListRecords;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Actions\BookmarkAction;
 
 class ListDeviceHistories extends ListRecords
 {
@@ -11,6 +12,8 @@ class ListDeviceHistories extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            BookmarkAction::make(),
+        ];
     }
 }
