@@ -56,6 +56,9 @@ return [
                 'significant' => 'p < 0.05',
                 'not_significant' => 'p ≥ 0.05',
             ],
+            'guard_rails' => [
+                'minimum_samples' => 'Нужно минимум :min показов на вариант, чтобы оценить значимость.',
+            ],
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',

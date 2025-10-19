@@ -56,6 +56,9 @@ return [
                 'significant' => 'p < 0.05',
                 'not_significant' => 'p ≥ 0.05',
             ],
+            'guard_rails' => [
+                'minimum_samples' => 'Need at least :min impressions per variant to evaluate significance.',
+            ],
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',
