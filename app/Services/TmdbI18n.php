@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 class TmdbI18n
 {
-    protected string $apiKey;
+    protected ?string $apiKey;
 
     protected string $base = 'https://api.themoviedb.org/3';
 
@@ -18,7 +18,7 @@ class TmdbI18n
 
     public function enabled(): bool
     {
-        return ! empty($this->apiKey);
+        return filled($this->apiKey);
     }
 
     /**
@@ -30,7 +30,10 @@ class TmdbI18n
         if (! $this->enabled()) {
             return null;
         }
-        $resp = Http::timeout(20)->get("{$this->base}/find/{$imdbId}", ['api_key' => $this->apiKey, 'external_source' => 'imdb_id']);
+        $resp = Http::timeout(20)->get("{$this->base}/find/{$imdbId}", [
+            'api_key' => $this->apiKey,
+            'external_source' => 'imdb_id',
+        ]);
         if ($resp->failed()) {
             return null;
         }
@@ -63,10 +66,16 @@ class TmdbI18n
         return TranslationPayload::prepare($out);
     }
 
+    /**
+     * @return array{title:string|null,plot:string|null}|null
+     */
     protected function one(string $type, int $id, string $lang): ?array
     {
         $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
-        $resp = Http::timeout(20)->get("{$this->base}/{$path}", ['api_key' => $this->apiKey, 'language' => $lang]);
+        $resp = Http::timeout(20)->get("{$this->base}/{$path}", [
+            'api_key' => $this->apiKey,
+            'language' => $lang,
+        ]);
         if ($resp->failed()) {
             return null;
         }
