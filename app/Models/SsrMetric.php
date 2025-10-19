@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\SsrMetricFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property int $first_byte_ms
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * @method static SsrMetricFactory factory($count = null, $state = [])
  */
 class SsrMetric extends Model
 {
@@ -29,4 +32,9 @@ class SsrMetric extends Model
     protected $table = 'ssr_metrics';
 
     protected $guarded = [];
+
+    protected static function newFactory(): SsrMetricFactory
+    {
+        return SsrMetricFactory::new();
+    }
 }

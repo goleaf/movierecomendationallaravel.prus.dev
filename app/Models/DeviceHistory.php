@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\DeviceHistoryFactory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
  *
+ * @method static DeviceHistoryFactory factory($count = null, $state = [])
  * @method static Builder<static>|self betweenViewedAt(DateTimeInterface|string $from, DateTimeInterface|string $to)
  * @method static Builder<static>|self forPlacement(?string $placement)
  */
@@ -66,5 +68,10 @@ class DeviceHistory extends Model
         }
 
         return $query->where('placement', $placement);
+    }
+
+    protected static function newFactory(): DeviceHistoryFactory
+    {
+        return DeviceHistoryFactory::new();
     }
 }
