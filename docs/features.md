@@ -41,6 +41,11 @@ This catalog highlights the major product surfaces in MovieRec so newcomers can 
 - **Features:** Surfaces queue depth, failed job counts, batch totals, and any available Horizon workload metadata for quick triage.
 - **Data dependencies:** Queries `jobs`, `failed_jobs`, `job_batches`, and Horizon's Redis hashes/sets.
 
+### Data ingestion status surface
+- **Entry point:** [`IngestionRun`](../app/Models/IngestionRun.php) exposes the `ingestion_runs` dataset, which feeds ingestion diagnostics surfaced alongside raw payload helpers in the Filament movie resource.
+- **Features:** Persists per-source request and response metadata (headers, payloads, etags, last-modified timestamps, and lifecycle markers) keyed by source, external identifier, and date so operators can audit daily fetches.
+- **Data dependencies:** Backs onto the `ingestion_runs` table (unique on `source` + `external_id` + `date_key`) seeded with TMDB demos and backfilled from the existing `movies` catalogue for continuity.
+
 ### Server-side rendering telemetry
 - **Middleware & views:** SSR scores funnel into Filament widgets and the JSON issues feed described above. The `SsrMetricsMiddleware` (registered via `app/Http/Kernel.php`) writes to `ssr_metrics`, enabling comparisons against drop detectors like `SsrDropWidget`.
 - **Operational loops:** Combined insights help operations teams tune markup weight, script deferral, and structured data adoption.
