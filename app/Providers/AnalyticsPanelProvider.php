@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
-use TomatoPHP\FilamentBookmarksMenu\FilamentBookmarksMenuPlugin;
+use TomatoPHP\FilamentCms\FilamentCMSPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -20,7 +20,13 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Analytics',
                 'Administration',
             ])
-            ->plugin(FilamentBookmarksMenuPlugin::make())
+            ->plugin(
+                FilamentCMSPlugin::make()
+                    ->useCategory()
+                    ->usePost()
+                    ->allowExport()
+                    ->allowImport()
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->widgets([

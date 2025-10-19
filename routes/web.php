@@ -6,7 +6,7 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SearchPageController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Livewire\HomePage;
-use App\Livewire\TrendsPage as TrendsLivewirePage;
+use App\Livewire\TrendsPage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
