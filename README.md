@@ -8,6 +8,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 - [TODO backlog](TODO.md)
 - [Works log](WORKS.md)
+- [Feature catalog](docs/features.md)
 
 ---
 
