@@ -60,23 +60,32 @@ class SsrMetricsMiddleware
         $score = 100;
 
         if ($blocking > 0) {
-            $score -= min(30, 5 * $blocking);
+            $perScriptPenalty = (int) config('ssrmetrics.penalties.blocking_scripts.per_script', 5);
+            $maxPenalty = (int) config('ssrmetrics.penalties.blocking_scripts.max', 30);
+
+            $score -= min($maxPenalty, $perScriptPenalty * $blocking);
         }
 
         if ($ld === 0) {
-            $score -= 10;
+            $score -= (int) config('ssrmetrics.penalties.missing_ldjson.deduction', 10);
         }
 
-        if ($og < 3) {
-            $score -= 10;
+        $minimumOgTags = (int) config('ssrmetrics.penalties.low_og.minimum', 3);
+
+        if ($og < $minimumOgTags) {
+            $score -= (int) config('ssrmetrics.penalties.low_og.deduction', 10);
         }
 
-        if ($size > 900 * 1024) {
-            $score -= 20;
+        $oversizedThreshold = (int) config('ssrmetrics.penalties.oversized_html.threshold', 900 * 1024);
+
+        if ($size > $oversizedThreshold) {
+            $score -= (int) config('ssrmetrics.penalties.oversized_html.deduction', 20);
         }
 
-        if ($imgs > 60) {
-            $score -= 10;
+        $excessImageThreshold = (int) config('ssrmetrics.penalties.excess_images.threshold', 60);
+
+        if ($imgs > $excessImageThreshold) {
+            $score -= (int) config('ssrmetrics.penalties.excess_images.deduction', 10);
         }
 
         $score = max(0, $score);

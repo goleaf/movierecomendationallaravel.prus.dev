@@ -123,6 +123,52 @@ class SsrMetricsMiddlewareTest extends TestCase
         });
     }
 
+    public function test_it_uses_configured_penalties_when_calculating_score(): void
+    {
+        Queue::fake();
+
+        config()->set('ssrmetrics.enabled', true);
+        config()->set('ssrmetrics.paths', ['/test']);
+        config()->set('ssrmetrics.penalties.blocking_scripts.per_script', 7);
+        config()->set('ssrmetrics.penalties.blocking_scripts.max', 21);
+        config()->set('ssrmetrics.penalties.missing_ldjson.deduction', 3);
+        config()->set('ssrmetrics.penalties.low_og.minimum', 2);
+        config()->set('ssrmetrics.penalties.low_og.deduction', 5);
+        config()->set('ssrmetrics.penalties.oversized_html.threshold', 512);
+        config()->set('ssrmetrics.penalties.oversized_html.deduction', 8);
+        config()->set('ssrmetrics.penalties.excess_images.threshold', 1);
+        config()->set('ssrmetrics.penalties.excess_images.deduction', 4);
+
+        $bodyContent = str_repeat('<p>content</p>', 60);
+
+        $html = <<<HTML
+            <html>
+                <head>
+                    <meta property="og:title" content="Example">
+                </head>
+                <body>
+                    {$bodyContent}
+                    <img src="image-a.jpg" alt="Example A">
+                    <img src="image-b.jpg" alt="Example B">
+                    <script src="/app.js"></script>
+                </body>
+            </html>
+        HTML;
+
+        $response = new Response($html, 200, ['Content-Type' => 'text/html']);
+        $request = Request::create('/test', 'GET');
+
+        $middleware = new SsrMetricsMiddleware;
+
+        $middleware->handle($request, static fn () => $response);
+
+        Queue::assertPushed(StoreSsrMetric::class, function (StoreSsrMetric $job): bool {
+            $payload = $job->payload;
+
+            return $payload['score'] === 73;
+        });
+    }
+
     public function test_it_skips_when_feature_disabled(): void
     {
         Queue::fake();
