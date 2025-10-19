@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentUsers\FilamentUsersPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -17,7 +18,11 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Catalog',
                 'Telemetry',
                 'Analytics',
+                'Administration',
             ])
+            ->plugin(
+                FilamentUsersPlugin::make()
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->widgets([
