@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -13,6 +14,9 @@ class AnalyticsPanelProvider extends PanelProvider
             ->id('analytics')
             ->path('analytics')
             ->brandName('Analytics')
+            ->plugins([
+                FilamentLanguageSwitcherPlugin::make(),
+            ])
             ->navigationGroups([
                 'Catalog',
                 'Telemetry',
