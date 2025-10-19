@@ -24,7 +24,7 @@ final class SearchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'q' => ['required', 'string'],
+            'q' => ['nullable', 'required_without_all:type,genre,yf,yt', 'string'],
             'type' => ['nullable', 'string', Rule::in(MovieSearchFilters::ALLOWED_TYPES)],
             'genre' => ['nullable', 'string'],
             'yf' => ['nullable', 'integer', 'between:1870,2100'],
@@ -39,7 +39,7 @@ final class SearchRequest extends FormRequest
             $validated = $this->validated();
 
             $this->filters = MovieSearchFilters::fromArray([
-                'q' => $validated['q'],
+                'q' => $validated['q'] ?? null,
                 'type' => $validated['type'] ?? null,
                 'genre' => $validated['genre'] ?? null,
                 'yf' => $validated['yf'] ?? null,
@@ -91,7 +91,7 @@ final class SearchRequest extends FormRequest
         ]);
 
         $this->merge([
-            'q' => $filters->query,
+            'q' => $filters->query === '' ? null : $filters->query,
             'type' => $filters->type,
             'genre' => $filters->genre,
             'yf' => $filters->yearFrom,

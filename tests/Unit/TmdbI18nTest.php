@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Services\TmdbI18n;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class TmdbI18nTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();

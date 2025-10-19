@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Models\Movie;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,7 @@ class CtrSvgSnapshotTest extends TestCase
     {
         parent::setUp();
 
+        $this->actingAs(User::factory()->create());
         Event::fake();
         Carbon::setTestNow(CarbonImmutable::parse('2025-02-15 12:00:00', 'UTC'));
     }
@@ -120,6 +122,7 @@ class CtrSvgSnapshotTest extends TestCase
             for ($i = 0; $i < $row['clks']; $i++) {
                 DB::table('rec_clicks')->insert([
                     'movie_id' => $i % 2 === 0 ? $movieA : $movieB,
+                    'device_id' => sprintf('device-%s-click-%d', $variant, $i),
                     'variant' => $variant,
                     'placement' => $placement,
                     'created_at' => $date->addHours(1),
