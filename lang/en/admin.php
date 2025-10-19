@@ -106,6 +106,24 @@ return [
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
     ],
+    'queues' => [
+        'title' => 'Queue throughput',
+        'heading' => 'Queue hotspots',
+        'description' => 'Monitor ingestion and recommendation throughput, recent failures, and processing time to catch slowdowns early.',
+        'download_csv' => 'Export CSV',
+        'empty' => 'No queue metrics available yet.',
+        'generated_at' => 'Snapshot generated at :timestamp.',
+        'table' => [
+            'queue' => 'Queue',
+            'in_flight' => 'Jobs in-flight',
+            'failures' => 'Failures',
+            'avg_runtime' => 'Avg runtime',
+            'jobs_per_minute' => 'Jobs / min',
+            'processed' => 'Processed',
+            'batches' => 'Batches',
+            'total' => 'Total',
+        ],
+    ],
     'ssr' => [
         'title' => 'SSR Analytics',
         'headline' => [
