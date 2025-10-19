@@ -4,6 +4,40 @@ declare(strict_types=1);
 
 return [
 
+    'http' => [
+        'defaults' => [
+            'timeout' => (float) env('HTTP_CLIENT_TIMEOUT', 15),
+            'connect_timeout' => (float) env('HTTP_CLIENT_CONNECT_TIMEOUT', 5),
+            'retry' => [
+                'times' => (int) env('HTTP_CLIENT_RETRY_TIMES', 3),
+                'sleep' => (int) env('HTTP_CLIENT_RETRY_SLEEP', 200),
+                'idempotent' => (bool) env('HTTP_CLIENT_RETRY_IDEMPOTENT', true),
+            ],
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+        ],
+        'clients' => [
+            'default' => [],
+            'tmdb' => [
+                'timeout' => (float) env('TMDB_TIMEOUT', 10),
+                'retry' => [
+                    'times' => (int) env('TMDB_RETRY_ATTEMPTS', 2),
+                    'sleep' => (int) env('TMDB_RETRY_DELAY_MS', 250),
+                    'idempotent' => true,
+                ],
+            ],
+            'omdb' => [
+                'timeout' => (float) env('OMDB_TIMEOUT', 10),
+                'retry' => [
+                    'times' => (int) env('OMDB_RETRY_ATTEMPTS', 1),
+                    'sleep' => (int) env('OMDB_RETRY_DELAY_MS', 300),
+                    'idempotent' => true,
+                ],
+            ],
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

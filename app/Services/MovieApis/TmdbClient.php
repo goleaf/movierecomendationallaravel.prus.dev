@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Support\Http\Policy;
 use Illuminate\Support\Uri;
 
 class TmdbClient
@@ -106,6 +107,10 @@ class TmdbClient
 
     protected function send(Uri $uri): array
     {
-        return $this->client->get($uri->path(), $uri->query()->all());
+        return $this->client->get(
+            $uri->path(),
+            $uri->query()->all(),
+            Policy::options('tmdb'),
+        );
     }
 }

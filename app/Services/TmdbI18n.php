@@ -53,7 +53,7 @@ class TmdbI18n
             return TranslationPayload::prepare($translations);
         }
 
-        $resp = Policy::external()->get("{$this->base}/find/{$imdbId}", [
+        $resp = Policy::external('tmdb')->get("{$this->base}/find/{$imdbId}", [
             'api_key' => $this->apiKey,
             'external_source' => 'imdb_id',
         ]);
@@ -172,7 +172,7 @@ class TmdbI18n
         $key = $this->cacheKey($type, $id, $lang);
         $payload = Cache::remember($key, now()->addSeconds($this->cacheTtl), function () use ($type, $id, $lang): array {
             $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
-            $resp = Policy::external()->get("{$this->base}/{$path}", [
+            $resp = Policy::external('tmdb')->get("{$this->base}/{$path}", [
                 'api_key' => $this->apiKey,
                 'language' => $lang,
             ]);
