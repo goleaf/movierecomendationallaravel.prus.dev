@@ -30,5 +30,5 @@ return [
 
     'nonce_generator' => RandomString::class,
 
-    'nonce_enabled' => env('CSP_NONCE_ENABLED', false),
+    'nonce_enabled' => env('CSP_NONCE_ENABLED', true),
 ];
