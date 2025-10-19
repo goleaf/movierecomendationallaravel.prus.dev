@@ -6,19 +6,18 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Spatie\Csp\AddCspHeaders;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-class AddSecurityHeaders extends AddCspHeaders
+class AddSecurityHeaders
 {
-    public function handle(Request $request, Closure $next, ?string $customPreset = null)
+    public function handle(Request $request, Closure $next): SymfonyResponse
     {
-        $response = parent::handle($request, $next, $customPreset);
+        /** @var SymfonyResponse $response */
+        $response = $next($request);
 
-        if ($response instanceof Response) {
-            $response->headers->set('X-Frame-Options', 'DENY');
-            $response->headers->set('X-Content-Type-Options', 'nosniff');
-        }
+        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Referrer-Policy', 'no-referrer');
 
         return $response;
     }

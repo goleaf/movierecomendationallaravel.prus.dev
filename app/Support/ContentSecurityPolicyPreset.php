@@ -18,15 +18,14 @@ class ContentSecurityPolicyPreset implements Preset
             ->addDirective(Directive::BASE, Keyword::SELF)
             ->addDirective(Directive::SCRIPT, [
                 Keyword::SELF,
-                Keyword::UNSAFE_INLINE,
-                Keyword::UNSAFE_EVAL,
                 'https:',
             ])
+            ->addNonce(Directive::SCRIPT)
             ->addDirective(Directive::STYLE, [
                 Keyword::SELF,
-                Keyword::UNSAFE_INLINE,
                 'https:',
             ])
+            ->addNonce(Directive::STYLE)
             ->addDirective(Directive::IMG, [
                 Keyword::SELF,
                 'data:',
