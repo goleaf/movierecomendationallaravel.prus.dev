@@ -6,7 +6,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ## Project trackers
 
-- [TODO backlog](TODO.md) — domain-grouped analytics, observability, and infrastructure backlog
+- [TODO backlog](TODO.md) — canonical uppercase filename to prevent case-insensitive checkout conflicts
 - [Works log](WORKS.md)
 - [MCP & Boost playbook](docs/mcp-tooling.md)
 
