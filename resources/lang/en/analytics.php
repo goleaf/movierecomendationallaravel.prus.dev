@@ -9,7 +9,6 @@ return [
         'navigation' => [
             'ctr' => 'CTR',
             'trends' => 'Trends',
-            'trends_advanced' => 'Trends (Advanced)',
             'queue' => 'Queue / Horizon',
         ],
     ],

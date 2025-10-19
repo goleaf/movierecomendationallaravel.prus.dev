@@ -2,6 +2,23 @@
   {{ $this->form }}
 
   <x-filament::card>
+    <div class="grid gap-4 text-sm text-gray-300 sm:grid-cols-3">
+      <div>
+        <div class="font-semibold text-white">{{ __('admin.trends.filters.genre') }}</div>
+        <div>{{ filled($filters['genre']) ? $filters['genre'] : __('messages.common.dash') }}</div>
+      </div>
+      <div>
+        <div class="font-semibold text-white">{{ __('admin.trends.filters.year_from') }}</div>
+        <div>{{ filled($filters['year_from']) ? $filters['year_from'] : __('messages.common.dash') }}</div>
+      </div>
+      <div>
+        <div class="font-semibold text-white">{{ __('admin.trends.filters.year_to') }}</div>
+        <div>{{ filled($filters['year_to']) ? $filters['year_to'] : __('messages.common.dash') }}</div>
+      </div>
+    </div>
+  </x-filament::card>
+
+  <x-filament::card>
     <div class="text-sm text-gray-400">{{ __('messages.trends.period', ['from' => $filters['from'], 'to' => $filters['to'], 'days' => $filters['days'], 'days_short' => __('messages.trends.days_short')]) }}</div>
   </x-filament::card>
 
