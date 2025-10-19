@@ -155,6 +155,17 @@ TMDB_API_KEY=your_tmdb_api_key          # Required for localisation and poster m
 OMDB_API_KEY=your_omdb_api_key          # Used for fallback ratings and extended metadata
 CACHE_STORE=redis                       # Use "file" or "database" if Redis is unavailable
 SSR_METRICS=true                        # Enable server-side rendering performance metrics
+SSR_METRICS_STORAGE=database            # Primary storage driver (database, jsonl, or both)
+SSR_METRICS_RETENTION_DAYS=30           # Days to retain SSR samples before pruning
+SSR_METRICS_JSONL_DISK=local            # Filesystem disk for JSONL fallback snapshots
+SSR_METRICS_JSONL_PATH=metrics/ssr.jsonl # Relative path used when writing JSONL snapshots
+SSR_METRICS_PENALTY_TIMEOUT=25          # Score penalty applied when SSR responses timeout
+SSR_METRICS_PENALTY_ERROR=50            # Score penalty applied when SSR responses error
+SSR_METRICS_PENALTY_SLOW_FIRST_BYTE=10  # Score penalty applied for slow TTFB
+SSR_METRICS_PENALTY_MISSING_JSON_LD=5   # Score penalty applied when JSON-LD is missing
+SSR_METRICS_PENALTY_MISSING_OPEN_GRAPH=5 # Score penalty applied when Open Graph tags are missing
+SSR_METRICS_PENALTY_BLOCKING_SCRIPTS=3  # Score penalty applied for blocking scripts
+SSR_METRICS_PENALTY_HEAVY_HTML=2        # Score penalty applied when HTML payloads are heavy
 
 # A/B recommendation strategy weights
 REC_A_POP=0.55
@@ -164,6 +175,12 @@ REC_B_POP=0.35
 REC_B_RECENT=0.15
 REC_B_PREF=0.50
 ```
+
+The SSR metrics variables let operators control persistence and scoring defaults without touching code:
+- `SSR_METRICS_STORAGE` selects the primary driver (`database`, `jsonl`, or `both`) used by the `StoreSsrMetric` job.
+- `SSR_METRICS_RETENTION_DAYS` defines how many days of samples to keep before pruning maintenance jobs run.
+- `SSR_METRICS_JSONL_DISK` and `SSR_METRICS_JSONL_PATH` configure the fallback JSONL snapshots used when the database is unavailable.
+- The `SSR_METRICS_PENALTY_*` variables tune how heavily issues such as timeouts, missing metadata, or heavy HTML payloads reduce the computed SSR score.
 
 Other useful flags:
 
