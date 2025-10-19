@@ -13,10 +13,8 @@
         "laravel/tinker": "^2.10.1",
         "inertiajs/inertia-laravel": "^2.0",
         "predis/predis": "^3.2",
-        "spatie/laravel-settings": "^3.0",
         "symfony/uid": "^7.3",
-        "tomatophp/filament-helpers": "*",
-        "zpmlabs/filament-api-docs-builder": "^1.0"
+        "tomatophp/filament-language-switcher": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

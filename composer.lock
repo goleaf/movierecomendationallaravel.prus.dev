@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb383e62bbdb9c68499d80f0b08d7bc0",
+    "content-hash": "84faaac9ff7f960f01962280c9c0e1da",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8841,104 +8841,22 @@
             "time": "2023-02-12T12:00:38+00:00"
         },
         {
-            "name": "tomatophp/filament-locations",
-            "version": "2.0.0",
+            "name": "tomatophp/filament-language-switcher",
+            "version": "v1.0.6",
             "source": {
                 "type": "git",
-                "url": "https://github.com/tomatophp/filament-locations.git",
-                "reference": "ab265e7f6081d21745b84660e441dfdd81ba06d7"
+                "url": "https://github.com/tomatophp/filament-language-switcher.git",
+                "reference": "fb7234214aef6098992e76321237b62add39aea9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tomatophp/filament-locations/zipball/ab265e7f6081d21745b84660e441dfdd81ba06d7",
-                "reference": "ab265e7f6081d21745b84660e441dfdd81ba06d7",
-                "shasum": ""
-            },
-            "require": {
-                "calebporzio/sushi": "*",
-                "filament/filament": "^3.2",
-                "php": "^8.1|^8.2",
-                "tomatophp/console-helpers": "^1.1",
-                "tomatophp/filament-settings-hub": "^2.0"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.18",
-                "livewire/livewire": "^2.10|^3.0",
-                "nunomaduro/larastan": "^2.9",
-                "orchestra/testbench": "^9.5",
-                "pestphp/pest": "^2.36",
-                "pestphp/pest-plugin-laravel": "^2.4",
-                "pestphp/pest-plugin-livewire": "^2.1",
-                "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan-deprecation-rules": "^1.2",
-                "phpstan/phpstan-phpunit": "^1.4"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "TomatoPHP\\FilamentLocations\\FilamentLocationsServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "TomatoPHP\\FilamentLocations\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fady Mondy",
-                    "email": "info@3x1.io"
-                }
-            ],
-            "description": "Database Seeds for Countries / Cities / Areas / Languages / Currancy with ready to use resources for FilamentPHP",
-            "keywords": [
-                "area",
-                "city",
-                "country",
-                "database",
-                "filament",
-                "laravel",
-                "locations",
-                "php"
-            ],
-            "support": {
-                "issues": "https://github.com/tomatophp/filament-locations/issues",
-                "source": "https://github.com/tomatophp/filament-locations/tree/v2.0.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/3x1io",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-11-27T12:36:49+00:00"
-        },
-        {
-            "name": "tomatophp/filament-settings-hub",
-            "version": "2.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tomatophp/filament-settings-hub.git",
-                "reference": "5a34d39f768d901dd728f2228a5a9e305b13696c"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tomatophp/filament-settings-hub/zipball/5a34d39f768d901dd728f2228a5a9e305b13696c",
-                "reference": "5a34d39f768d901dd728f2228a5a9e305b13696c",
+                "url": "https://api.github.com/repos/tomatophp/filament-language-switcher/zipball/fb7234214aef6098992e76321237b62add39aea9",
+                "reference": "fb7234214aef6098992e76321237b62add39aea9",
                 "shasum": ""
             },
             "require": {
                 "filament/filament": "^3.3",
-                "filament/notifications": "^3.3",
-                "filament/spatie-laravel-settings-plugin": "^3.3",
                 "php": "^8.2|^8.3|^8.4",
-                "spatie/laravel-sitemap": "^7.3",
                 "tomatophp/console-helpers": "^1.1"
             },
             "require-dev": {
@@ -8957,13 +8875,13 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "TomatoPHP\\FilamentSettingsHub\\FilamentSettingsHubServiceProvider"
+                        "TomatoPHP\\FilamentLanguageSwitcher\\FilamentLanguageSwitcherServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "TomatoPHP\\FilamentSettingsHub\\": "src/"
+                    "TomatoPHP\\FilamentLanguageSwitcher\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -8976,18 +8894,17 @@
                     "email": "info@3x1.io"
                 }
             ],
-            "description": "Manage your Filament app settings with GUI and helpers",
+            "description": "Switch between languages on your app using user base column on database",
             "keywords": [
-                "Settings",
-                "filament",
+                "filament-plugin",
+                "language-switch",
                 "laravel",
                 "php",
-                "spatie-integrations",
                 "tomatophp"
             ],
             "support": {
-                "issues": "https://github.com/tomatophp/filament-settings-hub/issues",
-                "source": "https://github.com/tomatophp/filament-settings-hub/tree/v2.0.2"
+                "issues": "https://github.com/tomatophp/filament-language-switcher/issues",
+                "source": "https://github.com/tomatophp/filament-language-switcher/tree/v1.0.6"
             },
             "funding": [
                 {
@@ -8995,7 +8912,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-02-26T03:03:24+00:00"
+            "time": "2025-03-24T12:06:33+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
