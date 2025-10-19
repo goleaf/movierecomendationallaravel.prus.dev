@@ -78,13 +78,17 @@ abstract class AbstractMovieFeedController extends Controller
             ?? $movie->updated_at?->toImmutable()
             ?? CarbonImmutable::now('UTC');
 
+        $genres = $movie->genres instanceof Collection
+            ? $movie->genres->values()->all()
+            : (is_array($movie->genres) ? array_values($movie->genres) : []);
+
         return [
             'title' => $title,
             'description' => $description,
             'link' => route('movies.show', ['movie' => $movie->getKey()]),
             'guid' => sprintf('movie:%s', $movie->imdb_tt),
             'pubDate' => $publishedAt?->setTimezone('UTC'),
-            'categories' => is_array($movie->genres) ? array_values($movie->genres) : [],
+            'categories' => $genres,
         ];
     }
 

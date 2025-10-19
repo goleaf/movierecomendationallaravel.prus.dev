@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\GenresCast;
+use App\Casts\ReleaseDateCast;
 use Database\Factories\MovieFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Kirschbaum\Commentions\Contracts\Commentable;
 use Kirschbaum\Commentions\HasComments;
 
@@ -23,7 +24,7 @@ use Kirschbaum\Commentions\HasComments;
  * @property float|null $imdb_rating
  * @property int|null $imdb_votes
  * @property int|null $runtime_min
- * @property array<int,string>|null $genres
+ * @property \Illuminate\Support\Collection<int, string>|null $genres
  * @property string|null $poster_url
  * @property string|null $backdrop_url
  * @property array{title?: array<string, string>, plot?: array<string, string>}|null $translations
@@ -40,46 +41,6 @@ class Movie extends Model implements Commentable
     use HasComments;
     use HasFactory;
 
-    /**
-     * Map of normalized external genre labels to local canonical genres.
-     *
-     * @var array<string, array<int, string>>
-     */
-    private const GENRE_SYNONYMS = [
-        'sci fi' => ['science fiction'],
-        'scifi' => ['science fiction'],
-        'sciencefiction' => ['science fiction'],
-        'science fiction & fantasy' => ['science fiction', 'fantasy'],
-        'science fiction fantasy' => ['science fiction', 'fantasy'],
-        'sci fi & fantasy' => ['science fiction', 'fantasy'],
-        'sci fi fantasy' => ['science fiction', 'fantasy'],
-        'scifi & fantasy' => ['science fiction', 'fantasy'],
-        'scifi fantasy' => ['science fiction', 'fantasy'],
-        'scififantasy' => ['science fiction', 'fantasy'],
-        'sciencefictionfantasy' => ['science fiction', 'fantasy'],
-        'romantic comedy' => ['romance', 'comedy'],
-        'romcom' => ['romance', 'comedy'],
-        'rom com' => ['romance', 'comedy'],
-        'action adventure' => ['action', 'adventure'],
-        'action & adventure' => ['action', 'adventure'],
-        'action adventure fiction' => ['action', 'adventure'],
-        'actionadventure' => ['action', 'adventure'],
-        'kids' => ['family'],
-        'children' => ['family'],
-        'childrens' => ['family'],
-        'family friendly' => ['family'],
-        'biopic' => ['biography', 'drama'],
-        'biographical' => ['biography'],
-        'film noir' => ['noir'],
-        'docu series' => ['documentary'],
-        'docuseries' => ['documentary'],
-        'documentary series' => ['documentary'],
-        'tv movie' => ['tv movie'],
-        'television movie' => ['tv movie'],
-        'tv special' => ['tv movie'],
-        'mini series' => ['miniseries'],
-    ];
-
     protected $guarded = [];
 
     protected $appends = ['weighted_score'];
@@ -87,29 +48,14 @@ class Movie extends Model implements Commentable
     protected function casts(): array
     {
         return [
-            'release_date' => 'immutable_datetime:Y-m-d',
+            'release_date' => ReleaseDateCast::class,
             'imdb_rating' => 'float',
             'imdb_votes' => 'integer',
             'runtime_min' => 'integer',
-            'genres' => 'array',
+            'genres' => GenresCast::class,
             'translations' => 'array',
             'raw' => 'array',
         ];
-    }
-
-    public function setGenresAttribute(array|string|null $value): void
-    {
-        if ($value === null) {
-            $this->attributes['genres'] = null;
-
-            return;
-        }
-
-        $normalized = $this->normalizeGenres($value);
-
-        $this->attributes['genres'] = $normalized === []
-            ? null
-            : json_encode($normalized, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
     }
 
     public function getWeightedScoreAttribute(): float
@@ -151,77 +97,5 @@ class Movie extends Model implements Commentable
     public function deviceHistory(): HasMany
     {
         return $this->hasMany(DeviceHistory::class);
-    }
-
-    /**
-     * @param  array<int, string>|string  $value
-     * @return array<int, string>
-     */
-    private function toGenreArray(array|string $value): array
-    {
-        if (is_array($value)) {
-            return $value;
-        }
-
-        $parts = preg_split('/[,;|]/', $value) ?: [];
-
-        return array_map(static fn (string $part): string => trim($part), $parts);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function normalizeGenres(array|string $value): array
-    {
-        $genres = $this->toGenreArray($value);
-
-        if ($genres === []) {
-            return [];
-        }
-
-        $normalized = [];
-
-        foreach ($genres as $genre) {
-            if (! is_string($genre)) {
-                continue;
-            }
-
-            foreach ($this->mapGenre($genre) as $mapped) {
-                if ($mapped === '') {
-                    continue;
-                }
-
-                if (! in_array($mapped, $normalized, true)) {
-                    $normalized[] = $mapped;
-                }
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function mapGenre(string $genre): array
-    {
-        $normalized = Str::of($genre)
-            ->lower()
-            ->replaceMatches('/[_.\/]/', ' ')
-            ->replace('-', ' ')
-            ->replace('&', ' & ')
-            ->replaceMatches('/\s+/', ' ')
-            ->trim()
-            ->value();
-
-        if ($normalized === '') {
-            return [];
-        }
-
-        if (array_key_exists($normalized, self::GENRE_SYNONYMS)) {
-            return self::GENRE_SYNONYMS[$normalized];
-        }
-
-        return [$normalized];
     }
 }
