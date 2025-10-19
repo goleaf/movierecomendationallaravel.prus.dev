@@ -105,6 +105,28 @@ return [
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
     ],
+    'ssr' => [
+        'title' => 'SSR Analytics',
+        'headline' => [
+            'heading' => 'SSR Score',
+        ],
+        'trend' => [
+            'heading' => 'SSR score trend',
+            'empty' => 'No SSR trend data available.',
+            'aria_label' => 'Line chart showing how the SSR score changes over time.',
+            'range' => '{0}No data|{1}Last :days day|[2,*]Last :days days',
+        ],
+        'drop' => [
+            'heading' => 'Top pages by SSR score drop',
+            'empty' => 'No SSR drops detected for the selected period.',
+            'columns' => [
+                'path' => 'Path',
+                'yesterday' => 'Yesterday',
+                'today' => 'Today',
+                'delta' => 'Δ',
+            ],
+        ],
+    ],
     'funnel' => [
         'period' => 'Period: :from — :to',
         'headers' => [

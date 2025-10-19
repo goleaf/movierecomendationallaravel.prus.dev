@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AdminSsrController;
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
@@ -51,6 +52,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/ctr.svg', [CtrSvgController::class, 'line'])->name('ctr.svg');
     Route::get('/ctr/bars.svg', [CtrSvgBarsController::class, 'bars'])->name('ctr.bars.svg');
     Route::permanentRedirect('/metrics', '/analytics/queue')->name('metrics');
+    Route::get('/ssr', AdminSsrController::class)->name('ssr');
     Route::get('/ssr/issues', SsrIssuesController::class)->name('ssr.issues');
 });
 

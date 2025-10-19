@@ -10,6 +10,7 @@ return [
             'ctr' => 'CTR',
             'trends' => 'Trends',
             'queue' => 'Queue / Horizon',
+            'ssr' => 'SSR',
         ],
     ],
     'widgets' => [

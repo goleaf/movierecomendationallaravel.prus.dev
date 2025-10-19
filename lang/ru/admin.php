@@ -105,6 +105,28 @@ return [
         'horizon_supervisors' => 'Супервайзеры Horizon',
         'horizon_empty' => 'Данные Horizon недоступны.',
     ],
+    'ssr' => [
+        'title' => 'SSR аналитика',
+        'headline' => [
+            'heading' => 'Оценка SSR',
+        ],
+        'trend' => [
+            'heading' => 'Тренд SSR Score',
+            'empty' => 'Нет данных по тренду SSR.',
+            'aria_label' => 'Линейный график изменения SSR score.',
+            'range' => '{0}Нет данных|{1}Последний :days день|[2,*]Последние :days дней',
+        ],
+        'drop' => [
+            'heading' => 'Топ страниц по просадке SSR',
+            'empty' => 'Просадок SSR за выбранный период не найдено.',
+            'columns' => [
+                'path' => 'Путь',
+                'yesterday' => 'Вчера',
+                'today' => 'Сегодня',
+                'delta' => 'Δ',
+            ],
+        ],
+    ],
     'funnel' => [
         'period' => 'Период: :from — :to',
         'headers' => [
