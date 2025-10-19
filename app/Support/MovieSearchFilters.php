@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 final class MovieSearchFilters
 {
-    private const ALLOWED_TYPES = ['movie', 'series', 'animation'];
+    public const ALLOWED_TYPES = ['movie', 'series', 'animation'];
 
     public function __construct(
         public readonly string $query,
@@ -15,16 +15,23 @@ final class MovieSearchFilters
         public readonly ?string $genre,
         public readonly ?int $yearFrom,
         public readonly ?int $yearTo,
-    ) {
-    }
+    ) {}
 
     public static function fromRequest(Request $request): self
     {
-        $query = trim((string) $request->query('q', ''));
-        $type = self::normalizeType($request->query('type'));
-        $genre = self::normalizeString($request->query('genre'));
-        $yearFrom = self::normalizeYear($request->query('yf'));
-        $yearTo = self::normalizeYear($request->query('yt'));
+        return self::fromArray($request->query());
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        $query = trim((string) ($data['q'] ?? ''));
+        $type = self::normalizeType($data['type'] ?? null);
+        $genre = self::normalizeString($data['genre'] ?? null);
+        $yearFrom = self::normalizeYear($data['yf'] ?? null);
+        $yearTo = self::normalizeYear($data['yt'] ?? null);
 
         if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
             [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
