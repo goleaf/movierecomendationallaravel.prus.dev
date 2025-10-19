@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Analytics;
 
-use BackedEnum;
-use UnitEnum;
-
 class TrendsAdvancedPage extends TrendsPage
 {
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
+    protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected string $view = 'filament.analytics.trends_advanced';
+    protected static string $view = 'filament.analytics.trends_advanced';
 
     protected static ?string $navigationLabel = 'Trends (Advanced)';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = 'Analytics';
 
     protected static ?string $slug = 'trends-advanced';
 

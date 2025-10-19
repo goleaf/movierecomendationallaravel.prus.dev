@@ -6,35 +6,31 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RecClickResource\Pages;
 use App\Models\RecClick;
-use BackedEnum;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Form;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
-/**
- * @extends Resource<RecClick>
- */
-class RecClickResource extends Resource
+final class RecClickResource extends Resource
 {
     protected static ?string $model = RecClick::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cursor-arrow-rays';
+    protected static ?string $navigationIcon = 'heroicon-o-cursor-arrow-rays';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Telemetry';
+    protected static ?string $navigationGroup = 'Telemetry';
 
     protected static ?string $modelLabel = 'Recommendation Click';
 
-    public static function form(Schema $schema): Schema
+    public static function form(Form $form): Form
     {
-        return $schema;
+        return $form;
     }
 
     public static function table(Table $table): Table
@@ -45,24 +41,20 @@ class RecClickResource extends Resource
                     ->label('Clicked at')
                     ->dateTime()
                     ->sortable(),
-                TextColumn::make('movie.title')
-                    ->label('Movie')
-                    ->searchable()
-                    ->toggleable(),
                 TextColumn::make('placement')
                     ->badge()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('variant')
                     ->badge()
                     ->sortable(),
                 TextColumn::make('device_id')
                     ->label('Device')
                     ->searchable()
-                    ->copyable()
-                    ->limit(24),
-                TextColumn::make('source')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->copyable(),
+                TextColumn::make('movie.title')
+                    ->label('Movie')
+                    ->searchable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -73,16 +65,9 @@ class RecClickResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['from'] ?? null, fn (Builder $q, $date): Builder => $q->whereDate('created_at', '>=', $date))
-                            ->when($data['until'] ?? null, fn (Builder $q, $date): Builder => $q->whereDate('created_at', '<=', $date));
+                            ->when($data['from'] ?? null, static fn (Builder $q, $date): Builder => $q->whereDate('created_at', '>=', $date))
+                            ->when($data['until'] ?? null, static fn (Builder $q, $date): Builder => $q->whereDate('created_at', '<=', $date));
                     }),
-                SelectFilter::make('variant')
-                    ->options(fn () => RecClick::query()
-                        ->select('variant')
-                        ->distinct()
-                        ->orderBy('variant')
-                        ->pluck('variant', 'variant')
-                        ->all()),
                 SelectFilter::make('placement')
                     ->options(fn () => RecClick::query()
                         ->select('placement')
@@ -90,46 +75,38 @@ class RecClickResource extends Resource
                         ->orderBy('placement')
                         ->pluck('placement', 'placement')
                         ->all()),
-                SelectFilter::make('source')
+                SelectFilter::make('variant')
                     ->options(fn () => RecClick::query()
-                        ->select('source')
-                        ->whereNotNull('source')
+                        ->select('variant')
                         ->distinct()
-                        ->orderBy('source')
-                        ->pluck('source', 'source')
+                        ->orderBy('variant')
+                        ->pluck('variant', 'variant')
                         ->all()),
-                SelectFilter::make('movie_id')
-                    ->relationship('movie', 'title')
-                    ->label('Movie'),
             ])
             ->actions([
-                BookmarkTableAction::make()->page('view'),
                 Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    BookmarkBulkAction::make()->page('view'),
-                    BookmarkBulkClearAction::make()->page('view'),
+                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
 
-    public static function infolist(Schema $schema): Schema
+    public static function infolist(Infolist $infolist): Infolist
     {
-        return $schema
+        return $infolist
             ->schema([
                 TextEntry::make('id')->label('ID'),
                 TextEntry::make('created_at')
                     ->label('Clicked at')
                     ->dateTime(),
-                TextEntry::make('movie.title')
-                    ->label('Movie'),
                 TextEntry::make('placement')->badge(),
                 TextEntry::make('variant')->badge(),
                 TextEntry::make('device_id')
                     ->label('Device'),
-                TextEntry::make('source')
-                    ->label('Source'),
+                TextEntry::make('movie.title')
+                    ->label('Movie'),
             ]);
     }
 
@@ -143,6 +120,6 @@ class RecClickResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['device_id', 'placement', 'variant', 'source'];
+        return ['device_id', 'placement', 'variant'];
     }
 }

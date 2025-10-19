@@ -4,59 +4,69 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use SolutionForest\TabLayoutPlugin\Components\Tabs;
-use SolutionForest\TabLayoutPlugin\Components\Tabs\Tab as TabLayoutTab;
-use SolutionForest\TabLayoutPlugin\Schemas\Components\LivewireContainer;
-use SolutionForest\TabLayoutPlugin\Widgets\TabsWidget as BaseTabsWidget;
+use Filament\Widgets\Widget;
 
-class AnalyticsTabsWidget extends BaseTabsWidget
+final class AnalyticsTabsWidget extends Widget
 {
-    protected static ?string $heading = null;
+    protected static string $view = 'filament.widgets.analytics-tabs';
 
-    public static function tabs(Tabs $tabs): Tabs
+    protected function getViewData(): array
     {
-        return $tabs
-            ->id('analytics-overview-tabs')
-            ->contained(true);
+        return [
+            'heading' => $this->getHeading(),
+            'tabs' => $this->getTabs(),
+            'widgetId' => $this->id,
+        ];
     }
 
-    protected function getHeading(): ?string
+    private function getHeading(): ?string
     {
         return __('admin.analytics_tabs.heading');
     }
 
-    protected function schema(): array
+    /**
+     * @return array<int, array{key: string, label: string, icon: string, widgets: array<int, class-string<Widget>>}>
+     */
+    private function getTabs(): array
     {
         return [
-            TabLayoutTab::make(__('admin.analytics_tabs.queue.label'), 'queue')
-                ->icon('heroicon-o-queue-list')
-                ->schema([
-                    LivewireContainer::make(QueueStatsWidget::class),
-                ]),
-            TabLayoutTab::make(__('admin.analytics_tabs.ctr.label'), 'ctr')
-                ->icon('heroicon-o-chart-bar')
-                ->schema([
-                    LivewireContainer::make(CtrLineWidget::class),
-                    LivewireContainer::make(CtrBarsWidget::class),
-                ])
-                ->columns(1),
-            TabLayoutTab::make(__('admin.analytics_tabs.funnels.label'), 'funnels')
-                ->icon('heroicon-o-funnel')
-                ->schema([
-                    LivewireContainer::make(FunnelWidget::class),
-                ]),
-            TabLayoutTab::make(__('admin.analytics_tabs.ssr.label'), 'ssr')
-                ->icon('heroicon-o-sparkles')
-                ->schema([
-                    LivewireContainer::make(SsrStatsWidget::class),
-                    LivewireContainer::make(SsrScoreWidget::class),
-                    LivewireContainer::make(SsrDropWidget::class),
-                ]),
-            TabLayoutTab::make(__('admin.analytics_tabs.experiments.label'), 'experiments')
-                ->icon('heroicon-o-beaker')
-                ->schema([
-                    LivewireContainer::make(ZTestWidget::class),
-                ]),
+            [
+                'key' => 'queue',
+                'label' => __('admin.analytics_tabs.queue.label'),
+                'icon' => 'heroicon-o-queue-list',
+                'widgets' => [QueueStatsWidget::class],
+            ],
+            [
+                'key' => 'ctr',
+                'label' => __('admin.analytics_tabs.ctr.label'),
+                'icon' => 'heroicon-o-chart-bar',
+                'widgets' => [
+                    CtrLineWidget::class,
+                    CtrBarsWidget::class,
+                ],
+            ],
+            [
+                'key' => 'funnels',
+                'label' => __('admin.analytics_tabs.funnels.label'),
+                'icon' => 'heroicon-o-funnel',
+                'widgets' => [FunnelWidget::class],
+            ],
+            [
+                'key' => 'ssr',
+                'label' => __('admin.analytics_tabs.ssr.label'),
+                'icon' => 'heroicon-o-sparkles',
+                'widgets' => [
+                    SsrStatsWidget::class,
+                    SsrScoreWidget::class,
+                    SsrDropWidget::class,
+                ],
+            ],
+            [
+                'key' => 'experiments',
+                'label' => __('admin.analytics_tabs.experiments.label'),
+                'icon' => 'heroicon-o-beaker',
+                'widgets' => [ZTestWidget::class],
+            ],
         ];
     }
 }

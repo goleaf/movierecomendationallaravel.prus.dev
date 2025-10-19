@@ -13,39 +13,45 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rec_ab_logs', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('device_id');
-            $table->string('placement', 32);
-            $table->string('variant', 1);
-            $table->json('meta')->nullable();
-            $table->timestamps();
-            $table->index(['variant', 'created_at']);
-            $table->index(['placement', 'created_at']);
-        });
+        if (! Schema::hasTable('rec_ab_logs')) {
+            Schema::create('rec_ab_logs', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
+                $table->string('device_id');
+                $table->string('placement', 32);
+                $table->string('variant', 1);
+                $table->json('meta')->nullable();
+                $table->timestamps();
+                $table->index(['variant', 'created_at']);
+                $table->index(['placement', 'created_at']);
+            });
+        }
 
-        Schema::create('rec_clicks', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('device_id');
-            $table->string('placement', 32);
-            $table->string('variant', 1);
-            $table->string('source')->nullable();
-            $table->timestamps();
-            $table->index(['variant', 'created_at']);
-            $table->index(['placement', 'created_at']);
-        });
+        if (! Schema::hasTable('rec_clicks')) {
+            Schema::create('rec_clicks', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
+                $table->string('device_id');
+                $table->string('placement', 32);
+                $table->string('variant', 1);
+                $table->string('source')->nullable();
+                $table->timestamps();
+                $table->index(['variant', 'created_at']);
+                $table->index(['placement', 'created_at']);
+            });
+        }
 
-        Schema::create('device_history', function (Blueprint $table): void {
-            $table->id();
-            $table->string('device_id');
-            $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('placement', 32)->nullable();
-            $table->timestamp('viewed_at');
-            $table->timestamps();
-            $table->index('viewed_at');
-        });
+        if (! Schema::hasTable('device_history')) {
+            Schema::create('device_history', function (Blueprint $table): void {
+                $table->id();
+                $table->string('device_id');
+                $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
+                $table->string('placement', 32)->nullable();
+                $table->timestamp('viewed_at');
+                $table->timestamps();
+                $table->index('viewed_at');
+            });
+        }
     }
 
     /**

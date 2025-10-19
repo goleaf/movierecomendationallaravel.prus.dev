@@ -19,7 +19,6 @@ class User extends Authenticatable implements Commenter, HasAvatar, HasName
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
 
-    use HasPlanSubscriptions;
     use Notifiable;
 
     /**

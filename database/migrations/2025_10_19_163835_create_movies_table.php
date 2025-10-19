@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('movies')) {
+            return;
+        }
+
         Schema::create('movies', function (Blueprint $table): void {
             $table->id();
             $table->string('imdb_tt')->unique();

@@ -5,30 +5,17 @@ declare(strict_types=1);
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\TrendsAnalyticsService;
-use BackedEnum;
-use Carbon\CarbonImmutable;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Schema;
-use Jacobtims\InlineDateTimePicker\Forms\Components\InlineDateTimePicker;
-use UnitEnum;
 
 class TrendsPage extends Page implements HasForms
 {
-    use InteractsWithForms;
+    protected static ?string $navigationIcon = 'heroicon-o-chart-line-square';
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-line-square';
-
-    protected string $view = 'filament.analytics.trends';
+    protected static string $view = 'filament.analytics.trends';
 
     protected static ?string $navigationLabel = 'Trends';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = 'Analytics';
 
     protected static ?string $slug = 'trends';
 

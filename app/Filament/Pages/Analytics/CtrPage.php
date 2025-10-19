@@ -5,29 +5,27 @@ declare(strict_types=1);
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\CtrAnalyticsService;
-use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Schema;
 use Jacobtims\InlineDateTimePicker\Forms\Components\InlineDateTimePicker;
-use UnitEnum;
 
 class CtrPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-bar';
+    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected string $view = 'filament.analytics.ctr';
+    protected static string $view = 'filament.analytics.ctr';
 
     protected static ?string $navigationLabel = 'CTR';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = 'Analytics';
 
     protected static ?string $slug = 'ctr';
 
@@ -121,9 +119,9 @@ class CtrPage extends Page implements HasForms
         }
     }
 
-    public function form(Schema $schema): Schema
+    public function form(Form $form): Form
     {
-        return $schema
+        return $form
             ->statePath('filters')
             ->extraAttributes([
                 'class' => 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4',
