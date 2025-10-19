@@ -56,8 +56,7 @@ class SsrDropWidget extends BaseWidget
                 DB::raw('coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta'),
             ])
             ->whereRaw('(coalesce(score_today, 0) - coalesce(score_yesterday, 0)) < 0')
-            ->orderBy('delta')
-            ->limit(10);
+            ->orderBy('delta');
     }
 
     protected function getTableColumns(): array
@@ -68,14 +67,32 @@ class SsrDropWidget extends BaseWidget
                 ->wrap(),
             Tables\Columns\TextColumn::make('score_yesterday')
                 ->label(__('analytics.widgets.ssr_drop.columns.yesterday'))
-                ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2))
+                ->sortable(),
             Tables\Columns\TextColumn::make('score_today')
                 ->label(__('analytics.widgets.ssr_drop.columns.today'))
-                ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2))
+                ->sortable(),
             Tables\Columns\TextColumn::make('delta')
                 ->label(__('analytics.widgets.ssr_drop.columns.delta'))
                 ->formatStateUsing(fn ($state) => number_format((float) $state, 2))
-                ->color(fn ($state) => $state >= 0 ? 'success' : 'danger'),
+                ->color(fn ($state) => $state >= 0 ? 'success' : 'danger')
+                ->sortable(),
         ];
+    }
+
+    protected function getDefaultTableSortColumn(): ?string
+    {
+        return 'delta';
+    }
+
+    protected function getDefaultTableSortDirection(): ?string
+    {
+        return 'asc';
+    }
+
+    protected function getTablePaginationPageOptions(): array
+    {
+        return [10, 25, 50];
     }
 }
