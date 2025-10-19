@@ -7,7 +7,32 @@ use Illuminate\Http\Request;
 
 final class MovieSearchFilters
 {
-    private const ALLOWED_TYPES = ['movie', 'series', 'animation'];
+    public const ALLOWED_TYPES = ['movie', 'series', 'animation'];
+
+    /**
+     * @var array<int, string>
+     */
+    public const ALLOWED_GENRES = [
+        'action',
+        'adventure',
+        'animation',
+        'comedy',
+        'crime',
+        'drama',
+        'fantasy',
+        'history',
+        'horror',
+        'mystery',
+        'romance',
+        'science fiction',
+        'thriller',
+        'Sci-Fi',
+        'Adventure',
+        'Action',
+        'Drama',
+        'Thriller',
+        'Documentary',
+    ];
 
     public function __construct(
         public readonly string $query,
@@ -15,16 +40,23 @@ final class MovieSearchFilters
         public readonly ?string $genre,
         public readonly ?int $yearFrom,
         public readonly ?int $yearTo,
-    ) {
-    }
+    ) {}
 
     public static function fromRequest(Request $request): self
     {
-        $query = trim((string) $request->query('q', ''));
-        $type = self::normalizeType($request->query('type'));
-        $genre = self::normalizeString($request->query('genre'));
-        $yearFrom = self::normalizeYear($request->query('yf'));
-        $yearTo = self::normalizeYear($request->query('yt'));
+        return self::fromArray($request->all());
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public static function fromArray(array $input): self
+    {
+        $query = trim((string) ($input['q'] ?? ''));
+        $type = self::normalizeType($input['type'] ?? null);
+        $genre = self::normalizeString($input['genre'] ?? null);
+        $yearFrom = self::normalizeYear($input['yf'] ?? null);
+        $yearTo = self::normalizeYear($input['yt'] ?? null);
 
         if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
             [$yearFrom, $yearTo] = [$yearTo, $yearFrom];

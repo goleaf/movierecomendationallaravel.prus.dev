@@ -4,34 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CtrBarsRequest;
 use App\Services\Analytics\CtrAnalyticsService;
-use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class CtrSvgBarsController extends Controller
 {
-    public function __construct(private readonly CtrAnalyticsService $analytics)
-    {
-    }
+    public function __construct(private readonly CtrAnalyticsService $analytics) {}
 
-    public function bars(Request $request): Response
+    public function bars(CtrBarsRequest $request): Response
     {
-        $from = $this->parseDate($request->query('from'), now()->subDays(7)->format('Y-m-d'));
-        $to = $this->parseDate($request->query('to'), now()->format('Y-m-d'));
+        $from = $request->fromDate();
+        $to = $request->toDate();
 
         $svg = $this->analytics->buildPlacementCtrSvg($from, $to) ?? $this->emptyChart();
 
         return $this->svgResponse($svg);
-    }
-
-    private function parseDate(?string $value, string $fallback): CarbonImmutable
-    {
-        try {
-            return CarbonImmutable::parse($value ?? $fallback);
-        } catch (\Throwable) {
-            return CarbonImmutable::parse($fallback);
-        }
     }
 
     private function emptyChart(): string
