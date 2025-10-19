@@ -25,9 +25,6 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Analytics',
                 'Administration',
             ])
-            ->plugins([
-                FilamentTranslationsPlugin::make(),
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->plugin(

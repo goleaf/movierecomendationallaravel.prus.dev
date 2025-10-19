@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\UserResource\Pages;
-use App\Models\User;
+use App\Filament\Resources\CepResource\Pages;
+use App\Models\Cep;
 use App\Support\CepFormatter;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
@@ -19,53 +19,34 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use JeffersonGoncalves\Filament\CepField\Forms\Components\CepInput;
 
-class UserResource extends Resource
+class CepResource extends Resource
 {
-    protected static ?string $model = User::class;
+    protected static ?string $model = Cep::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
     protected static ?string $navigationGroup = 'Administration';
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $recordTitleAttribute = 'cep';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Account')
-                    ->schema([
-                        Grid::make(2)
-                            ->schema([
-                                TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255),
-                                TextInput::make('email')
-                                    ->email()
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
-                            ]),
-                        TextInput::make('password')
-                            ->password()
-                            ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? $state : null)
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->required(fn (string $context): bool => $context === 'create'),
-                    ]),
-                Section::make('Address')
+                Section::make('CEP Lookup')
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 CepInput::make('cep')
                                     ->label('CEP')
                                     ->placeholder('00000-000')
+                                    ->required()
                                     ->formatStateUsing(fn (?string $state): ?string => CepFormatter::format($state))
                                     ->dehydrateStateUsing(fn (?string $state): ?string => CepFormatter::strip($state))
                                     ->setStreetField('street')
                                     ->setNeighborhoodField('neighborhood')
                                     ->setCityField('city')
-                                    ->setStateField('state')
-                                    ->helperText('Searches Brazilian addresses and fills the fields below automatically.'),
+                                    ->setStateField('state'),
                                 TextInput::make('state')
                                     ->label('State')
                                     ->maxLength(2)
@@ -100,38 +81,39 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('email')
-                    ->label('E-mail')
-                    ->searchable()
-                    ->sortable(),
                 TextColumn::make('cep')
                     ->label('CEP')
                     ->formatStateUsing(fn (?string $state): ?string => CepFormatter::format($state))
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('city')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(),
                 TextColumn::make('state')
                     ->label('UF')
                     ->formatStateUsing(fn (?string $state): ?string => CepFormatter::uppercaseState($state))
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('created_at')
+                TextColumn::make('city')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('neighborhood')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('street')
+                    ->limit(40)
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('updated_at')
+                    ->label('Updated')
                     ->dateTime()
                     ->since()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('updated_at', 'desc')
             ->filters([
                 SelectFilter::make('state')
                     ->label('State')
-                    ->options(fn () => User::query()
+                    ->options(fn () => Cep::query()
                         ->whereNotNull('state')
                         ->pluck('state')
                         ->map(fn (?string $state) => CepFormatter::uppercaseState($state))
@@ -145,6 +127,7 @@ class UserResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -155,41 +138,40 @@ class UserResource extends Resource
     {
         return $infolist
             ->schema([
-                TextEntry::make('name'),
-                TextEntry::make('email')
-                    ->label('E-mail'),
                 TextEntry::make('cep')
                     ->label('CEP')
                     ->formatStateUsing(fn (?string $state): ?string => CepFormatter::format($state)),
                 TextEntry::make('state')
                     ->label('State')
                     ->formatStateUsing(fn (?string $state): ?string => CepFormatter::uppercaseState($state)),
-                TextEntry::make('city'),
-                TextEntry::make('neighborhood'),
+                TextEntry::make('city')
+                    ->label('City'),
+                TextEntry::make('neighborhood')
+                    ->label('Neighborhood'),
                 TextEntry::make('street')
+                    ->label('Street')
                     ->columnSpanFull(),
                 TextEntry::make('created_at')
-                    ->dateTime()
-                    ->label('Created'),
+                    ->label('Created')
+                    ->dateTime(),
                 TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->label('Updated'),
+                    ->label('Updated')
+                    ->dateTime(),
             ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'view' => Pages\ViewUser::route('/{record}'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'index' => Pages\ListCeps::route('/'),
+            'create' => Pages\CreateCep::route('/create'),
+            'view' => Pages\ViewCep::route('/{record}'),
+            'edit' => Pages\EditCep::route('/{record}/edit'),
         ];
     }
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name', 'email', 'cep', 'city', 'neighborhood', 'street', 'state'];
+        return ['cep', 'city', 'neighborhood', 'street', 'state'];
     }
-
 }
