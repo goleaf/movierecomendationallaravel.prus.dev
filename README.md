@@ -2,6 +2,8 @@
 
 MovieRec bundles every feature shipped across the previous MovieRec releases into a single Laravel overlay. The project delivers ingestion pipelines, A/B-tested movie recommendations, SVG CTR visualisations, TMDB-powered localisation, RSS feeds, on-the-fly SSR metrics, Filament dashboards, optimised database indexes, automated tests, and strict PHPStan level 7 typing.
 
+👉 Track outstanding integration tasks in the project [TODO list](TODO.md).
+
 ---
 
 ## Feature overview
