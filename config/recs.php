@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'A' => [
         'pop' => (float) env('REC_A_POP', 0.55),

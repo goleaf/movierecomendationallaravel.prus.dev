@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'analytics_tabs' => [
         'heading' => 'Обзор аналитики',
