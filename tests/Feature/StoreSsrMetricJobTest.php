@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +55,7 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricsService::class));
 
         $row = DB::table('ssr_metrics')->first();
 
@@ -103,7 +104,7 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(app(SsrMetricsService::class));
 
         Storage::disk('local')->assertExists('metrics/ssr.jsonl');
 

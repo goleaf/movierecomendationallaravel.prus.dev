@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Services\Analytics\SsrAnalyticsService;
+use App\Services\SsrMetricsService;
 use Filament\Widgets\ChartWidget;
 
 class SsrScoreWidget extends ChartWidget
 {
+    public function __construct(private readonly SsrMetricsService $metrics)
+    {
+        parent::__construct();
+    }
+
     public function getHeading(): ?string
     {
         return __('analytics.widgets.ssr_score.heading');
@@ -21,6 +26,6 @@ class SsrScoreWidget extends ChartWidget
 
     protected function getData(): array
     {
-        return app(SsrAnalyticsService::class)->trend();
+        return $this->metrics->trend();
     }
 }
