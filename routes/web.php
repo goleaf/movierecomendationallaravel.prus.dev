@@ -10,6 +10,7 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\Rss\NewReleasesFeedController;
 use App\Http\Controllers\Rss\UpcomingFeedController;
 use App\Http\Controllers\SearchPageController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Http\Middleware\AutoTranslate;
 use App\Livewire\HomePage;
@@ -24,6 +25,11 @@ Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemaps.index');
+Route::get('/sitemaps/{type}.xml', [SitemapController::class, 'type'])
+    ->where('type', '[A-Za-z0-9_-]+')
+    ->name('sitemaps.type');
 
 Route::prefix('rss')->name('rss.')->group(function (): void {
     Route::get('/new', NewReleasesFeedController::class)->name('new');
