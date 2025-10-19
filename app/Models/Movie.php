@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Kirschbaum\Commentions\Contracts\Commentable;
+use Kirschbaum\Commentions\HasComments;
 
 /**
  * @property int $id
@@ -27,8 +29,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecClick> $recClicks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeviceHistory> $deviceHistory
  */
-class Movie extends Model
+class Movie extends Model implements Commentable
 {
+    use HasComments;
     use HasFactory;
 
     protected $guarded = [];
