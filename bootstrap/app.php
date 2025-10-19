@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureDeviceCookie;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SsrMetricsMiddleware;
@@ -17,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureDeviceCookie::class);
+
+        $middleware->append(AddSecurityHeaders::class);
 
         $middleware->appendToGroup('web', HandleInertiaRequests::class);
         $middleware->appendToGroup('web', SsrMetricsMiddleware::class);
