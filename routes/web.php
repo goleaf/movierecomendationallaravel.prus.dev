@@ -9,6 +9,7 @@ use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\PosterProxyController;
 use App\Http\Controllers\Rss\NewReleasesFeedController;
 use App\Http\Controllers\Rss\UpcomingFeedController;
 use App\Http\Controllers\SearchPageController;
@@ -32,6 +33,10 @@ Route::get('/metrics', MetricsController::class)->name('metrics');
 
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
+
+Route::get('/media/poster', PosterProxyController::class)
+    ->middleware('signed')
+    ->name('media.poster');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemaps.index');
 Route::get('/sitemaps/{type}.xml', [SitemapController::class, 'type'])
