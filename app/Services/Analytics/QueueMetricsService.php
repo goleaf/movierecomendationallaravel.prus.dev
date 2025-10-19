@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Schema;
 class QueueMetricsService
 {
     /**
+     * @var array<string, string>
+     */
+    private const METRIC_KEY_MAP = [
+        'queue' => 'jobs',
+        'failed' => 'failed',
+        'processed' => 'batches',
+    ];
+
+    /**
      * @return array{
      *     jobs: int,
      *     failed: int,
@@ -62,11 +71,14 @@ class QueueMetricsService
     {
         $snapshot = $this->snapshot();
 
-        return [
-            'queue' => $snapshot['jobs'],
-            'failed' => $snapshot['failed'],
-            'processed' => $snapshot['batches'],
-            'horizon' => $snapshot['horizon'],
-        ];
+        $metrics = [];
+
+        foreach (self::METRIC_KEY_MAP as $uiKey => $snapshotKey) {
+            $metrics[$uiKey] = $snapshot[$snapshotKey];
+        }
+
+        $metrics['horizon'] = $snapshot['horizon'];
+
+        return $metrics;
     }
 }

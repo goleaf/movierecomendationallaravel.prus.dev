@@ -8,13 +8,15 @@ use Livewire\Component;
 
 class QueueMetrics extends Component
 {
-    /** @var array{queue: int, failed: int, processed: int, horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null}} */
-    public array $metrics = [
+    private const DEFAULT_METRICS = [
         'queue' => 0,
         'failed' => 0,
         'processed' => 0,
         'horizon' => ['workload' => null, 'supervisors' => null],
     ];
+
+    /** @var array{queue: int, failed: int, processed: int, horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null}} */
+    public array $metrics = self::DEFAULT_METRICS;
 
     protected QueueMetricsService $service;
 
@@ -30,7 +32,7 @@ class QueueMetrics extends Component
 
     public function refreshMetrics(): void
     {
-        $this->metrics = $this->service->getMetrics();
+        $this->metrics = array_replace(self::DEFAULT_METRICS, $this->service->getMetrics());
     }
 
     public function render(): View
