@@ -4,6 +4,7 @@ namespace App\Livewire\Analytics;
 
 use App\Services\Analytics\CtrAnalyticsService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class CtrOverview extends Component
@@ -65,11 +66,14 @@ class CtrOverview extends Component
 
     protected function rules(): array
     {
+        $placementOptions = $this->placements === [] ? ['home', 'show', 'trends'] : $this->placements;
+        $variantOptions = $this->variants === [] ? ['A', 'B'] : $this->variants;
+
         return [
             'filters.from' => ['required', 'date'],
             'filters.to' => ['required', 'date', 'after_or_equal:filters.from'],
-            'filters.placement' => ['nullable', 'string'],
-            'filters.variant' => ['nullable', 'string'],
+            'filters.placement' => ['nullable', 'string', Rule::in($placementOptions)],
+            'filters.variant' => ['nullable', 'string', Rule::in($variantOptions)],
         ];
     }
 

@@ -30,8 +30,8 @@ class CtrAnalyticsService
         $toDate = CarbonImmutable::parse($to);
 
         $summaryData = $this->variantSummary($fromDate, $toDate, $placement, $variant);
-        $placementCtrData = $this->placementCtrs($fromDate, $toDate);
 
+        $placementCtrData = $this->placementCtrs($fromDate, $toDate);
         $placements = $placementCtrData
             ->map(static fn (array $row) => explode('-', $row['label'])[0])
             ->unique()
@@ -42,43 +42,51 @@ class CtrAnalyticsService
             $placements = ['home', 'show', 'trends'];
         }
 
-        $clicksByPlacement = array_fill_keys($placements, 0);
-        foreach ($summaryData['placementClicks'] as $placementKey => $clickCount) {
-            $clicksByPlacement[$placementKey] = (int) $clickCount;
-        }
+        $clicksByPlacement = collect($placements)
+            ->mapWithKeys(static fn (string $key): array => [
+                $key => (int) ($summaryData['placementClicks'][$key] ?? 0),
+            ])
+            ->all();
 
-        $funnelsRaw = $this->funnels($fromDate, $toDate, $placements);
-        $funnels = [];
+        $funnelRows = $this->funnels($fromDate, $toDate, $placements);
+        $funnels = collect($funnelRows)
+            ->mapWithKeys(static function (array $row): array {
+                return [
+                    $row['label'] => [
+                        'imps' => (int) $row['imps'],
+                        'clks' => (int) $row['clicks'],
+                        'views' => (int) $row['views'],
+                    ],
+                ];
+            })
+            ->all();
+
         $totalLabel = __('admin.ctr.funnels.total');
-        $totalViews = 0;
+        $totalViews = $funnels[$totalLabel]['views'] ?? 0;
 
-        foreach ($funnelsRaw as $row) {
-            $label = $row['label'];
-            $funnels[$label] = [
-                'imps' => (int) $row['imps'],
-                'clks' => (int) $row['clicks'],
-                'views' => (int) $row['views'],
-            ];
-
-            if ($label === $totalLabel) {
-                $totalViews = (int) $row['views'];
-            }
-        }
-
+        $summary = $summaryData['summary'];
         $totals = [
             'impressions' => array_sum(array_map(
                 static fn (array $item): int => (int) $item['impressions'],
-                $summaryData['summary']
+                $summary
             )),
             'clicks' => array_sum(array_map(
                 static fn (array $item): int => (int) $item['clicks'],
-                $summaryData['summary']
+                $summary
             )),
-            'views' => $totalViews,
+            'views' => (int) $totalViews,
         ];
 
+        $variants = array_values(array_unique(array_merge(
+            ['A', 'B'],
+            array_map(
+                static fn (array $row): string => $row['variant'],
+                $summary
+            )
+        )));
+
         return [
-            'summary' => $summaryData['summary'],
+            'summary' => $summary,
             'clicksByPlacement' => $clicksByPlacement,
             'funnels' => $funnels,
             'totals' => $totals,
@@ -86,7 +94,7 @@ class CtrAnalyticsService
                 'from' => $fromDate->toDateString(),
                 'to' => $toDate->toDateString(),
             ],
-            'variants' => ['A', 'B'],
+            'variants' => $variants,
             'placements' => array_values($placements),
         ];
     }
