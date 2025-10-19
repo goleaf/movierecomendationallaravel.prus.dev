@@ -63,8 +63,10 @@ class SsrAnalyticsService
         $series = [];
 
         if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = $this->timestampColumn();
+
             $rows = DB::table('ssr_metrics')
-                ->selectRaw('date(created_at) as d, avg(score) as s')
+                ->selectRaw("date({$timestampColumn}) as d, avg(score) as s")
                 ->groupBy('d')
                 ->orderBy('d')
                 ->limit($limit)
@@ -108,15 +110,16 @@ class SsrAnalyticsService
 
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
+        $timestampColumn = $this->timestampColumn();
 
         return SsrMetric::query()
-            ->fromSub(function ($query) use ($today, $yesterday): void {
+            ->fromSub(function ($query) use ($today, $yesterday, $timestampColumn): void {
                 $query
-                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday): void {
+                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday, $timestampColumn): void {
                         $aggregateQuery
                             ->from('ssr_metrics')
-                            ->selectRaw('path, date(created_at) as d, avg(score) as avg_score')
-                            ->whereIn(DB::raw('date(created_at)'), [$yesterday, $today])
+                            ->selectRaw("path, date({$timestampColumn}) as d, avg(score) as avg_score")
+                            ->whereIn(DB::raw("date({$timestampColumn})"), [$yesterday, $today])
                             ->groupBy('path', 'd');
                     }, 'agg')
                     ->selectRaw(
@@ -161,5 +164,10 @@ class SsrAnalyticsService
                 ];
             })
             ->all();
+    }
+
+    private function timestampColumn(): string
+    {
+        return Schema::hasColumn('ssr_metrics', 'recorded_at') ? 'recorded_at' : 'created_at';
     }
 }

@@ -98,10 +98,21 @@ class PrometheusMetricsService
         $samples = 0;
 
         if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')
-                ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
-                ->where('created_at', '>=', $from->toDateTimeString())
-                ->first();
+            $timestampColumn = Schema::hasColumn('ssr_metrics', 'recorded_at') ? 'recorded_at' : 'created_at';
+
+            if (Schema::hasColumn('ssr_metrics', 'payload')) {
+                $row = DB::table('ssr_metrics')
+                    ->selectRaw(
+                        "avg(score) as avg_score, avg(COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(payload, '\$.first_byte_ms')) AS DECIMAL(10, 2)), 0)) as avg_first_byte, count(*) as sample_size"
+                    )
+                    ->where($timestampColumn, '>=', $from->toDateTimeString())
+                    ->first();
+            } else {
+                $row = DB::table('ssr_metrics')
+                    ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
+                    ->where($timestampColumn, '>=', $from->toDateTimeString())
+                    ->first();
+            }
 
             if ($row !== null) {
                 $avgScore = (float) ($row->avg_score ?? 0.0);

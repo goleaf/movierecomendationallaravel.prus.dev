@@ -44,10 +44,21 @@ class AnalyticsWidgetsTest extends TestCase
             ->assertSeeText('4') // total views
             ->assertSeeText('3'); // clicks for home placement
 
-        $this->assertEquals(
-            [210, 238, 192, 265],
-            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
-        );
+        $firstBytes = DB::table('ssr_metrics')
+            ->orderBy('id')
+            ->pluck('payload')
+            ->map(static function (?string $payload): int {
+                if ($payload === null) {
+                    return 0;
+                }
+
+                $decoded = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+
+                return (int) ($decoded['first_byte_ms'] ?? 0);
+            })
+            ->all();
+
+        $this->assertEquals([210, 238, 192, 265], $firstBytes);
     }
 
     public function test_z_test_widget_displays_ctr_for_both_variants(): void

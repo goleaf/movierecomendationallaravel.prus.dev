@@ -7,21 +7,16 @@ namespace App\Models;
 use Database\Factories\SsrMetricFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\CarbonImmutable;
 
 /**
  * @property int $id
  * @property string $path
  * @property int $score
- * @property int $size
- * @property int $meta_count
- * @property int $og_count
- * @property int $ldjson_count
- * @property int $img_count
- * @property int $blocking_scripts
- * @property int $first_byte_ms
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property array<string, mixed>|null $payload
+ * @property CarbonImmutable|null $recorded_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  *
  * @method static SsrMetricFactory factory($count = null, $state = [])
  */
@@ -32,6 +27,16 @@ class SsrMetric extends Model
     protected $table = 'ssr_metrics';
 
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'recorded_at' => 'immutable_datetime',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
 
     protected static function newFactory(): SsrMetricFactory
     {

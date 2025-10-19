@@ -164,13 +164,17 @@ class DemoContentSeeder extends Seeder
         ];
 
         DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
+            $recordedAt = $now->subDays($row['delta']);
+
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
-                'first_byte_ms' => $row['first_byte_ms'],
-                'created_at' => $now->subDays($row['delta']),
-                'updated_at' => $now->subDays($row['delta']),
+                'payload' => json_encode([
+                    'first_byte_ms' => $row['first_byte_ms'],
+                ], JSON_THROW_ON_ERROR),
+                'recorded_at' => $recordedAt,
+                'created_at' => $recordedAt,
+                'updated_at' => $recordedAt,
             ];
         }, $ssrMetrics));
     }

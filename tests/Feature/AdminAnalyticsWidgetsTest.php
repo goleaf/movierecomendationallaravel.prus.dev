@@ -84,10 +84,21 @@ class AdminAnalyticsWidgetsTest extends TestCase
             ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
 
-        $this->assertEquals(
-            [185, 244, 201, 176, 192],
-            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
-        );
+        $firstBytes = DB::table('ssr_metrics')
+            ->orderBy('id')
+            ->pluck('payload')
+            ->map(static function (?string $payload): int {
+                if ($payload === null) {
+                    return 0;
+                }
+
+                $decoded = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+
+                return (int) ($decoded['first_byte_ms'] ?? 0);
+            })
+            ->all();
+
+        $this->assertEquals([185, 244, 201, 176, 192], $firstBytes);
     }
 
     public function test_z_test_widget_displays_variant_breakdown(): void

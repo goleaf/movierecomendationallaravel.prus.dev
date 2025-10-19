@@ -16,16 +16,28 @@ class SsrMetricFactory extends Factory
 
     public function definition(): array
     {
+        $metaCount = fake()->numberBetween(1, 25);
+        $ogCount = fake()->numberBetween(0, 10);
+        $ldjsonCount = fake()->numberBetween(0, 10);
+        $imgCount = fake()->numberBetween(0, 30);
+        $blocking = fake()->numberBetween(0, 5);
+        $firstByte = fake()->numberBetween(0, 1500);
+
         return [
             'path' => '/'.fake()->slug(),
             'score' => fake()->numberBetween(0, 100),
-            'size' => fake()->numberBetween(10_000, 1_000_000),
-            'meta_count' => fake()->numberBetween(1, 25),
-            'og_count' => fake()->numberBetween(0, 10),
-            'ldjson_count' => fake()->numberBetween(0, 10),
-            'img_count' => fake()->numberBetween(0, 30),
-            'blocking_scripts' => fake()->numberBetween(0, 5),
-            'first_byte_ms' => fake()->numberBetween(0, 1500),
+            'recorded_at' => now()->subMinutes(fake()->numberBetween(0, 1440)),
+            'payload' => [
+                'html_size' => fake()->numberBetween(10_000, 1_000_000),
+                'counts' => [
+                    'meta' => $metaCount,
+                    'og' => $ogCount,
+                    'ldjson' => $ldjsonCount,
+                    'img' => $imgCount,
+                    'blocking_scripts' => $blocking,
+                ],
+                'first_byte_ms' => $firstByte,
+            ],
         ];
     }
 }

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\SsrIssueCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class SsrIssuesController extends Controller
@@ -13,9 +14,26 @@ class SsrIssuesController extends Controller
     public function __invoke(): SsrIssueCollection
     {
         $issues = [];
-        if (\Schema::hasTable('ssr_metrics')) {
-            $rows = DB::table('ssr_metrics')->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
-                ->where('created_at', '>=', now()->subDays(2))->groupBy('path')->get();
+        if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = Schema::hasColumn('ssr_metrics', 'recorded_at') ? 'recorded_at' : 'created_at';
+
+            if (Schema::hasColumn('ssr_metrics', 'payload')) {
+                $blockingExpression = "avg(COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(payload, '\$.counts.blocking_scripts')) AS DECIMAL(10, 2)), 0)) as avg_block";
+                $ldExpression = "avg(COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(payload, '\$.counts.ldjson')) AS DECIMAL(10, 2)), 0)) as ld";
+                $ogExpression = "avg(COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(payload, '\$.counts.og')) AS DECIMAL(10, 2)), 0)) as og";
+
+                $rows = DB::table('ssr_metrics')
+                    ->selectRaw("path, avg(score) as avg_score, {$blockingExpression}, {$ldExpression}, {$ogExpression}")
+                    ->where($timestampColumn, '>=', now()->subDays(2))
+                    ->groupBy('path')
+                    ->get();
+            } else {
+                $rows = DB::table('ssr_metrics')
+                    ->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
+                    ->where($timestampColumn, '>=', now()->subDays(2))
+                    ->groupBy('path')
+                    ->get();
+            }
             foreach ($rows as $r) {
                 $advice = [];
                 if ((int) $r->avg_block > 0) {

@@ -189,13 +189,18 @@ class FixturesSeeder extends Seeder
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'size' => $row['size'],
-                'meta_count' => $row['meta'],
-                'og_count' => $row['og'],
-                'ldjson_count' => $row['ld'],
-                'img_count' => $row['img'],
-                'blocking_scripts' => $row['blocking'],
-                'first_byte_ms' => $row['first_byte_ms'],
+                'payload' => json_encode([
+                    'html_size' => $row['size'],
+                    'counts' => [
+                        'meta' => $row['meta'],
+                        'og' => $row['og'],
+                        'ldjson' => $row['ld'],
+                        'img' => $row['img'],
+                        'blocking_scripts' => $row['blocking'],
+                    ],
+                    'first_byte_ms' => $row['first_byte_ms'],
+                ], JSON_THROW_ON_ERROR),
+                'recorded_at' => $ts,
                 'created_at' => $ts,
                 'updated_at' => $ts,
             ];

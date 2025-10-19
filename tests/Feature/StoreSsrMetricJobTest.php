@@ -61,12 +61,30 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame('/movies', $row->path);
         $this->assertSame(85, (int) $row->score);
-        $this->assertSame(2048, (int) $row->size);
-        $this->assertSame(5, (int) $row->meta_count);
-        $this->assertSame(3, (int) $row->og_count);
-        $this->assertSame(1, (int) $row->ldjson_count);
-        $this->assertSame(4, (int) $row->img_count);
-        $this->assertSame(2, (int) $row->blocking_scripts);
+        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->recorded_at)->toDateTimeString());
+
+        $payload = json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(2048, $payload['html_size']);
+        $this->assertSame(123, $payload['first_byte_ms']);
+        $this->assertSame([
+            'meta' => 5,
+            'og' => 3,
+            'ldjson' => 1,
+            'img' => 4,
+            'blocking_scripts' => 2,
+        ], $payload['counts']);
+        $this->assertSame([
+            'first_byte_ms' => 123,
+            'html_size' => 2048,
+            'meta_count' => 5,
+            'og_count' => 3,
+            'ldjson_count' => 1,
+            'img_count' => 4,
+            'blocking_scripts' => 2,
+            'has_json_ld' => true,
+            'has_open_graph' => true,
+        ], $payload['meta']);
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
     }
 

@@ -9,10 +9,12 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use stdClass;
 
 class StoreSsrMetric implements ShouldQueue
 {
@@ -42,10 +44,29 @@ class StoreSsrMetric implements ShouldQueue
         }
 
         try {
+            $now = now();
+
+            if (Schema::hasColumn('ssr_metrics', 'payload')) {
+                $payload = $this->buildPayload();
+
+                $data = [
+                    'path' => $this->payload['path'],
+                    'score' => $this->payload['score'],
+                    'payload' => json_encode($payload === [] ? new stdClass() : $payload, JSON_THROW_ON_ERROR),
+                    'recorded_at' => $this->resolveRecordedAt($now),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                DB::table('ssr_metrics')->insert($data);
+
+                return true;
+            }
+
             $data = [
                 'path' => $this->payload['path'],
                 'score' => $this->payload['score'],
-                'created_at' => now(),
+                'created_at' => $now,
             ];
 
             if (Schema::hasColumn('ssr_metrics', 'size') && isset($this->payload['html_size'])) {
@@ -121,5 +142,58 @@ class StoreSsrMetric implements ShouldQueue
                 'payload' => $this->payload,
             ]);
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildPayload(): array
+    {
+        $payload = [];
+
+        if (isset($this->payload['html_size'])) {
+            $payload['html_size'] = (int) $this->payload['html_size'];
+        }
+
+        $counts = array_filter([
+            'meta' => $this->payload['meta_count'] ?? null,
+            'og' => $this->payload['og_count'] ?? null,
+            'ldjson' => $this->payload['ldjson_count'] ?? null,
+            'img' => $this->payload['img_count'] ?? null,
+            'blocking_scripts' => $this->payload['blocking_scripts'] ?? null,
+        ], static fn ($value) => $value !== null);
+
+        if ($counts !== []) {
+            $payload['counts'] = array_map(static fn ($value) => (int) $value, $counts);
+        }
+
+        if (isset($this->payload['first_byte_ms'])) {
+            $payload['first_byte_ms'] = (int) $this->payload['first_byte_ms'];
+        }
+
+        if (isset($this->payload['meta'])) {
+            $payload['meta'] = $this->payload['meta'];
+        }
+
+        return $payload;
+    }
+
+    private function resolveRecordedAt(Carbon $fallback): Carbon
+    {
+        $recordedAt = $this->payload['recorded_at'] ?? $this->payload['recordedAt'] ?? null;
+
+        if ($recordedAt instanceof Carbon) {
+            return $recordedAt;
+        }
+
+        if ($recordedAt instanceof \DateTimeInterface) {
+            return Carbon::parse($recordedAt->format('Y-m-d H:i:s'));
+        }
+
+        if (is_string($recordedAt) && $recordedAt !== '') {
+            return Carbon::parse($recordedAt);
+        }
+
+        return $fallback;
     }
 }
