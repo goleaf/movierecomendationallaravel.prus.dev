@@ -17,11 +17,6 @@ class Recommender
     {
         [$variant, $list] = $this->ab->forDevice($deviceId, $limit);
 
-        Log::debug('rec_ab.variant_selected', [
-            'device_id' => $deviceId,
-            'variant' => $variant,
-        ]);
-
         return [
             'variant' => $variant,
             'recommendations' => $list,
