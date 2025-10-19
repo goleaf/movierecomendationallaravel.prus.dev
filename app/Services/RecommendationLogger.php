@@ -8,7 +8,9 @@ use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class RecommendationLogger
@@ -50,6 +52,19 @@ class RecommendationLogger
             }
         }
 
+        $movies->values()->each(function (Movie $movie, int $index) use ($deviceId, $variant, $placement, $now): void {
+            Log::info('recommendation.impression', $this->appendRequestContext([
+                'event' => 'recommendation.impression',
+                'device_id' => $deviceId,
+                'placement' => $placement,
+                'variant' => $variant,
+                'ab_variant' => $variant,
+                'movie_id' => $movie->id,
+                'position' => $index + 1,
+                'impression_at' => $now->toAtomString(),
+            ]));
+        });
+
         $this->recordPageView($deviceId, $placement, null, $now);
     }
 
@@ -71,6 +86,16 @@ class RecommendationLogger
             $this->trendsRollup->increment($movieId, $now);
         }
 
+        Log::info('recommendation.click', $this->appendRequestContext([
+            'event' => 'recommendation.click',
+            'device_id' => $deviceId,
+            'placement' => $placement,
+            'variant' => $variant,
+            'ab_variant' => $variant,
+            'movie_id' => $movieId,
+            'clicked_at' => $now->toAtomString(),
+        ]));
+
         $this->recordPageView($deviceId, 'movie', $movieId, $now);
     }
 
@@ -90,5 +115,29 @@ class RecommendationLogger
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ]);
+    }
+
+    /**
+     * @param  array<string,mixed>  $context
+     * @return array<string,mixed>
+     */
+    protected function appendRequestContext(array $context): array
+    {
+        $request = request();
+        if (! $request instanceof Request) {
+            return $context;
+        }
+
+        $requestId = $request->attributes->get('request_id', $request->headers->get('X-Request-ID'));
+        if (is_string($requestId) && $requestId !== '') {
+            $context['request_id'] = $requestId;
+        }
+
+        $variant = $request->attributes->get('ab_variant');
+        if (is_string($variant) && $variant !== '') {
+            $context['ab_variant'] = $variant;
+        }
+
+        return $context;
     }
 }
