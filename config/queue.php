@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+$failoverConnections = array_values(array_filter(
+    array_map('trim', explode(',', (string) env('QUEUE_FAILOVER_CONNECTIONS', 'database,sync'))),
+    static fn (string $connection): bool => $connection !== '',
+));
+
+if ($failoverConnections === []) {
+    $failoverConnections = ['database', 'sync'];
+}
+
 return [
 
     /*
@@ -15,7 +24,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'failover'),
 
     /*
     |--------------------------------------------------------------------------
@@ -76,10 +85,7 @@ return [
 
         'failover' => [
             'driver' => 'failover',
-            'connections' => [
-                'database',
-                'sync',
-            ],
+            'connections' => $failoverConnections,
         ],
 
     ],
