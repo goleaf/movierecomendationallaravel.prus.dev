@@ -15,9 +15,10 @@
                         href="{{ route('movies.show', $movie) }}"
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
-                        @if ($movie->poster_url)
+                        @php($poster = poster_image_url($movie->poster_url))
+                        @if ($poster)
                             <img
-                                src="{{ $movie->poster_url }}"
+                                src="{{ $poster }}"
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
@@ -52,9 +53,10 @@
                         href="{{ route('movies.show', $movie) }}"
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
-                        @if ($movie->poster_url)
+                        @php($poster = poster_image_url($movie->poster_url))
+                        @if ($poster)
                             <img
-                                src="{{ $movie->poster_url }}"
+                                src="{{ $poster }}"
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"

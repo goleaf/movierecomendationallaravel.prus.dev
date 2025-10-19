@@ -76,7 +76,7 @@ class TrendsAnalyticsService
                 return [
                     'id' => (int) $movie->id,
                     'title' => (string) $movie->title,
-                    'poster_url' => $movie->poster_url !== null ? (string) $movie->poster_url : null,
+                    'poster_url' => poster_image_url($movie->poster_url !== null ? (string) $movie->poster_url : null),
                     'year' => $movie->year !== null ? (int) $movie->year : null,
                     'type' => (string) $movie->type,
                     'imdb_rating' => $movie->imdb_rating !== null ? (float) $movie->imdb_rating : null,
@@ -198,7 +198,7 @@ class TrendsAnalyticsService
                             return [
                                 'id' => (int) $item->id,
                                 'title' => (string) $item->title,
-                                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                                'poster_url' => poster_image_url($item->poster_url !== null ? (string) $item->poster_url : null),
                                 'year' => $item->year !== null ? (int) $item->year : null,
                                 'type' => (string) $item->type,
                                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
@@ -243,7 +243,7 @@ class TrendsAnalyticsService
                             return [
                                 'id' => (int) $item->id,
                                 'title' => (string) $item->title,
-                                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                                'poster_url' => poster_image_url($item->poster_url !== null ? (string) $item->poster_url : null),
                                 'year' => $item->year !== null ? (int) $item->year : null,
                                 'type' => (string) $item->type,
                                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,

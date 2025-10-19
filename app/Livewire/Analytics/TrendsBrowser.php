@@ -80,7 +80,7 @@ class TrendsBrowser extends Component
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => poster_image_url($item->poster_url),
                 'year' => $item->year,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating,

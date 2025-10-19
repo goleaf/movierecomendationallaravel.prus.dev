@@ -30,3 +30,22 @@ if (! function_exists('artwork_url')) {
         return URL::signedRoute('api.artwork', ['src' => $url]);
     }
 }
+
+if (! function_exists('poster_image_url')) {
+    function poster_image_url(?string $url, ?string $fallback = null): ?string
+    {
+        if (blank($url)) {
+            return filled($fallback) ? $fallback : null;
+        }
+
+        $resolvedUrl = (string) $url;
+        $host = parse_url($resolvedUrl, PHP_URL_HOST);
+        $appHost = parse_url(URL::to('/'), PHP_URL_HOST);
+
+        if ($host === null || ($appHost !== null && Str::lower((string) $host) === Str::lower((string) $appHost))) {
+            return $resolvedUrl;
+        }
+
+        return artwork_url($resolvedUrl) ?? (filled($fallback) ? $fallback : null);
+    }
+}
