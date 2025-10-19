@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use Illuminate\Support\Uri;
+
 class OmdbClient
 {
     /**
@@ -22,7 +24,7 @@ class OmdbClient
     {
         $query = $this->buildQuery(['i' => $imdbId], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->client->get($this->rootPath(), $query);
     }
 
     /**
@@ -33,7 +35,7 @@ class OmdbClient
     {
         $query = $this->buildQuery(['t' => $title], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->client->get($this->rootPath(), $query);
     }
 
     /**
@@ -44,7 +46,7 @@ class OmdbClient
     {
         $query = $this->buildQuery(['s' => $search], $parameters);
 
-        return $this->client->get('/', $query);
+        return $this->client->get($this->rootPath(), $query);
     }
 
     /**
@@ -54,11 +56,19 @@ class OmdbClient
      */
     protected function buildQuery(array $query, array $overrides = []): array
     {
-        $merged = array_merge($this->defaultParameters, $overrides, $query);
+        $uri = Uri::of('/')
+            ->withQuery($this->defaultParameters)
+            ->withQuery($overrides)
+            ->withQuery($query);
 
         return array_filter(
-            $merged,
+            $uri->query()->all(),
             static fn ($value) => $value !== null && $value !== ''
         );
+    }
+
+    protected function rootPath(): Uri
+    {
+        return Uri::of('/');
     }
 }

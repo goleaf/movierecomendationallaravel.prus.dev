@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use Illuminate\Support\Uri;
+
 class TmdbClient
 {
     /**
@@ -30,7 +32,7 @@ class TmdbClient
     {
         $locale = $this->resolveLocale($language);
 
-        return $this->client->get("find/{$imdbId}", [
+        return $this->client->get($this->buildPath('find', $imdbId), [
             'external_source' => 'imdb_id',
             'language' => $locale,
         ]);
@@ -49,7 +51,15 @@ class TmdbClient
             'language' => $locale,
         ];
 
-        return $this->client->get("{$mediaType}/{$id}", $query);
+        return $this->client->get($this->buildPath($mediaType, (string) $id), $query);
+    }
+
+    protected function buildPath(string ...$segments): Uri
+    {
+        $trimmedSegments = array_map(static fn (string $segment): string => trim($segment, '/'), $segments);
+        $path = implode('/', array_filter($trimmedSegments, static fn (string $segment): bool => $segment !== ''));
+
+        return Uri::of()->withPath($path);
     }
 
     protected function resolveLocale(?string $locale): string

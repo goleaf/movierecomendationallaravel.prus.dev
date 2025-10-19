@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Uri;
 use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
@@ -64,7 +65,12 @@ class RateLimitedClient
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function get(string $path, array $query = [], array $options = []): array
+    /**
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public function get(Uri|string $path, array $query = [], array $options = []): array
     {
         return $this->request('GET', $path, $query, $options);
     }
@@ -74,7 +80,7 @@ class RateLimitedClient
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function request(string $method, string $path, array $query = [], array $options = []): array
+    public function request(string $method, Uri|string $path, array $query = [], array $options = []): array
     {
         $result = null;
 
@@ -106,7 +112,7 @@ class RateLimitedClient
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    protected function performRequest(string $method, string $path, array $query = [], array $options = []): array
+    protected function performRequest(string $method, Uri|string $path, array $query = [], array $options = []): array
     {
         $maxAttempts = max(1, $this->retryAttempts + 1);
         $delay = $this->retryDelayMs;
@@ -117,8 +123,10 @@ class RateLimitedClient
             try {
                 $request = $this->buildRequest($options);
 
-                $response = $request->send($method, ltrim($path, '/'), [
-                    'query' => $this->buildQuery($query, $options),
+                [$resolvedPath, $resolvedQuery] = $this->prepareUri($path, $query, $options);
+
+                $response = $request->send($method, $resolvedPath, [
+                    'query' => $resolvedQuery,
                 ]);
 
                 if ($response->successful()) {
@@ -187,14 +195,45 @@ class RateLimitedClient
     /**
      * @param  array<string, mixed>  $query
      * @param  array<string, mixed>  $options
+     * @return array{string, array<string, mixed>}
+     */
+    protected function prepareUri(Uri|string $path, array $query, array $options): array
+    {
+        $uri = $path instanceof Uri ? $path : Uri::of($path);
+
+        if ($query !== []) {
+            $uri = $uri->withQuery($query);
+        }
+
+        $uriQuery = $uri->query()->all();
+        $mergedQuery = $this->buildQuery($uriQuery, $options);
+
+        $resolvedPath = $uri->path();
+
+        if ($resolvedPath === null || $resolvedPath === '/') {
+            $resolvedPath = '';
+        }
+
+        return [
+            ltrim($resolvedPath, '/'),
+            $mergedQuery,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
     protected function buildQuery(array $query, array $options = []): array
     {
         $optionQuery = (array) ($options['query'] ?? []);
-        $merged = array_merge($optionQuery, $query);
 
-        return array_filter($merged, static fn ($value) => $value !== null);
+        $uri = Uri::of('/')
+            ->withQuery($optionQuery)
+            ->withQuery($query);
+
+        return array_filter($uri->query()->all(), static fn ($value) => $value !== null);
     }
 
     protected function shouldRetryResponse(Response $response): bool
