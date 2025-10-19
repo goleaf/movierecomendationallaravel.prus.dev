@@ -26,4 +26,17 @@ return [
             'deduction' => 10,
         ],
     ],
+    'storage' => [
+        'order' => ['database', 'jsonl'],
+        'database' => [
+            'enabled' => env('SSR_METRICS_DB_ENABLED', true),
+            'retention_days' => env('SSR_METRICS_DB_RETENTION_DAYS', 30),
+        ],
+        'jsonl' => [
+            'enabled' => env('SSR_METRICS_JSONL_ENABLED', true),
+            'disk' => env('SSR_METRICS_JSONL_DISK', 'local'),
+            'path' => env('SSR_METRICS_JSONL_PATH', 'metrics/ssr.jsonl'),
+            'retention_days' => env('SSR_METRICS_JSONL_RETENTION_DAYS', 14),
+        ],
+    ],
 ];

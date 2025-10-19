@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Services\SsrMetricsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -33,15 +34,35 @@ class StoreSsrMetric implements ShouldQueue
      */
     public function __construct(public array $payload) {}
 
-    public function handle(): void
+    public function handle(SsrMetricsService $metrics): void
     {
         $this->normalizedPayload = $this->normalizePayload($this->payload);
 
-        if ($this->storeInDatabase()) {
-            return;
+        $drivers = $metrics->storageOrder();
+        $stored = false;
+
+        foreach ($drivers as $driver) {
+            if ($driver === 'database' && $this->storeInDatabase()) {
+                $this->purgeDatabase($metrics);
+                $stored = true;
+
+                break;
+            }
+
+            if ($driver === 'jsonl' && $this->storeInJsonl($metrics)) {
+                $this->purgeJsonl($metrics);
+                $stored = true;
+
+                break;
+            }
         }
 
-        $this->storeInJsonl();
+        if (! $stored && $metrics->storageEnabled('jsonl') && ! in_array('jsonl', $drivers, true)) {
+            if ($this->storeInJsonl($metrics)) {
+                $this->purgeJsonl($metrics);
+            }
+        }
+
     }
 
     private function storeInDatabase(): bool
@@ -118,11 +139,16 @@ class StoreSsrMetric implements ShouldQueue
         }
     }
 
-    private function storeInJsonl(): void
+    private function storeInJsonl(SsrMetricsService $metrics): bool
     {
         try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
+            $disk = Storage::disk($metrics->jsonlDisk());
+            $path = $metrics->jsonlPath();
+
+            $directory = trim(dirname($path), '.\/');
+
+            if ($directory !== '' && ! $disk->exists($directory)) {
+                $disk->makeDirectory($directory);
             }
 
             $payload = [
@@ -147,11 +173,111 @@ class StoreSsrMetric implements ShouldQueue
                 'has_open_graph' => $this->normalizedPayload['has_open_graph'],
             ];
 
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+            $disk->append($path, json_encode($payload, JSON_THROW_ON_ERROR));
+
+            return true;
         } catch (Throwable $e) {
             Log::error('Failed storing SSR metric.', [
                 'exception' => $e,
                 'payload' => $this->payload,
+            ]);
+
+            return false;
+        }
+    }
+
+    private function purgeDatabase(SsrMetricsService $metrics): void
+    {
+        $retention = $metrics->databaseRetentionDays();
+
+        if ($retention === null) {
+            return;
+        }
+
+        if (! Schema::hasTable('ssr_metrics')) {
+            return;
+        }
+
+        $column = Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+        $threshold = Carbon::now()->subDays($retention)->toDateTimeString();
+
+        try {
+            DB::table('ssr_metrics')
+                ->whereNotNull($column)
+                ->where($column, '<', $threshold)
+                ->delete();
+        } catch (Throwable $e) {
+            Log::warning('Failed pruning SSR metrics table.', [
+                'exception' => $e,
+            ]);
+        }
+    }
+
+    private function purgeJsonl(SsrMetricsService $metrics): void
+    {
+        $retention = $metrics->jsonlRetentionDays();
+
+        if ($retention === null) {
+            return;
+        }
+
+        try {
+            $disk = Storage::disk($metrics->jsonlDisk());
+            $path = $metrics->jsonlPath();
+
+            if (! $disk->exists($path)) {
+                return;
+            }
+
+            $contents = $disk->get($path);
+            $lines = preg_split('/\r?\n/', $contents) ?: [];
+            $threshold = Carbon::now()->subDays($retention);
+            $kept = [];
+
+            foreach ($lines as $line) {
+                $line = trim($line);
+
+                if ($line === '') {
+                    continue;
+                }
+
+                try {
+                    $decoded = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                } catch (Throwable) {
+                    $kept[] = $line;
+
+                    continue;
+                }
+
+                $timestamp = $decoded['ts'] ?? $decoded['timestamp'] ?? $decoded['collected_at'] ?? null;
+
+                if ($timestamp === null) {
+                    $kept[] = $line;
+
+                    continue;
+                }
+
+                try {
+                    $parsed = Carbon::parse($timestamp);
+                } catch (Throwable) {
+                    $kept[] = $line;
+
+                    continue;
+                }
+
+                if ($parsed->lt($threshold)) {
+                    continue;
+                }
+
+                $kept[] = json_encode($decoded, JSON_THROW_ON_ERROR);
+            }
+
+            $payload = $kept === [] ? '' : implode(PHP_EOL, $kept).PHP_EOL;
+
+            $disk->put($path, $payload);
+        } catch (Throwable $e) {
+            Log::warning('Failed pruning SSR metrics JSONL store.', [
+                'exception' => $e,
             ]);
         }
     }
