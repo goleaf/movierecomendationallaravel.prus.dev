@@ -1,0 +1,821 @@
+---
+alwaysApply: true
+---
+
+Cursor Filament rules
+create for cursor app rules for project, where i want to use only filament laravel framework
+Thought for 8 seconds
+Below is a complete set of “Cursor‑App” rules you can drop into your Laravel project to tell the Cursor AI (or any other AI‑assistant you use) to stay strictly inside the Filament ecosystem.
+
+The rules are written as a human‑readable policy document (CURSOR_RULES.md) and as a machine‑readable configuration file (.cursor.yml). Adjust the file names/format to match the exact syntax required by the version of Cursor you are using (most recent builds read a top‑level .cursor.yml or cursor.yaml in the repo root).
+
+1️⃣ CURSOR_RULES.md (Human‑readable guideline)
+Place this file in the root of the repository (/CURSOR_RULES.md).
+It works as a quick reference for any developer (or AI) who opens the project.
+
+# 📘 Cursor Project Rules – Filament‑Only Laravel Application
+
+## 🎯 Goal
+All UI, admin, and CRUD functionality must be built **exclusively** with the **Filament** Laravel framework (and its bundled dependencies). No external UI libraries, no custom Blade scaffolding outside Filament, and no alternative admin generators are allowed.
+
+---
+
+## 📚 General Laravel Conventions
+|
+#
+|
+ Rule 
+|
+|
+---
+|
+------
+|
+|
+**
+1
+**
+|
+ Follow 
+**
+PSR‑12
+**
+ coding style. Use 
+`declare(strict_types=1);`
+ at the top of every PHP file. 
+|
+|
+**
+2
+**
+|
+ All classes must live under the appropriate namespaces (
+`App\Models`
+, 
+`App\Filament\Resources`
+, etc.). 
+|
+|
+**
+3
+**
+|
+ Use 
+**
+Eloquent
+**
+ models for data access. Do not write raw queries unless absolutely necessary and wrapped in a repository. 
+|
+|
+**
+4
+**
+|
+ All database schema changes must be performed via 
+**
+Laravel migrations
+**
+ inside 
+`database/migrations`
+. 
+|
+|
+**
+5
+**
+|
+ Use 
+**
+Form Requests
+**
+ for validation (
+`php artisan make:request`
+). 
+|
+|
+**
+6
+**
+|
+ Write 
+**
+PHPUnit
+**
+ tests for every new feature (
+`tests/Feature`
+ and 
+`tests/Unit`
+). 
+|
+|
+**
+7
+**
+|
+ Keep the 
+`app/`
+ directory free of UI‑specific code; UI belongs under 
+`app/Filament`
+. 
+|
+|
+**
+8
+**
+|
+ All configuration lives in 
+`config/`
+. Do not hard‑code values in classes. 
+|
+|
+**
+9
+**
+|
+ Use 
+**
+Laravel’s built‑in logging
+**
+ (
+`Log::info()`
+, etc.) and never call 
+`dd()`
+ or 
+`dump()`
+ in production code. 
+|
+|
+**
+10
+**
+|
+ Respect the 
+**
+principle of least privilege
+**
+ – use policies / gates for any data‑access checks. 
+|
+
+---
+
+## 🛠️ Filament‑Specific Rules
+
+|
+#
+|
+ Rule 
+|
+|
+---
+|
+------
+|
+|
+**
+F1
+**
+|
+**
+All UI must be built with Filament components
+**
+: Resources, Pages, Widgets, Forms, Tables, and custom Livewire components that extend Filament classes. 
+|
+|
+**
+F2
+**
+|
+**
+CRUD
+**
+: Implement every create/read/update/delete screen via a 
+**
+Filament Resource
+**
+ (
+`php artisan make:filament-resource`
+). Do not hand‑craft Blade views for CRUD. 
+|
+|
+**
+F3
+**
+|
+**
+Navigation
+**
+: Use Filament’s navigation configuration (
+`Filament::registerNavigationGroups`
+, 
+`->navigationLabel()`
+, etc.). Do not add custom menu items via raw Blade. 
+|
+|
+**
+F4
+**
+|
+**
+Forms
+**
+: Use 
+`Filament\Forms`
+ components (
+`TextInput`
+, 
+`Select`
+, 
+`DatePicker`
+, 
+`FileUpload`
+, …). No plain HTML 
+`<input>`
+ unless it’s inside a custom Filament form component. 
+|
+|
+**
+F5
+**
+|
+**
+Tables
+**
+: Use 
+`Filament\Tables`
+ components (
+`TextColumn`
+, 
+`BooleanColumn`
+, 
+`ImageColumn`
+, etc.). 
+|
+|
+**
+F6
+**
+|
+**
+Widgets
+**
+: Keep all dashboard widgets under 
+`app/Filament/Widgets`
+. Use the 
+`Widget`
+ base class. 
+|
+|
+**
+F7
+**
+|
+**
+Livewire
+**
+: Filament runs on Livewire – any custom dynamic component must extend 
+`Filament\Widgets\Widget`
+ or 
+`Filament\Forms\Components\Livewire`
+. 
+|
+|
+**
+F8
+**
+|
+**
+Policies
+**
+: Attach Filament policies via the resource’s 
+`getPolicy()`
+ method or the 
+`->can*()`
+ helpers. 
+|
+|
+**
+F9
+**
+|
+**
+Notifications
+**
+: Use Filament’s built‑in notification system (
+`$this->notify('success', '...')`
+). 
+|
+|
+**
+F10
+**
+|
+**
+Styling/Theming
+**
+: Rely on Filament’s default Tailwind config. Do 
+**
+not
+**
+ import additional CSS frameworks (Bootstrap, Bulma, etc.). Small custom Tailwind tweaks are allowed in 
+`resources/css/filament.css`
+. 
+|
+|
+**
+F11
+**
+|
+**
+Asset Loading
+**
+: All JavaScript must be loaded through Filament’s asset pipeline (
+`FilamentAsset::register()`
+). No direct script tags in Blade. 
+|
+|
+**
+F12
+**
+|
+**
+File Uploads
+**
+: Use Filament’s 
+`Spatie\MediaLibrary`
+ integration (or the built‑in 
+`FileUpload`
+ component). Do not use third‑party upload libraries. 
+|
+|
+**
+F13
+**
+|
+**
+Internationalisation
+**
+: All UI strings must be translatable via 
+`__('key')`
+ and live under 
+`lang/filament/*.php`
+. 
+|
+|
+**
+F14
+**
+|
+**
+Testing Filament UI
+**
+: Use 
+`Livewire::test()`
+ and Filament’s testing helpers (
+`Filament\Resources\Tests\Pages\...`
+) to assert UI behavior. 
+|
+
+---
+
+## 🚫 Forbidden Technologies / Practices
+
+|
+#
+|
+ Not allowed 
+|
+|
+---
+|
+--------------
+|
+|
+**
+X1
+**
+|
+ Any 
+**
+non‑Filament UI library
+**
+ (Bootstrap, Ant Design, Tailwind UI components, React, Vue, Alpine.js, etc.). 
+|
+|
+**
+X2
+**
+|
+ Custom Blade files for admin UI that are not wrapped by Filament components. 
+|
+|
+**
+X3
+**
+|
+ Direct use of 
+**
+jQuery
+**
+ or other legacy JavaScript within the admin panel. 
+|
+|
+**
+X4
+**
+|
+ Manual data‑grid implementations; always use Filament tables. 
+|
+|
+**
+X5
+**
+|
+ Overriding Filament’s default form validation with custom JavaScript validation. 
+|
+|
+**
+X6
+**
+|
+ Adding routes to 
+`routes/web.php`
+ that serve admin pages – use Filament’s route registration only. 
+|
+|
+**
+X7
+**
+|
+ Using 
+**
+third‑party admin generators
+**
+ (Voyager, Nova, Backpack, etc.). 
+|
+
+---
+
+## 🧪  CI / Linting
+
+|
+#
+|
+ Rule 
+|
+|
+---
+|
+------
+|
+|
+**
+CI1
+**
+|
+ Run 
+`php artisan style:check`
+ (or 
+`phpcs`
+) on every PR – must pass PSR‑12. 
+|
+|
+**
+CI2
+**
+|
+ Run 
+`php artisan test`
+ – 100 % coverage for any new Filament feature. 
+|
+|
+**
+CI3
+**
+|
+ Run 
+`phpstan`
+ or 
+`psalm`
+ with level 8 (or higher). 
+|
+|
+**
+CI4
+**
+|
+ Use 
+`php artisan filament:publish`
+ in CI to verify no missing config assets. 
+|
+|
+**
+CI5
+**
+|
+ Enforce the presence of a 
+**
+CURSOR_RULES.md
+**
+ entry for every new directory or major feature. 
+|
+
+---
+
+## 🤖  How Cursor Should Use These Rules
+
+When generating code, Cursor must:
+
+1. **Read the rule set first** – treat every rule as a hard constraint unless the user explicitly states otherwise.  
+2. **Search the Filament docs** for the appropriate component before inventing any custom Blade markup.  
+3. **Ask for clarification** if a request implies an external UI library (e.g., “add a Bootstrap modal”).  
+4. **Insert comments** reminding the developer of the rule that triggered the suggestion, e.g.:
+
+   ```php
+   // 📌 Filament Rule F4 – Using Filament Form components only
+   $form->schema([
+       TextInput::make('title')
+           ->required()
+           ->maxLength(255),
+   ]);
+Never suggest direct route definitions for admin pages – always use Filament::registerResources() or the resource’s built‑in Pages.
+
+📦 Sample Folder Layout (recommended)
+/app
+   /Filament
+      /Resources
+          PostResource.php
+          /Pages
+              CreatePost.php
+              EditPost.php
+              ListPosts.php
+      /Widgets
+          RecentPosts.php
+   /Models
+      Post.php
+   /Http
+      /Controllers   (optional API controllers)
+      /Requests
+          StorePostRequest.php
+/config
+   filament.php
+/database
+   /migrations
+/resources
+   /views   (only for custom public‑facing pages – NOT for admin)
+   /css
+      filament.css   (Tailwind overrides)
+   /js
+      filament.js    (if extending Filament JS)
+/tests
+   /Feature
+   /Unit
+✅ Quick checklist for a new feature
+ Create a Filament Resource (php artisan make:filament-resource Model).
+
+ Define Forms and Tables inside the resource using Filament components.
+
+ Register any Pages/Widgets under app/Filament.
+
+ Add Policies if the feature requires authorization.
+
+ Write Feature tests using Livewire::test() + Filament assertions.
+
+ Update CURSOR_RULES.md if you add a new folder or a new type of Filament component.
+
+📜 Summary
+All UI → Filament (Resources, Pages, Widgets, Forms, Tables).
+
+No extra CSS/JS frameworks or custom Blade admin pages.
+
+Follow Laravel + PSR‑12 standards.
+
+Write tests, lint, and keep CI green.
+
+Use this file as the single source of truth for the Cursor assistant and for any human contributor.
+
+2️⃣ .cursor.yml (Machine‑readable configuration)
+Place this file at the root of the project (/ .cursor.yml).
+Cursor reads the system_prompt (or instructions) block and prepends it to the AI request.
+Adjust the key names if your version of Cursor expects a different schema (e.g. cursor.yaml, cursor.json).
+
+# .cursor.yml
+# -------------------------------------------------
+# Cursor AI configuration – Filament‑Only Laravel app
+# -------------------------------------------------
+# This file tells the Cursor assistant to stay inside the
+# Filament framework and obey the policies defined in
+# CURSOR_RULES.md.
+
+system_prompt: |
+  You are a coding assistant for a Laravel project that uses ONLY the Filament framework for any UI,
+  navigation, forms, tables, widgets, and actions. Follow these constraints strictly:
+
+  1️⃣  All UI must be built with Filament components (Resources, Pages, Widgets, Form & Table components).
+  2️⃣  Do NOT import or reference any external CSS/JS libraries (Bootstrap, Vue, React, Alpine, etc.).
+  3️⃣  Use Laravel‑standard conventions (PSR‑12, Eloquent models, migrations, Form Requests, policies).
+  4️⃣  When creating CRUD screens, generate a Filament Resource (`php artisan make:filament-resource`).
+  5️⃣  Use Filament’s navigation system; never add raw menu items in Blade.
+  6️⃣  All validation must be handled via Laravel Form Requests or Filament Form components.
+  7️⃣  For dynamic behaviour, extend Filament Livewire components only.
+  8️⃣  Follow the rules in the repository file CURSOR_RULES.md – treat them as hard constraints.
+  9️⃣  Whenever you produce code, prepend a comment that references the rule that forced that decision
+        (e.g. // 📌 Filament Rule F4 – using Form components only).
+  🔟  If a user asks for something that conflicts with any rule, ask for clarification before proceeding.
+
+# Optional: you can also add a list of “banned imports” so the UI can warn you.
+banned_imports:
+  - "use Illuminate\\Support\\Facades\\Blade;"
+  - "use Bootstrap\\*;"
+  - "use Vue\\*;"
+  - "use React\\*;"
+  - "use Alpine\\*;"
+
+# Optional: set a soft “auto‑fix” mode for linting (if your Cursor version supports it)
+auto_fix: true
+
+# Optional: set a path to the human‑readable rule file for quick reference
+rules_document: "./CURSOR_RULES.md"
+How it works:
+When you invoke Cursor (e.g., Ctrl+Shift+I in the editor) the assistant first reads this file, injects the system_prompt into the model, and then generates code that obeys every line.
+If you ever need to relax a rule, edit the system_prompt or add an explicit exception comment in your request.
+
+🛠️ What to Do Next
+Add the two files (CURSOR_RULES.md & .cursor.yml) to the repo root.
+
+Commit & push – the next time Cursor is used it will automatically respect the constraints.
+
+Add a CI step (optional) that verifies the .cursor.yml syntax (e.g., yq e . .cursor.yml).
+
+Educate the team – point new contributors at CURSOR_RULES.md during onboarding.
+
+✨ Quick “One‑Liner” for the team
+“All admin UI must be built with Filament. If you’re not sure which Filament component to use, ask the assistant – it will only suggest Filament‑compatible code.”
+
+That’s it! You now have a complete rule‑set that both humans and the Cursor AI can read, understand, and enforce. Happy coding! 🚀
+
+give me just mdc text    
+Thought for a couple of seconds
+📘 Cursor Project Rules – Filament‑Only Laravel Application
+🎯 Goal
+All UI, admin, and CRUD functionality must be built exclusively with the Filament Laravel framework (and its bundled dependencies). No external UI libraries, no custom Blade scaffolding outside Filament, and no alternative admin generators are allowed.
+
+📚 General Laravel Conventions
+#	Rule
+1	Follow PSR‑12 coding style. Use declare(strict_types=1); at the top of every PHP file.
+2	All classes must live under the appropriate namespaces (App\Models, App\Filament\Resources, etc.).
+3	Use Eloquent models for data access. Do not write raw queries unless absolutely necessary and wrapped in a repository.
+4	All database schema changes must be performed via Laravel migrations inside database/migrations.
+5	Use Form Requests for validation (php artisan make:request).
+6	Write PHPUnit tests for every new feature (tests/Feature and tests/Unit).
+7	Keep the app/ directory free of UI‑specific code; UI belongs under app/Filament.
+8	All configuration lives in config/. Do not hard‑code values in classes.
+9	Use Laravel’s built‑in logging (Log::info(), etc.) and never call dd() or dump() in production code.
+10	Respect the principle of least privilege – use policies / gates for any data‑access checks.
+🛠️ Filament‑Specific Rules
+#	Rule
+F1	All UI must be built with Filament components: Resources, Pages, Widgets, Forms, Tables, and custom Livewire components that extend Filament classes.
+F2	CRUD: Implement every create/read/update/delete screen via a Filament Resource (php artisan make:filament-resource). Do not hand‑craft Blade views for CRUD.
+F3	Navigation: Use Filament’s navigation configuration (Filament::registerNavigationGroups, ->navigationLabel(), etc.). Do not add custom menu items via raw Blade.
+F4	Forms: Use Filament\Forms components (TextInput, Select, DatePicker, FileUpload, …). No plain HTML <input> unless it’s inside a custom Filament form component.
+F5	Tables: Use Filament\Tables components (TextColumn, BooleanColumn, ImageColumn, etc.).
+F6	Widgets: Keep all dashboard widgets under app/Filament/Widgets. Use the Widget base class.
+F7	Livewire: Filament runs on Livewire – any custom dynamic component must extend Filament\Widgets\Widget or Filament\Forms\Components\Livewire.
+F8	Policies: Attach Filament policies via the resource’s getPolicy() method or the ->can*() helpers.
+F9	Notifications: Use Filament’s built‑in notification system ($this->notify('success', '...')).
+F10	Styling/Theming: Rely on Filament’s default Tailwind config. Do not import additional CSS frameworks (Bootstrap, Bulma, etc.). Small custom Tailwind tweaks are allowed in resources/css/filament.css.
+F11	Asset Loading: All JavaScript must be loaded through Filament’s asset pipeline (FilamentAsset::register()). No direct script tags in Blade.
+F12	File Uploads: Use Filament’s Spatie\MediaLibrary integration (or the built‑in FileUpload component). Do not use third‑party upload libraries.
+F13	Internationalisation: All UI strings must be translatable via __('key') and live under lang/filament/*.php.
+F14	Testing Filament UI: Use Livewire::test() and Filament’s testing helpers (Filament\Resources\Tests\Pages\...) to assert UI behavior.
+🚫 Forbidden Technologies / Practices
+#	Not allowed
+X1	Any non‑Filament UI library (Bootstrap, Ant Design, Tailwind UI components, React, Vue, Alpine.js, etc.).
+X2	Custom Blade files for admin UI that are not wrapped by Filament components.
+X3	Direct use of jQuery or other legacy JavaScript within the admin panel.
+X4	Manual data‑grid implementations; always use Filament tables.
+X5	Overriding Filament’s default form validation with custom JavaScript validation.
+X6	Adding routes to routes/web.php that serve admin pages – use Filament’s route registration only.
+X7	Using third‑party admin generators (Voyager, Nova, Backpack, etc.).
+🧪 CI / Linting
+#	Rule
+CI1	Run php artisan style:check (or phpcs) on every PR – must pass PSR‑12.
+CI2	Run php artisan test – 100 % coverage for any new Filament feature.
+CI3	Run phpstan or psalm with level 8 (or higher).
+CI4	Use php artisan filament:publish in CI to verify no missing config assets.
+CI5	Enforce the presence of a CURSOR_RULES.md entry for every new directory or major feature.
+🤖 How Cursor Should Use These Rules
+When generating code, Cursor must:
+
+Read the rule set first – treat every rule as a hard constraint unless the user explicitly states otherwise.
+
+Search the Filament docs for the appropriate component before inventing any custom Blade markup.
+
+Ask for clarification if a request implies an external UI library (e.g., “add a Bootstrap modal”).
+
+Insert comments reminding the developer of the rule that triggered the suggestion, e.g.:
+
+// 📌 Filament Rule F4 – Using Filament Form components only
+$form->schema([
+    TextInput::make('title')
+        ->required()
+        ->maxLength(255),
+]);
+Never suggest direct route definitions for admin pages – always use Filament::registerResources() or the resource’s built‑in Pages.
+
+📦 Sample Folder Layout (recommended)
+/app
+   /Filament
+      /Resources
+          PostResource.php
+          /Pages
+              CreatePost.php
+              EditPost.php
+              ListPosts.php
+      /Widgets
+          RecentPosts.php
+   /Models
+      Post.php
+   /Http
+      /Controllers   (optional API controllers)
+      /Requests
+          StorePostRequest.php
+/config
+   filament.php
+/database
+   /migrations
+/resources
+   /views   (only for custom public‑facing pages – NOT for admin)
+   /css
+      filament.css   (Tailwind overrides)
+   /js
+      filament.js    (if extending Filament JS)
+/tests
+   /Feature
+   /Unit
+✅ Quick checklist for a new feature
+ Create a Filament Resource (php artisan make:filament-resource Model).
+
+ Define Forms and Tables inside the resource using Filament components.
+
+ Register any Pages/Widgets under app/Filament.
+
+ Add Policies if the feature requires authorization.
+
+ Write Feature tests using Livewire::test() + Filament assertions.
+
+ Update CURSOR_RULES.md if you add a new folder or a new type of Filament component.
+
+
+## General code instructions
+ 
+- Don't generate code comments above the methods or code blocks if they are obvious. Generate comments only for something that needs extra explanation for the reasons why that code was written
+ 
+---
+ 
+## PHP instructions
+ 
+- In PHP, use `match` operator over `switch` whenever possible
+- Use PHP 8 constructor property promotion. Don't create an empty Constructor method if it doesn't have any parameters.
+- Using Services in Controllers: if Service class is used only in ONE method of Controller, inject it directly into that method with type-hinting. If Service class is used in MULTIPLE methods of Controller, initialize it in Constructor.
+- Use return types in functions whenever possible, adding the full path to classname to the top in `use` section
+ 
+---
+ 
+## Laravel instructions
+ 
+- For DB pivot tables, use correct alphabetical order, like "project_role" instead of "role_project"
+- I am using Laravel Herd locally, so always assume that the main URL of the project is `http://[folder_name].test`
+- **Eloquent Observers** should be registered in Eloquent Models with PHP Attributes, and not in AppServiceProvider. Example: `#[ObservedBy([UserObserver::class])]` with `use Illuminate\Database\Eloquent\Attributes\ObservedBy;` on top
+- When generating Controllers, put validation in Form Request classes
+- Aim for "slim" Controllers and put larger logic pieces in Service classes
+- Use Laravel helpers instead of `use` section classes whenever possible. Examples: use `auth()->id()` instead of `Auth::id()` and adding `Auth` in the `use` section. Another example: use `redirect()->route()` instead of `Redirect::route()`.
+ 
+---
+ 
+## Use Laravel 11+ skeleton structure
+ 
+- **Service Providers**: there are no other service providers except AppServiceProvider. Don't create new service providers unless absolutely necessary. Use Laravel 11+ new features, instead. Or, if you really need to create a new service provider, register it in `bootstrap/providers.php` and not `config/app.php` like it used to be before Laravel 11.
+- **Event Listeners**: since Laravel 11, Listeners auto-listen for the events if they are type-hinted correctly.
+- **Console Scheduler**: scheduled commands should be in `routes/console.php` and not `app/Console/Kernel.php` which doesn't exist since Laravel 11.
+- **Middleware**: whenever possible, use Middleware by class name in the routes. But if you do need to register Middleware alias, it should be registered in `bootstrap/app.php` and not `app/Http/Kernel.php` which doesn't exist since Laravel 11.
+- **Tailwind**: in new Blade pages, use Tailwind and not Bootstrap, unless instructed otherwise in the prompt. Tailwind is already pre-configured since Laravel 11, with Vite.
+- **Faker**: in Factories, use `fake()` helper instead of `$this->faker`.
+- **Policies**: Laravel automatically auto-discovers Policies, no need to register them in the Service Providers.
+ 
+---
+ 
+## Testing instructions
+ 
+Use Pest and not PHPUnit. Run tests with `php artisan test`.
+ 
+Every test method should be structured with Arrange-Act-Assert.
+ 
+In the Arrange phase, use Laravel factories but add meaningful column values and variable names if they help to understand failed tests better.
+Bad example: `$user1 = User::factory()->create();`
+Better example: `$adminUser = User::factory()->create(['email' => 'admin@admin.com'])`;
+ 
+In the Assert phase, perform these assertions when applicable:
+- HTTP status code returned from Act: `assertStatus()`
+- Structure/data returned from Act (Blade or JSON): functions like `assertViewHas()`, `assertSee()`, `assertDontSee()` or `assertJsonContains()`
+- Or, redirect assertions like `assertRedirect()` and `assertSessionHas()` in case of Flash session values passed
+- DB changes if any create/update/delete operation was performed: functions like `assertDatabaseHas()`, `assertDatabaseMissing()`, `expect($variable)->toBe()` and similar.
