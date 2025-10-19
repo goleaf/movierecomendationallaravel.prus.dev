@@ -10,6 +10,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 - [TODO backlog](TODO.md) — domain-grouped analytics, observability, and infrastructure backlog
 - [Works log](WORKS.md)
+- [MCP & Boost playbook](docs/mcp-tooling.md)
 
 ---
 
@@ -69,6 +70,16 @@ Install the frontend dependencies and start Vite if you are working with the UI:
 npm install
 npm run dev   # use npm run build for production assets
 ```
+
+### Connect your MCP tooling
+
+Boost configuration is already versioned. Launch the Laravel Boost MCP server with:
+
+```bash
+php artisan boost:mcp
+```
+
+Editors that support MCP (Cursor, Zed, etc.) will auto-discover the `.cursor/mcp.json` profile and connect without extra tweaks. Review [the full playbook](docs/mcp-tooling.md) for available capabilities and day-to-day workflows.
 
 ---
 
