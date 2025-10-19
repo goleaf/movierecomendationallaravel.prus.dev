@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentSubscriptions\Filament\Pages\Billing;
+use TomatoPHP\FilamentSubscriptions\FilamentSubscriptionsPlugin;
+use TomatoPHP\FilamentSubscriptions\FilamentSubscriptionsProvider;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -18,6 +21,9 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Telemetry',
                 'Analytics',
             ])
+            ->plugin(FilamentSubscriptionsPlugin::make())
+            ->tenantBillingProvider(new FilamentSubscriptionsProvider)
+            ->requiresTenantSubscription()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->widgets([
@@ -31,6 +37,7 @@ class AnalyticsPanelProvider extends PanelProvider
                 \App\Filament\Widgets\SsrDropWidget::class,
             ])
             ->pages([
+                Billing::class,
                 \App\Filament\Pages\Analytics\CtrPage::class,
                 \App\Filament\Pages\Analytics\TrendsPage::class,
                 \App\Filament\Pages\Analytics\TrendsAdvancedPage::class,

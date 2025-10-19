@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\ServiceProvider;
+use TomatoPHP\FilamentSubscriptions\Facades\FilamentSubscriptions;
+use TomatoPHP\FilamentSubscriptions\Services\Contracts\Subscriber;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Filament::serving(function (): void {
+            if (FilamentSubscriptions::getOptions()->doesntContain(
+                fn (Subscriber $subscriber): bool => $subscriber->model === User::class
+            )) {
+                FilamentSubscriptions::register(
+                    Subscriber::make('Users')
+                        ->model(User::class)
+                );
+            }
+        });
     }
 }
