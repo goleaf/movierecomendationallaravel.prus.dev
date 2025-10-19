@@ -22,6 +22,7 @@ return new class extends Migration
 
             $table->index(['variant', 'created_at']);
             $table->index(['placement', 'created_at']);
+            $table->index(['device_id', 'created_at']);
         });
     }
 

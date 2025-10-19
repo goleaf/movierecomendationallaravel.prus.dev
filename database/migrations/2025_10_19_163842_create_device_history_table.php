@@ -21,6 +21,7 @@ return new class extends Migration
 
             $table->index(['viewed_at']);
             $table->index(['device_id', 'viewed_at']);
+            $table->index(['page', 'viewed_at']);
         });
     }
 
