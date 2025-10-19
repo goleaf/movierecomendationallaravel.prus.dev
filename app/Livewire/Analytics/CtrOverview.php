@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Livewire\Analytics;
 
+use App\Attributes\Cache;
+use App\Attributes\Policies;
 use App\Services\Analytics\CtrAnalyticsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
+#[Policies('viewAnalyticsDashboard')]
+#[Cache('analytics-ctr-overview', ttl: 300, tags: ['analytics'])]
 class CtrOverview extends Component
 {
     public array $filters = [];
