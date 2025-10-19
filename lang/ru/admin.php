@@ -29,6 +29,7 @@ return [
         'ab_summary_heading' => 'Итоги A/B',
         'ab_summary_item' => 'Вариант :variant — Показы: :impressions, Клики: :clicks, CTR: :ctr%',
         'no_data' => 'Нет данных за выбранный период.',
+        'noscript_notice' => 'Включите JavaScript, чтобы увидеть графики. Ключевые метрики доступны в таблицах ниже.',
         'filters' => [
             'aria_label' => 'Фильтры CTR аналитики',
             'from' => 'От даты',

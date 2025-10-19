@@ -1,19 +1,45 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php
+    $htmlLocale = str_replace('_', '-', app()->getLocale());
+    $rtlLocales = ['ar', 'dv', 'fa', 'he', 'ku', 'ps', 'ur', 'yi'];
+    $htmlDirection = in_array(\Illuminate\Support\Str::before($htmlLocale, '-'), $rtlLocales, true) ? 'rtl' : 'ltr';
+@endphp
+<html lang="{{ $htmlLocale }}" dir="{{ $htmlDirection }}">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>@yield('title', __('messages.app.default_title'))</title>
-<meta name="description" content="@yield('meta_description', __('messages.app.meta_description'))">
-<link rel="canonical" href="{{ url()->current() }}">
-<meta property="og:type" content="website">
-<meta property="og:title" content="@yield('og_title', $__env->yieldContent('title', __('messages.app.default_title')))">
-<meta property="og:description" content="@yield('og_desc', $__env->yieldContent('meta_description', __('messages.app.og_description')))">
-<meta property="og:url" content="{{ url()->current() }}">
-<meta property="og:image" content="@yield('og_image', asset('img/og_default.jpg'))">
-<script nonce="{{ csp_nonce() }}" type="application/ld+json">
-{"@@context":"https://schema.org","@@type":"WebSite","name":"MovieRec","url":"{{ url('/') }}",
-"potentialAction":{"@@type":"SearchAction","target":"{{ url('/search') }}?q={query}","query-input":"required name=query"}}
-</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', __('messages.app.default_title'))</title>
+    <meta name="description" content="@yield('meta_description', __('messages.app.meta_description'))">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="{{ $htmlLocale }}">
+    <meta property="og:title" content="@yield('og_title', $__env->yieldContent('title', __('messages.app.default_title')))">
+    <meta property="og:description" content="@yield('og_desc', $__env->yieldContent('meta_description', __('messages.app.og_description')))">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="@yield('og_image', asset('img/og_default.jpg'))">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', $__env->yieldContent('title', __('messages.app.default_title')))">
+    <meta name="twitter:description" content="@yield('og_desc', $__env->yieldContent('meta_description', __('messages.app.og_description')))">
+    <meta name="twitter:image" content="@yield('og_image', asset('img/og_default.jpg'))">
+    @stack('meta')
+    @php
+        $defaultStructuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => 'MovieRec',
+            'url' => url('/'),
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => url('/search') . '?q={query}',
+                'query-input' => 'required name=query',
+            ],
+        ];
+    @endphp
+    @hasSection('structured_data')
+        @yield('structured_data')
+    @else
+        <script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode($defaultStructuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
+    @endif
 <style nonce="{{ csp_nonce() }}">
 :root{color-scheme:dark}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,Noto Sans;background:#0b0c0f;color:#e6e7e8}
 a{color:#9fc5ff;text-decoration:none}.container{max-width:1200px;margin:0 auto;padding:20px}

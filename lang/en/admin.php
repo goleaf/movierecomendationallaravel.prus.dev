@@ -29,6 +29,7 @@ return [
         'ab_summary_heading' => 'A/B Summary',
         'ab_summary_item' => 'Variant :variant — Imps: :impressions, Clicks: :clicks, CTR: :ctr%',
         'no_data' => 'No data for the selected period.',
+        'noscript_notice' => 'Enable JavaScript to view the charts. Key metrics remain available in the tables below.',
         'filters' => [
             'aria_label' => 'CTR analytics filters',
             'from' => 'From',

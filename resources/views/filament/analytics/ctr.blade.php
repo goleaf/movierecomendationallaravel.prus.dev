@@ -63,6 +63,12 @@
       </x-filament::card>
     </div>
 
+    <noscript>
+      <div class="rounded-lg border border-gray-700/60 bg-gray-900/80 p-4 text-sm text-gray-100">
+        {{ __('admin.ctr.noscript_notice') }}
+      </div>
+    </noscript>
+
     <x-filament::card>
       <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.placement_clicks.heading') }}</h3>
       @if(empty($placementClicks))

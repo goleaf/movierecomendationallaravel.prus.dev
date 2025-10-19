@@ -1,14 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark bg-white dark:bg-black">
+@php
+    $htmlLocale = str_replace('_', '-', app()->getLocale());
+    $rtlLocales = ['ar', 'dv', 'fa', 'he', 'ku', 'ps', 'ur', 'yi'];
+    $htmlDirection = in_array(\Illuminate\Support\Str::before($htmlLocale, '-'), $rtlLocales, true) ? 'rtl' : 'ltr';
+@endphp
+<html lang="{{ $htmlLocale }}" dir="{{ $htmlDirection }}" class="dark bg-white dark:bg-black">
 <head>
     @php
         use App\Settings\SiteSettings;
         $siteSettings = app(SiteSettings::class);
     @endphp
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     @if($siteSettings->favicon)
         <link rel="shortcut icon" type="image/x-icon" href="{{ asset("storage/" . $siteSettings->favicon) }}">
@@ -25,10 +28,11 @@
     <meta property="og:description" content="{{ $siteSettings->description }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:locale" content="{{ $htmlLocale }}">
     @if($siteSettings->og_image)
         <meta property="og:image" content="{{ asset("storage/" . $siteSettings->og_image) }}">
     @endif
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ $siteSettings->name }}">
     <meta name="twitter:title" content="{{ $siteSettings->name }}">
     <meta name="twitter:description" content="{{ $siteSettings->description }}">
@@ -43,6 +47,20 @@
     @viteReactRefresh
     @vite(['resources/js/App.tsx', "resources/js/Pages/{$page['component']}.tsx", "resources/css/app.css"])
     @inertiaHead
+    @stack('meta')
+
+    @php
+        $structuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $siteSettings->name,
+            'url' => url('/'),
+        ];
+        if (!empty($siteSettings->description)) {
+            $structuredData['description'] = $siteSettings->description;
+        }
+    @endphp
+    <script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode($structuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
 
     {!! $siteSettings->header_scripts !!}
 </head>
