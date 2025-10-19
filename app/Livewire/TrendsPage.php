@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Attributes\Cache;
+use App\Attributes\Concerns\InteractsWithComponentAttributes;
+use App\Attributes\Title;
 use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
 use Illuminate\Contracts\View\View;
@@ -13,8 +16,12 @@ use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
+#[Title('Тренды рекомендаций')]
+#[Cache('trends-page', ttl: 300, tags: ['pages'])]
 class TrendsPage extends Component
 {
+    use InteractsWithComponentAttributes;
+
     #[Url]
     public int $days = 7;
 
@@ -267,9 +274,8 @@ class TrendsPage extends Component
 
     public function render(): View
     {
-        return view('livewire.trends-page')->layout('layouts.app', [
-            'title' => 'Тренды рекомендаций',
+        return view('livewire.trends-page')->layout('layouts.app', $this->layoutData([
             'metaDescription' => 'Статистика переходов по рекомендациям MovieRec',
-        ]);
+        ]));
     }
 }

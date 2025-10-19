@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Livewire\Analytics;
 
+use App\Attributes\Cache;
+use App\Attributes\Policies;
 use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
+#[Policies('viewAnalyticsDashboard')]
+#[Cache('analytics-trends-browser', ttl: 300, tags: ['analytics'])]
 class TrendsBrowser extends Component
 {
     public bool $showAdvanced = false;

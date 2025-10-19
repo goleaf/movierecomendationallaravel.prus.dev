@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Attributes\Cache;
+use App\Attributes\Concerns\InteractsWithComponentAttributes;
+use App\Attributes\Title;
 use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
 use App\Services\Recommender;
@@ -16,8 +19,12 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
+#[Title('Рекомендации')]
+#[Cache('home-page', ttl: 300, tags: ['pages'])]
 class HomePage extends Component
 {
+    use InteractsWithComponentAttributes;
+
     public Collection $recommended;
 
     public Collection $trending;
@@ -170,9 +177,8 @@ class HomePage extends Component
 
     public function render(): View
     {
-        return view('livewire.home-page')->layout('layouts.app', [
-            'title' => 'Рекомендации',
+        return view('livewire.home-page')->layout('layouts.app', $this->layoutData([
             'metaDescription' => 'Подборки, тренды и рекомендации',
-        ]);
+        ]));
     }
 }
