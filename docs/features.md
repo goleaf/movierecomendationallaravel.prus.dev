@@ -48,4 +48,5 @@ This catalog highlights the major product surfaces in MovieRec so newcomers can 
 
 ### Server-side rendering telemetry
 - **Middleware & views:** SSR scores funnel into Filament widgets and the JSON issues feed described above. The `SsrMetricsMiddleware` (registered via `app/Http/Kernel.php`) writes to `ssr_metrics`, enabling comparisons against drop detectors like `SsrDropWidget`.
+- **Scheduled collection:** The hourly `ssr:collect` artisan command replays key SSR routes internally so the middleware can enqueue `StoreSsrMetric` jobs without waiting for public traffic. The command is registered in `bootstrap/app.php` alongside other scheduled tasks.
 - **Operational loops:** Combined insights help operations teams tune markup weight, script deferral, and structured data adoption.

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Console\Commands\AggregateCtrDailySnapshotsCommand;
+use App\Console\Commands\SsrCollectCommand;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
 use App\Http\Middleware\EnsureDeviceCookie;
@@ -24,9 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         AggregateCtrDailySnapshotsCommand::class,
+        SsrCollectCommand::class,
     ])
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command(AggregateCtrDailySnapshotsCommand::class)->dailyAt('01:00');
+        $schedule->command(SsrCollectCommand::class)->hourly();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureDeviceCookie::class);
