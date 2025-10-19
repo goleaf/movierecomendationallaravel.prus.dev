@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Analytics;
 
-use App\Services\Analytics\TrendAnalyticsService;
+use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -18,9 +18,9 @@ class TrendsBrowser extends Component
     /** @var array<int, array{id: int, title: string, poster_url: ?string, year: ?int, type: ?string, imdb_rating: ?float, imdb_votes: ?int, clicks: ?int}> */
     public array $items = [];
 
-    protected TrendAnalyticsService $service;
+    protected TrendsAnalyticsService $service;
 
-    public function boot(TrendAnalyticsService $service): void
+    public function boot(TrendsAnalyticsService $service): void
     {
         $this->service = $service;
     }
@@ -59,7 +59,7 @@ class TrendsBrowser extends Component
 
     protected function refreshTrends(): void
     {
-        $result = $this->service->getTrends(
+        $result = $this->service->getTrendsData(
             (int) $this->filters['days'],
             (string) ($this->filters['type'] ?? ''),
             (string) ($this->filters['genre'] ?? ''),
