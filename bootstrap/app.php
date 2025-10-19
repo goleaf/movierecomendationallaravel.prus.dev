@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Console\Commands\AggregateCtrDailySnapshotsCommand;
+use App\Console\Commands\AppDoctor;
 use App\Console\Commands\SsrCollectCommand;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         AggregateCtrDailySnapshotsCommand::class,
+        AppDoctor::class,
         SsrCollectCommand::class,
     ])
     ->withSchedule(function (Schedule $schedule): void {
