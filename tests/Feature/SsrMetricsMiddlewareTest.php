@@ -6,14 +6,19 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\SsrMetricsMiddleware;
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 class SsrMetricsMiddlewareTest extends TestCase
 {
+    use MockeryPHPUnitIntegration;
+
     public function test_it_dispatches_metrics_when_config_enabled_and_path_matches(): void
     {
         Queue::fake();
@@ -38,7 +43,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $result = $middleware->handle($request, static fn () => $response);
 
@@ -158,7 +163,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response($html, 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $middleware->handle($request, static fn () => $response);
 
@@ -179,7 +184,7 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
 
         $middleware->handle($request, static fn () => $response);
 
@@ -196,7 +201,55 @@ class SsrMetricsMiddlewareTest extends TestCase
         $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
         $request = Request::create('/test', 'GET');
 
-        $middleware = new SsrMetricsMiddleware;
+        $middleware = new SsrMetricsMiddleware(app(SsrMetricsService::class));
+
+        $middleware->handle($request, static fn () => $response);
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_it_delegates_capture_to_service(): void
+    {
+        Queue::fake();
+
+        $request = Request::create('/delegated', 'GET');
+        $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
+
+        $payload = ['path' => '/delegated'];
+
+        $service = Mockery::mock(SsrMetricsService::class);
+        $service->shouldReceive('capture')
+            ->once()
+            ->with($request, $response, Mockery::type('float'))
+            ->andReturn($payload);
+
+        $this->app->instance(SsrMetricsService::class, $service);
+
+        $middleware = new SsrMetricsMiddleware($service);
+
+        $middleware->handle($request, static fn () => $response);
+
+        Queue::assertPushed(StoreSsrMetric::class, function (StoreSsrMetric $job) use ($payload): bool {
+            return $job->payload === $payload;
+        });
+    }
+
+    public function test_it_does_not_dispatch_when_service_returns_null(): void
+    {
+        Queue::fake();
+
+        $request = Request::create('/no-dispatch', 'GET');
+        $response = new Response('<html></html>', 200, ['Content-Type' => 'text/html']);
+
+        $service = Mockery::mock(SsrMetricsService::class);
+        $service->shouldReceive('capture')
+            ->once()
+            ->with($request, $response, Mockery::type('float'))
+            ->andReturnNull();
+
+        $this->app->instance(SsrMetricsService::class, $service);
+
+        $middleware = new SsrMetricsMiddleware($service);
 
         $middleware->handle($request, static fn () => $response);
 

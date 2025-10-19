@@ -6,17 +6,33 @@ namespace App\Services;
 
 use App\Support\SsrMetricsFallbackStore;
 use Carbon\CarbonInterface;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class SsrMetricsService
 {
     public function __construct(private SsrMetricsFallbackStore $fallbackStore) {}
+
+    public function capture(Request $request, Response $response, float $startedAt): ?array
+    {
+        if (! $this->shouldCapture($request, $response)) {
+            return null;
+        }
+
+        $path = $this->normalizePath($request->path());
+        $firstByteMs = max(0, (int) round((microtime(true) - $startedAt) * 1000));
+        $metrics = $this->parseResponse($response);
+
+        return $this->buildPayload($path, $firstByteMs, $metrics);
+    }
 
     /**
      * Extracts SSR-related metrics from an HTML response.
@@ -124,6 +140,94 @@ class SsrMetricsService
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *     path: string,
+     *     score: int,
+     *     html_bytes: int|null,
+     *     meta_count: int|null,
+     *     og_count: int|null,
+     *     ldjson_count: int|null,
+     *     img_count: int|null,
+     *     blocking_scripts: int|null,
+     *     first_byte_ms: int,
+     *     has_json_ld: bool,
+     *     has_open_graph: bool,
+     *     meta: array<string, mixed>,
+     *     collected_at: CarbonInterface|\DateTimeInterface|string|int|null,
+     * }
+     */
+    public function normalizePayload(array $payload): array
+    {
+        $path = isset($payload['path']) ? (string) $payload['path'] : '/';
+        $path = $this->normalizePath($path);
+
+        $score = max(0, min(100, (int) ($payload['score'] ?? 0)));
+
+        $htmlBytes = $this->extractInteger($payload, ['html_bytes', 'html_size', 'size']);
+        $metaCount = $this->extractInteger($payload, ['meta_count']);
+        $ogCount = $this->extractInteger($payload, ['og_count']);
+        $ldjsonCount = $this->extractInteger($payload, ['ldjson_count']);
+        $imgCount = $this->extractInteger($payload, ['img_count']);
+        $blockingScripts = $this->extractInteger($payload, ['blocking_scripts']);
+        $firstByteMs = $this->extractInteger($payload, ['first_byte_ms']) ?? 0;
+
+        $hasJsonLd = array_key_exists('has_json_ld', $payload)
+            ? (bool) $payload['has_json_ld']
+            : (($ldjsonCount ?? 0) > 0);
+
+        $hasOpenGraph = array_key_exists('has_open_graph', $payload)
+            ? (bool) $payload['has_open_graph']
+            : (($ogCount ?? 0) > 0);
+
+        $meta = $payload['meta'] ?? [];
+        $meta = is_array($meta) ? $meta : [];
+        $meta = array_merge($meta, [
+            'first_byte_ms' => $firstByteMs,
+            'html_bytes' => $htmlBytes,
+            'html_size' => $htmlBytes,
+            'meta_count' => $metaCount,
+            'og_count' => $ogCount,
+            'ldjson_count' => $ldjsonCount,
+            'img_count' => $imgCount,
+            'blocking_scripts' => $blockingScripts,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
+        ]);
+
+        $collectedAtSource = $payload['collected_at']
+            ?? $payload['timestamp']
+            ?? $payload['ts']
+            ?? null;
+
+        return [
+            'path' => $path,
+            'score' => $score,
+            'html_bytes' => $htmlBytes,
+            'meta_count' => $metaCount,
+            'og_count' => $ogCount,
+            'ldjson_count' => $ldjsonCount,
+            'img_count' => $imgCount,
+            'blocking_scripts' => $blockingScripts,
+            'first_byte_ms' => $firstByteMs,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
+            'meta' => $meta,
+            'collected_at' => $collectedAtSource,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function storeMetric(array $payload): void
+    {
+        $normalizedPayload = $this->normalizePayload($payload);
+
+        $this->storeNormalizedMetric($normalizedPayload, $payload);
+    }
+
+    /**
      * @param  array{collected_at: CarbonInterface|\DateTimeInterface|string|int|null}  $normalizedPayload
      * @param  array<string, mixed>  $originalPayload
      */
@@ -132,10 +236,13 @@ class SsrMetricsService
         $normalizedPayload = $this->ensureNormalizedPayload($normalizedPayload);
 
         if ($this->storeInDatabase($normalizedPayload)) {
+            $this->prunePrimaryRetention();
+
             return;
         }
 
         $this->storeInJsonl($normalizedPayload, $originalPayload);
+        $this->pruneFallbackRetention();
     }
 
     /**
@@ -282,5 +389,169 @@ class SsrMetricsService
                 'payload' => $originalPayload,
             ]);
         }
+    }
+
+    private function prunePrimaryRetention(): void
+    {
+        $days = (int) config('ssrmetrics.retention.primary_days', 0);
+
+        if ($days <= 0) {
+            return;
+        }
+
+        if (! Schema::hasTable('ssr_metrics')) {
+            return;
+        }
+
+        $timestampColumn = $this->timestampColumn();
+
+        $cutoff = Carbon::now()->subDays($days);
+
+        DB::table('ssr_metrics')
+            ->whereNotNull($timestampColumn)
+            ->where($timestampColumn, '<', $cutoff->toDateTimeString())
+            ->delete();
+    }
+
+    private function pruneFallbackRetention(): void
+    {
+        $days = (int) config('ssrmetrics.retention.fallback_days', 0);
+
+        if ($days <= 0) {
+            return;
+        }
+
+        $records = $this->fallbackStore->readIncoming();
+
+        if ($records === []) {
+            return;
+        }
+
+        $cutoff = Carbon::now()->subDays($days);
+
+        $filtered = array_values(array_filter($records, function (array $record) use ($cutoff): bool {
+            $timestamp = $this->resolveFallbackTimestamp($record);
+
+            if ($timestamp === null) {
+                return true;
+            }
+
+            return $timestamp->greaterThanOrEqualTo($cutoff);
+        }));
+
+        if (count($filtered) === count($records)) {
+            return;
+        }
+
+        $disk = Storage::disk($this->fallbackStore->diskName());
+        $path = (string) config('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
+        if ($filtered === []) {
+            $disk->delete($path);
+
+            return;
+        }
+
+        $lines = array_map(static fn (array $record): string => json_encode($record, JSON_THROW_ON_ERROR), $filtered);
+
+        $disk->put($path, implode("\n", $lines));
+    }
+
+    private function timestampColumn(): string
+    {
+        if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+            return 'collected_at';
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'created_at')) {
+            return 'created_at';
+        }
+
+        return 'updated_at';
+    }
+
+    private function shouldCapture(Request $request, Response $response): bool
+    {
+        if (! config('ssrmetrics.enabled')) {
+            return false;
+        }
+
+        $path = $this->normalizePath($request->path());
+        $monitoredPaths = collect(config('ssrmetrics.paths', []))
+            ->map(fn ($configuredPath) => $this->normalizePath((string) $configuredPath));
+
+        if (! $monitoredPaths->contains($path)) {
+            return false;
+        }
+
+        $contentType = (string) $response->headers->get('Content-Type');
+
+        if ($contentType === '' || ! Str::contains($contentType, 'text/html')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $normalized = '/'.ltrim($path, '/');
+
+        return $normalized === '//' ? '/' : $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $keys
+     */
+    private function extractInteger(array $payload, array $keys): ?int
+    {
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$key];
+
+            if ($value === null) {
+                return null;
+            }
+
+            if (is_numeric($value)) {
+                return max(0, (int) $value);
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveFallbackTimestamp(array $record): ?CarbonInterface
+    {
+        $value = $record['ts']
+            ?? $record['collected_at']
+            ?? $record['timestamp']
+            ?? null;
+
+        if ($value instanceof CarbonInterface) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::createFromInterface($value);
+        }
+
+        if (is_numeric($value)) {
+            return Carbon::createFromTimestamp((int) $value);
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return Carbon::parse($value);
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }
