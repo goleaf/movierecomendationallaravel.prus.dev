@@ -193,6 +193,13 @@ Routes for the overlay are already defined in `routes/web.php` and ship with the
 
 ---
 
+## Deployment notes
+
+- Run `php artisan storage:link` so the `storage/app/public/proxy-artwork` directory is exposed via `public/storage` for the image proxy cache.
+- Start a queue worker (`php artisan queue:work`) in production so the `CacheProxyImage` job refreshes cached artwork in the background.
+
+---
+
 ## Database & seeding
 
 Run all migrations after configuring your database connection:
