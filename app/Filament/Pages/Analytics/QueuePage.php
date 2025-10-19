@@ -5,7 +5,6 @@ namespace App\Filament\Pages\Analytics;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Schema;
 
 class QueuePage extends Page
 {
@@ -21,10 +20,10 @@ class QueuePage extends Page
 
     public int $failedCount = 0;
 
-    public int $batchCount = 0;
+    public int $processedCount = 0;
 
     /**
-     * @var array<string,mixed>
+     * @var array{workload: array<string, int>, supervisors: array<int, string>}
      */
     public array $horizon = [
         'workload' => [],
@@ -33,14 +32,19 @@ class QueuePage extends Page
 
     public function mount(): void
     {
-        $this->refreshMetrics();
+        $this->loadMetrics();
     }
 
     public function refreshMetrics(): void
     {
-        $this->queueCount = $this->countTable('jobs');
-        $this->failedCount = $this->countTable('failed_jobs');
-        $this->batchCount = $this->countTable('job_batches');
+        $this->loadMetrics();
+    }
+
+    protected function loadMetrics(): void
+    {
+        $this->queueCount = (int) (DB::table('jobs')->count() ?? 0);
+        $this->failedCount = (int) (DB::table('failed_jobs')->count() ?? 0);
+        $this->processedCount = (int) (DB::table('job_batches')->count() ?? 0);
 
         $this->horizon = [
             'workload' => [],
@@ -49,25 +53,20 @@ class QueuePage extends Page
 
         try {
             $workload = Redis::hgetall('horizon:workload');
-            if (! empty($workload)) {
-                $this->horizon['workload'] = $workload;
-            }
-
             $supervisors = Redis::smembers('horizon:supervisors');
-            if (! empty($supervisors)) {
-                $this->horizon['supervisors'] = $supervisors;
+
+            if (is_array($workload) && $workload !== []) {
+                $this->horizon['workload'] = array_map('intval', $workload);
             }
-        } catch (\Throwable $exception) {
-            $this->horizon['error'] = $exception->getMessage();
-        }
-    }
 
-    protected function countTable(string $table): int
-    {
-        if (! Schema::hasTable($table)) {
-            return 0;
+            if (is_array($supervisors) && $supervisors !== []) {
+                $this->horizon['supervisors'] = array_values($supervisors);
+            }
+        } catch (\Throwable) {
+            $this->horizon = [
+                'workload' => [],
+                'supervisors' => [],
+            ];
         }
-
-        return (int) DB::table($table)->count();
     }
 }

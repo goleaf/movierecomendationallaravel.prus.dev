@@ -2,88 +2,224 @@
 
 namespace App\Livewire;
 
-use App\Support\TrendingService;
+use App\Models\Movie;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-#[Layout('layouts.app')]
-#[Title('Тренды рекомендаций')]
 class TrendsPage extends Component
 {
-    #[Url(as: 'days')]
+    #[Url]
     public int $days = 7;
 
-    #[Url(as: 'type')]
+    #[Url]
     public string $type = '';
 
-    #[Url(as: 'genre')]
+    #[Url]
     public string $genre = '';
 
-    #[Url(as: 'yf')]
-    public ?int $yf = null;
+    #[Url]
+    public int $yf = 0;
 
-    #[Url(as: 'yt')]
-    public ?int $yt = null;
+    #[Url]
+    public int $yt = 0;
 
-    /**
-     * @var Collection<int,array{id:int,title:string,poster_url:?string,year:?int,type:?string,imdb_rating:?float,imdb_votes:?int,clicks:?int}>
-     */
     public Collection $items;
 
-    public string $fromDate = '';
+    public string $from;
 
-    public string $toDate = '';
+    public string $to;
 
-    public string $metaDescription = 'Следите за трендами рекомендаций и динамикой кликов.';
-
-    public array $availableTypes = [
-        '' => 'Тип контента',
-        'movie' => 'Фильмы',
-        'series' => 'Сериалы',
-        'animation' => 'Мультфильмы',
-    ];
-
-    public function mount(TrendingService $service): void
+    public function mount(): void
     {
-        $this->normalize();
-        $this->loadItems($service);
+        $this->items = collect();
+
+        $this->sanitizeFilters();
+        $this->loadItems();
     }
 
-    public function applyFilters(): void
+    public function updatedDays(): void
     {
-        $this->normalize();
-        $this->loadItems(app(TrendingService::class));
+        $sanitized = $this->sanitizeDays();
+        if ($sanitized !== $this->days) {
+            $this->days = $sanitized;
+
+            return;
+        }
+
+        $this->loadItems();
+    }
+
+    public function updatedType(): void
+    {
+        $sanitized = $this->sanitizeType();
+        if ($sanitized !== $this->type) {
+            $this->type = $sanitized;
+
+            return;
+        }
+
+        $this->loadItems();
+    }
+
+    public function updatedGenre(): void
+    {
+        $sanitized = $this->sanitizeGenre();
+        if ($sanitized !== $this->genre) {
+            $this->genre = $sanitized;
+
+            return;
+        }
+
+        $this->loadItems();
+    }
+
+    public function updatedYf(): void
+    {
+        $sanitized = $this->sanitizeYear($this->yf);
+        if ($sanitized !== $this->yf) {
+            $this->yf = $sanitized;
+
+            return;
+        }
+
+        $this->loadItems();
+    }
+
+    public function updatedYt(): void
+    {
+        $sanitized = $this->sanitizeYear($this->yt);
+        if ($sanitized !== $this->yt) {
+            $this->yt = $sanitized;
+
+            return;
+        }
+
+        $this->loadItems();
+    }
+
+    protected function sanitizeFilters(): void
+    {
+        $this->days = $this->sanitizeDays();
+        $this->type = $this->sanitizeType();
+        $this->genre = $this->sanitizeGenre();
+        $this->yf = $this->sanitizeYear($this->yf);
+        $this->yt = $this->sanitizeYear($this->yt);
+    }
+
+    protected function sanitizeDays(): int
+    {
+        return max(1, min(30, $this->days));
+    }
+
+    protected function sanitizeType(): string
+    {
+        $type = trim($this->type);
+        $allowed = ['', 'movie', 'series', 'animation'];
+
+        return in_array($type, $allowed, true) ? $type : '';
+    }
+
+    protected function sanitizeGenre(): string
+    {
+        $genre = trim($this->genre);
+
+        return mb_substr($genre, 0, 50);
+    }
+
+    protected function sanitizeYear(int $year): int
+    {
+        if ($year < 0) {
+            return 0;
+        }
+
+        return min(2100, $year);
+    }
+
+    protected function loadItems(): void
+    {
+        $fromDate = now()->copy()->subDays($this->days)->startOfDay();
+        $toDate = now()->endOfDay();
+
+        $this->from = $fromDate->toDateString();
+        $this->to = $toDate->toDateString();
+
+        $items = collect();
+
+        if (Schema::hasTable('rec_clicks')) {
+            $query = DB::table('rec_clicks')
+                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
+                ->whereBetween('rec_clicks.created_at', [$fromDate->toDateTimeString(), $toDate->toDateTimeString()])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($this->type !== '') {
+                $query->where('movies.type', $this->type);
+            }
+
+            if ($this->genre !== '') {
+                $query->whereJsonContains('movies.genres', $this->genre);
+            }
+
+            if ($this->yf > 0) {
+                $query->where('movies.year', '>=', $this->yf);
+            }
+
+            if ($this->yt > 0) {
+                $query->where('movies.year', '<=', $this->yt);
+            }
+
+            $items = $query->limit(40)->get()->map(static function ($item) {
+                return [
+                    'id' => (int) $item->id,
+                    'title' => $item->title,
+                    'poster_url' => $item->poster_url,
+                    'year' => $item->year,
+                    'type' => $item->type,
+                    'imdb_rating' => $item->imdb_rating,
+                    'imdb_votes' => $item->imdb_votes,
+                    'clicks' => (int) $item->clicks,
+                ];
+            });
+        }
+
+        if ($items->isEmpty()) {
+            $fallback = Movie::query()
+                ->when($this->type !== '', fn ($query) => $query->where('type', $this->type))
+                ->when($this->genre !== '', fn ($query) => $query->whereJsonContains('genres', $this->genre))
+                ->when($this->yf > 0, fn ($query) => $query->where('year', '>=', $this->yf))
+                ->when($this->yt > 0, fn ($query) => $query->where('year', '<=', $this->yt))
+                ->orderByDesc('imdb_votes')
+                ->orderByDesc('imdb_rating')
+                ->limit(40)
+                ->get();
+
+            $items = $fallback->map(static function (Movie $movie) {
+                return [
+                    'id' => $movie->id,
+                    'title' => $movie->title,
+                    'poster_url' => $movie->poster_url,
+                    'year' => $movie->year,
+                    'type' => $movie->type,
+                    'imdb_rating' => $movie->imdb_rating,
+                    'imdb_votes' => $movie->imdb_votes,
+                    'clicks' => null,
+                ];
+            });
+        }
+
+        $this->items = $items->values();
     }
 
     public function render(): View
     {
-        return view('livewire.trends-page');
-    }
-
-    protected function normalize(): void
-    {
-        $this->days = max(1, min(30, (int) $this->days));
-        $this->type = trim($this->type);
-        $this->genre = trim($this->genre);
-
-        $this->yf = $this->yf !== null ? max(0, (int) $this->yf) : null;
-        $this->yt = $this->yt !== null ? max(0, (int) $this->yt) : null;
-    }
-
-    protected function loadItems(TrendingService $service): void
-    {
-        [$this->fromDate, $this->toDate] = $service->rangeDates($this->days);
-
-        $this->items = $service->filtered(
-            $this->days,
-            $this->type,
-            $this->genre,
-            $this->yf,
-            $this->yt,
-        );
+        return view('livewire.trends-page')->layout('layouts.app', [
+            'title' => 'Тренды рекомендаций',
+            'metaDescription' => 'Статистика переходов по рекомендациям MovieRec',
+        ]);
     }
 }
