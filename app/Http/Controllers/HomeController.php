@@ -16,9 +16,9 @@ class HomeController extends Controller
     public function __invoke(Recommender $recommender): View
     {
         $did = device_id();
-        $result = $recommender->recommendForDevice($did, 12, 'home');
-        $homeVariant = $result['variant'];
-        $recommended = $result['movies'];
+        $recommendation = $recommender->recommendForDevice($did, 12, 'home');
+        $homeVariant = $recommendation->variant();
+        $recommended = $recommendation->movies();
         if ($recommended->isEmpty()) {
             $homeVariant = 'fallback';
             $recommended = Movie::query()

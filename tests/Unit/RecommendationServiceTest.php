@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Services\RecommendationLogger;
 use App\Services\Recommender;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,10 +71,16 @@ class RecommendationServiceTest extends TestCase
             ->with('device-fixture', 2)
             ->andReturn(['B', $expected]);
 
-        $recommender = new Recommender($ab);
+        $logger = Mockery::mock(RecommendationLogger::class);
+        $logger->shouldReceive('recordRecommendation')
+            ->once()
+            ->with('device-fixture', 'B', 'home', $expected);
+
+        $recommender = new Recommender($ab, $logger);
 
         $result = $recommender->recommendForDevice('device-fixture', 2);
 
-        $this->assertSame($expected->pluck('title')->all(), $result->pluck('title')->all());
+        $this->assertSame('B', $result->variant());
+        $this->assertSame($expected->pluck('title')->all(), $result->movies()->pluck('title')->all());
     }
 }
