@@ -120,6 +120,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'importers' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/importers.log'),
+            'level' => env('IMPORTER_LOG_LEVEL', 'info'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
