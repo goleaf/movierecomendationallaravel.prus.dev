@@ -1,0 +1,56 @@
+<?php
+
+return [
+    'app' => [
+        'name' => 'MovieRec',
+        'default_title' => 'MovieRec',
+        'meta_description' => 'Подборки, тренды и рекомендации.',
+        'og_description' => 'Подборки и рекомендации.',
+        'tagline' => 'SSR • SVG-графики',
+        'footer' => '© :year MovieRec',
+    ],
+    'common' => [
+        'dash' => '—',
+        'clicks' => 'Клики: :count',
+        'imdb_only' => 'IMDb :rating',
+        'imdb_with_votes' => 'IMDb :rating • :votes',
+        'imdb_with_votes_colon' => 'IMDb: :rating • :votes',
+    ],
+    'home' => [
+        'title' => 'Рекомендации',
+        'recommendations_heading' => 'Персональные рекомендации',
+        'recommendations_description' => 'Алгоритм A/B (device cookie) подбирает топ релизы по IMDb и свежести.',
+        'empty_recommendations' => 'Пока нет данных для рекомендаций.',
+        'trends_heading' => 'Тренды за 7 дней',
+        'trends_description_html' => 'Клики рекомендаций по placement\'ам. Подробнее — <a href=":url">страница трендов</a>.',
+        'empty_trending' => 'Статистика кликов пока не собрана.',
+    ],
+    'trends' => [
+        'title' => 'Тренды рекомендаций',
+        'heading' => 'Тренды рекомендаций',
+        'period' => 'Период: :from — :to (:days :days_short)',
+        'days_short' => 'дн.',
+        'empty' => 'Нет данных — проверьте сбор кликов или измените фильтры.',
+        'votes' => ':count голосов',
+    ],
+    'search' => [
+        'title' => 'Поиск',
+        'form' => [
+            'query_placeholder' => 'Название или tt...',
+            'type_label' => 'Тип',
+            'type_movie' => 'Фильмы',
+            'type_series' => 'Сериалы',
+            'type_animation' => 'Мультики',
+            'genre_placeholder' => 'Жанр',
+            'year_from_placeholder' => 'Год от',
+            'year_to_placeholder' => 'Год до',
+            'submit' => 'Искать',
+        ],
+        'empty' => 'Ничего не найдено.',
+    ],
+    'movies' => [
+        'imdb_caption' => 'IMDb :rating • :votes • Взвешенный индекс :score',
+        'votes' => ':count голосов',
+        'genres' => 'Жанры: :genres',
+    ],
+];
