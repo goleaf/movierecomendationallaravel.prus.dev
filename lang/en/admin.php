@@ -106,6 +106,19 @@ return [
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
     ],
+    'queues' => [
+        'title' => 'Queue monitoring',
+        'heading' => 'Queue activity (last :minutes minutes)',
+        'window' => 'Window: :from — :to (:timezone)',
+        'summary' => 'Queued jobs: :jobs · Failures: :failures',
+        'export_csv' => 'Download CSV',
+        'jobs_chart' => 'Jobs per minute',
+        'failures_chart' => 'Failures per minute',
+        'jobs_chart_aria' => 'Line chart showing queued jobs per minute.',
+        'failures_chart_aria' => 'Line chart showing queue failures per minute.',
+        'chart_max' => 'Peak value: :value',
+        'empty' => 'No queue activity recorded during this period.',
+    ],
     'ssr' => [
         'title' => 'SSR Analytics',
         'headline' => [
