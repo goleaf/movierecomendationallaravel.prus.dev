@@ -7,6 +7,7 @@ use App\Filament\Resources\MovieResource\RelationManagers\DeviceHistoryRelationM
 use App\Filament\Resources\MovieResource\RelationManagers\RecAbLogsRelationManager;
 use App\Filament\Resources\MovieResource\RelationManagers\RecClicksRelationManager;
 use App\Models\Movie;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -14,6 +15,9 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Section as InfolistSection;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -21,6 +25,10 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Kirschbaum\Commentions\Filament\Actions\CommentsTableAction;
+use Kirschbaum\Commentions\Filament\Actions\SubscriptionTableAction;
+use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
 
 class MovieResource extends Resource
 {
@@ -245,10 +253,69 @@ class MovieResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                CommentsTableAction::make()
+                    ->mentionables(fn (): Collection => static::getCommentMentionables()),
+                SubscriptionTableAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                InfolistSection::make('Details')
+                    ->schema([
+                        TextEntry::make('title')
+                            ->label('Title'),
+                        TextEntry::make('imdb_tt')
+                            ->label('IMDb ID'),
+                        TextEntry::make('type')
+                            ->badge(),
+                        TextEntry::make('year')
+                            ->label('Year'),
+                        TextEntry::make('release_date')
+                            ->label('Release Date')
+                            ->date(),
+                        TextEntry::make('imdb_rating')
+                            ->label('IMDb Rating')
+                            ->formatStateUsing(fn (?float $state): ?string => $state === null ? null : number_format($state, 1)),
+                        TextEntry::make('imdb_votes')
+                            ->label('IMDb Votes')
+                            ->formatStateUsing(fn (?int $state): ?string => $state === null ? null : number_format($state)),
+                        TextEntry::make('weighted_score')
+                            ->label('Weighted Score')
+                            ->formatStateUsing(fn (?float $state): ?string => $state === null ? null : number_format($state, 2)),
+                        TextEntry::make('runtime_min')
+                            ->label('Runtime (min)'),
+                        TextEntry::make('genres')
+                            ->label('Genres')
+                            ->formatStateUsing(function (?array $state): ?string {
+                                if ($state === null) {
+                                    return null;
+                                }
+
+                                $genres = array_filter($state, fn (?string $genre): bool => $genre !== null && $genre !== '');
+
+                                return empty($genres) ? null : implode(', ', $genres);
+                            })
+                            ->columnSpanFull(),
+                        TextEntry::make('plot')
+                            ->label('Plot')
+                            ->prose()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+                InfolistSection::make('Comments')
+                    ->schema([
+                        CommentsEntry::make('comments')
+                            ->mentionables(fn (): Collection => static::getCommentMentionables())
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -274,5 +341,15 @@ class MovieResource extends Resource
     public static function getGloballySearchableAttributes(): array
     {
         return ['title', 'imdb_tt'];
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public static function getCommentMentionables(): Collection
+    {
+        return User::query()
+            ->orderBy('name')
+            ->get();
     }
 }
