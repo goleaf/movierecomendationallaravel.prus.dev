@@ -31,8 +31,8 @@ return [
         'fallback' => [
             'disk' => env('SSR_METRICS_STORAGE_FALLBACK_DISK', 'local'),
             'files' => [
-                'incoming' => env('SSR_METRICS_STORAGE_FALLBACK_FILE', 'ssr-metrics-fallback.jsonl'),
-                'recovery' => env('SSR_METRICS_STORAGE_FALLBACK_RECOVERY_FILE', 'ssr-metrics-recovery.jsonl'),
+                'incoming' => env('SSR_METRICS_STORAGE_FALLBACK_FILE', 'metrics/ssr.jsonl'),
+                'recovery' => env('SSR_METRICS_STORAGE_FALLBACK_RECOVERY_FILE', 'metrics/last.json'),
             ],
         ],
     ],
@@ -55,23 +55,23 @@ return [
     ],
     'penalties' => [
         'blocking_scripts' => [
-            'per_script' => 5,
-            'max' => 30,
+            'per_script' => (int) env('SSR_METRICS_PENALTY_BLOCKING_PER_SCRIPT', 5),
+            'max' => (int) env('SSR_METRICS_PENALTY_BLOCKING_MAX', 30),
         ],
         'missing_ldjson' => [
-            'deduction' => 10,
+            'deduction' => (int) env('SSR_METRICS_PENALTY_MISSING_LDJSON', 10),
         ],
         'low_og' => [
-            'minimum' => 3,
-            'deduction' => 10,
+            'minimum' => (int) env('SSR_METRICS_PENALTY_LOW_OG_MINIMUM', 3),
+            'deduction' => (int) env('SSR_METRICS_PENALTY_LOW_OG_DEDUCTION', 10),
         ],
         'oversized_html' => [
-            'threshold' => 900 * 1024,
-            'deduction' => 20,
+            'threshold' => (int) env('SSR_METRICS_PENALTY_OVERSIZED_THRESHOLD', 900 * 1024),
+            'deduction' => (int) env('SSR_METRICS_PENALTY_OVERSIZED_DEDUCTION', 20),
         ],
         'excess_images' => [
-            'threshold' => 60,
-            'deduction' => 10,
+            'threshold' => (int) env('SSR_METRICS_PENALTY_EXCESS_IMAGES_THRESHOLD', 60),
+            'deduction' => (int) env('SSR_METRICS_PENALTY_EXCESS_IMAGES_DEDUCTION', 10),
         ],
     ],
 ];

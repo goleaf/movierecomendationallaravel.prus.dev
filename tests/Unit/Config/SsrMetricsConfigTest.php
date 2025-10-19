@@ -63,8 +63,8 @@ class SsrMetricsConfigTest extends TestCase
         $this->assertSame('local', $config['storage']['fallback']['disk']);
         $this->assertSame('ssr-metrics.jsonl', $config['storage']['primary']['files']['incoming']);
         $this->assertSame('ssr-metrics-summary.json', $config['storage']['primary']['files']['aggregate']);
-        $this->assertSame('ssr-metrics-fallback.jsonl', $config['storage']['fallback']['files']['incoming']);
-        $this->assertSame('ssr-metrics-recovery.jsonl', $config['storage']['fallback']['files']['recovery']);
+        $this->assertSame('metrics/ssr.jsonl', $config['storage']['fallback']['files']['incoming']);
+        $this->assertSame('metrics/last.json', $config['storage']['fallback']['files']['recovery']);
         $this->assertSame(0.35, $config['score']['weights']['speed_index']);
         $this->assertSame(0.25, $config['score']['weights']['first_contentful_paint']);
         $this->assertSame(80, $config['score']['thresholds']['passing']);
@@ -72,6 +72,15 @@ class SsrMetricsConfigTest extends TestCase
         $this->assertSame(14, $config['retention']['primary_days']);
         $this->assertSame(3, $config['retention']['fallback_days']);
         $this->assertSame(90, $config['retention']['aggregate_days']);
+        $this->assertSame(5, $config['penalties']['blocking_scripts']['per_script']);
+        $this->assertSame(30, $config['penalties']['blocking_scripts']['max']);
+        $this->assertSame(10, $config['penalties']['missing_ldjson']['deduction']);
+        $this->assertSame(3, $config['penalties']['low_og']['minimum']);
+        $this->assertSame(10, $config['penalties']['low_og']['deduction']);
+        $this->assertSame(900 * 1024, $config['penalties']['oversized_html']['threshold']);
+        $this->assertSame(20, $config['penalties']['oversized_html']['deduction']);
+        $this->assertSame(60, $config['penalties']['excess_images']['threshold']);
+        $this->assertSame(10, $config['penalties']['excess_images']['deduction']);
     }
 
     public function test_it_honours_environment_overrides(): void
@@ -92,6 +101,15 @@ class SsrMetricsConfigTest extends TestCase
         $this->setEnv('SSR_METRICS_RETENTION_PRIMARY_DAYS', '21');
         $this->setEnv('SSR_METRICS_RETENTION_FALLBACK_DAYS', '5');
         $this->setEnv('SSR_METRICS_RETENTION_AGGREGATE_DAYS', '120');
+        $this->setEnv('SSR_METRICS_PENALTY_BLOCKING_PER_SCRIPT', '7');
+        $this->setEnv('SSR_METRICS_PENALTY_BLOCKING_MAX', '28');
+        $this->setEnv('SSR_METRICS_PENALTY_MISSING_LDJSON', '4');
+        $this->setEnv('SSR_METRICS_PENALTY_LOW_OG_MINIMUM', '5');
+        $this->setEnv('SSR_METRICS_PENALTY_LOW_OG_DEDUCTION', '11');
+        $this->setEnv('SSR_METRICS_PENALTY_OVERSIZED_THRESHOLD', (string) (800 * 1024));
+        $this->setEnv('SSR_METRICS_PENALTY_OVERSIZED_DEDUCTION', '25');
+        $this->setEnv('SSR_METRICS_PENALTY_EXCESS_IMAGES_THRESHOLD', '45');
+        $this->setEnv('SSR_METRICS_PENALTY_EXCESS_IMAGES_DEDUCTION', '12');
 
         $config = $this->reloadConfig();
 
@@ -111,6 +129,15 @@ class SsrMetricsConfigTest extends TestCase
         $this->assertSame(21, $config['retention']['primary_days']);
         $this->assertSame(5, $config['retention']['fallback_days']);
         $this->assertSame(120, $config['retention']['aggregate_days']);
+        $this->assertSame(7, $config['penalties']['blocking_scripts']['per_script']);
+        $this->assertSame(28, $config['penalties']['blocking_scripts']['max']);
+        $this->assertSame(4, $config['penalties']['missing_ldjson']['deduction']);
+        $this->assertSame(5, $config['penalties']['low_og']['minimum']);
+        $this->assertSame(11, $config['penalties']['low_og']['deduction']);
+        $this->assertSame(800 * 1024, $config['penalties']['oversized_html']['threshold']);
+        $this->assertSame(25, $config['penalties']['oversized_html']['deduction']);
+        $this->assertSame(45, $config['penalties']['excess_images']['threshold']);
+        $this->assertSame(12, $config['penalties']['excess_images']['deduction']);
     }
 
     /**

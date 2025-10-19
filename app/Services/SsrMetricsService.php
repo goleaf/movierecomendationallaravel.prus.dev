@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\SsrMetricsFallbackStore;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class SsrMetricsService
 {
+    public function __construct(private SsrMetricsFallbackStore $fallbackStore) {}
+
     /**
      * Extracts SSR-related metrics from an HTML response.
      */
@@ -251,10 +253,6 @@ class SsrMetricsService
     private function storeInJsonl(array $normalizedPayload, array $originalPayload): void
     {
         try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
-            }
-
             $payload = [
                 'ts' => $normalizedPayload['collected_at']->toIso8601String(),
                 'path' => $normalizedPayload['path'],
@@ -277,7 +275,7 @@ class SsrMetricsService
                 'has_open_graph' => $normalizedPayload['has_open_graph'],
             ];
 
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+            $this->fallbackStore->append($payload);
         } catch (Throwable $e) {
             Log::error('Failed storing SSR metric.', [
                 'exception' => $e,

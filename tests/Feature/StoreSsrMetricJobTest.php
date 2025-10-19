@@ -25,6 +25,9 @@ class StoreSsrMetricJobTest extends TestCase
 
     public function test_it_inserts_metric_into_database_when_table_exists(): void
     {
+        config()->set('ssrmetrics.storage.fallback.disk', 'local');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
         Storage::fake('local');
 
         $now = Carbon::parse('2024-01-01 12:00:00');
@@ -85,6 +88,9 @@ class StoreSsrMetricJobTest extends TestCase
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
     {
+        config()->set('ssrmetrics.storage.fallback.disk', 'local');
+        config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
+
         Storage::fake('local');
 
         $now = Carbon::parse('2024-01-02 08:30:00');
@@ -119,9 +125,12 @@ class StoreSsrMetricJobTest extends TestCase
         $job = new StoreSsrMetric($payload);
         $job->handle();
 
-        Storage::disk('local')->assertExists('metrics/ssr.jsonl');
+        $fallbackDisk = config('ssrmetrics.storage.fallback.disk');
+        $fallbackFile = config('ssrmetrics.storage.fallback.files.incoming');
 
-        $contents = Storage::disk('local')->get('metrics/ssr.jsonl');
+        Storage::disk($fallbackDisk)->assertExists($fallbackFile);
+
+        $contents = Storage::disk($fallbackDisk)->get($fallbackFile);
         $lines = array_values(array_filter(explode(PHP_EOL, $contents)));
 
         $this->assertCount(1, $lines);

@@ -6,10 +6,10 @@ namespace App\Services;
 
 use App\Services\Analytics\CtrAnalyticsService;
 use App\Support\MetricsCache;
+use App\Support\SsrMetricsFallbackStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class PrometheusMetricsService
 {
@@ -22,6 +22,7 @@ class PrometheusMetricsService
     public function __construct(
         private readonly MetricsCache $cache,
         private readonly CtrAnalyticsService $ctrAnalytics,
+        private readonly SsrMetricsFallbackStore $fallbackStore,
     ) {}
 
     public function render(): string
@@ -203,37 +204,13 @@ class PrometheusMetricsService
      */
     private function loadSsrFallback(): array
     {
-        if (Storage::exists('metrics/ssr.jsonl')) {
-            $content = trim((string) Storage::get('metrics/ssr.jsonl'));
-            if ($content !== '') {
-                $lines = preg_split('/\r?\n/', $content) ?: [];
-                $records = [];
+        $records = $this->fallbackStore->readIncoming();
 
-                foreach ($lines as $line) {
-                    if ($line === '') {
-                        continue;
-                    }
-
-                    $decoded = json_decode($line, true);
-                    if (is_array($decoded)) {
-                        $records[] = $decoded;
-                    }
-                }
-
-                if ($records !== []) {
-                    return $records;
-                }
-            }
+        if ($records !== []) {
+            return $records;
         }
 
-        if (Storage::exists('metrics/last.json')) {
-            $decoded = json_decode((string) Storage::get('metrics/last.json'), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
-        }
-
-        return [];
+        return $this->fallbackStore->readRecovery();
     }
 
     private function metric(string $name, string $type, string $help, int|float $value): array
