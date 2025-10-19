@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Console\Commands\AggregateCtrDailySnapshotsCommand;
 use App\Console\Commands\DoctorCommand;
 use App\Console\Commands\LogsTail;
+use App\Console\Commands\QueueHealthcheckCommand;
 use App\Console\Commands\SsrCollectCommand;
 use App\Exceptions\Handler as ExceptionHandler;
 use App\Http\Middleware\AddSecurityHeaders;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         AggregateCtrDailySnapshotsCommand::class,
         DoctorCommand::class,
         LogsTail::class,
+        QueueHealthcheckCommand::class,
         SsrCollectCommand::class,
     ])
     ->withSchedule(function (Schedule $schedule): void {
