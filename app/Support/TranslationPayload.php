@@ -2,8 +2,68 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
+
 final class TranslationPayload
 {
+    /** @var array<string, string> */
+    private const LANGUAGE_CODE_MAP = [
+        'aar' => 'aa',
+        'afr' => 'af',
+        'ara' => 'ar',
+        'bel' => 'be',
+        'bul' => 'bg',
+        'bos' => 'bs',
+        'cat' => 'ca',
+        'ces' => 'cs',
+        'cze' => 'cs',
+        'chi' => 'zh',
+        'zho' => 'zh',
+        'dan' => 'da',
+        'deu' => 'de',
+        'ger' => 'de',
+        'ell' => 'el',
+        'gre' => 'el',
+        'eng' => 'en',
+        'est' => 'et',
+        'fin' => 'fi',
+        'fra' => 'fr',
+        'fre' => 'fr',
+        'heb' => 'he',
+        'hin' => 'hi',
+        'hrv' => 'hr',
+        'hun' => 'hu',
+        'ind' => 'id',
+        'isl' => 'is',
+        'ita' => 'it',
+        'jpn' => 'ja',
+        'kor' => 'ko',
+        'lav' => 'lv',
+        'lit' => 'lt',
+        'mac' => 'mk',
+        'mkd' => 'mk',
+        'may' => 'ms',
+        'msa' => 'ms',
+        'dut' => 'nl',
+        'nld' => 'nl',
+        'nor' => 'no',
+        'pol' => 'pl',
+        'por' => 'pt',
+        'ron' => 'ro',
+        'rum' => 'ro',
+        'rus' => 'ru',
+        'slo' => 'sk',
+        'slk' => 'sk',
+        'slv' => 'sl',
+        'spa' => 'es',
+        'srp' => 'sr',
+        'swe' => 'sv',
+        'tha' => 'th',
+        'tur' => 'tr',
+        'ukr' => 'uk',
+        'vie' => 'vi',
+    ];
+
     /**
      * Normalize mixed translation payloads into a consistent structure.
      *
@@ -34,6 +94,12 @@ final class TranslationPayload
                 continue;
             }
 
+            $normalizedLocale = self::normalizeLocaleKey($locale);
+
+            if ($normalizedLocale === null) {
+                continue;
+            }
+
             foreach (['title', 'plot'] as $field) {
                 $value = $payload[$field] ?? null;
 
@@ -41,7 +107,7 @@ final class TranslationPayload
                     continue;
                 }
 
-                $normalized[$field][$locale] = $value;
+                $normalized[$field][$normalizedLocale] = $value;
             }
         }
 
@@ -117,7 +183,13 @@ final class TranslationPayload
                 continue;
             }
 
-            $filtered[$locale] = $value;
+            $normalizedLocale = self::normalizeLocaleKey($locale);
+
+            if ($normalizedLocale === null) {
+                continue;
+            }
+
+            $filtered[$normalizedLocale] = $value;
         }
 
         if ($filtered !== []) {
@@ -125,5 +197,37 @@ final class TranslationPayload
         }
 
         return $filtered;
+    }
+
+    private static function normalizeLocaleKey(string $locale): ?string
+    {
+        $normalized = Str::of($locale)
+            ->lower()
+            ->trim()
+            ->replace('_', '-')
+            ->value();
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (array_key_exists($normalized, self::LANGUAGE_CODE_MAP)) {
+            return self::LANGUAGE_CODE_MAP[$normalized];
+        }
+
+        if (str_contains($normalized, '-')) {
+            $parts = array_values(array_filter(explode('-', $normalized), static fn (string $part): bool => $part !== ''));
+
+            if ($parts === []) {
+                return null;
+            }
+
+            $primary = self::LANGUAGE_CODE_MAP[$parts[0]] ?? $parts[0];
+            $tail = array_slice($parts, 1);
+
+            return $primary.(empty($tail) ? '' : '-'.implode('-', $tail));
+        }
+
+        return $normalized;
     }
 }
