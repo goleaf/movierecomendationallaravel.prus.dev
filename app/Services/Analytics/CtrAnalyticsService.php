@@ -23,16 +23,16 @@ class CtrAnalyticsService
     public function getMetrics(
         string $from,
         string $to,
-        ?string $placement = null,
-        ?string $variant = null
+        ?string $placement,
+        ?string $variant
     ): array {
         $fromDate = CarbonImmutable::parse($from);
         $toDate = CarbonImmutable::parse($to);
 
-        $summaryData = $this->variantSummary($fromDate, $toDate, $placement, $variant);
-        $placementCtrData = $this->placementCtrs($fromDate, $toDate);
+        $summary = $this->variantSummary($fromDate, $toDate, $placement, $variant);
+        $placementCtrs = $this->placementCtrs($fromDate, $toDate);
 
-        $placements = $placementCtrData
+        $placements = $placementCtrs
             ->map(static fn (array $row) => explode('-', $row['label'])[0])
             ->unique()
             ->values()
@@ -42,17 +42,17 @@ class CtrAnalyticsService
             $placements = ['home', 'show', 'trends'];
         }
 
-        $clicksByPlacement = array_fill_keys($placements, 0);
-        foreach ($summaryData['placementClicks'] as $placementKey => $clickCount) {
-            $clicksByPlacement[$placementKey] = (int) $clickCount;
-        }
+        $clicksByPlacement = collect($placements)
+            ->mapWithKeys(fn (string $placementKey) => [
+                $placementKey => (int) ($summary['placementClicks'][$placementKey] ?? 0),
+            ])
+            ->all();
 
-        $funnelsRaw = $this->funnels($fromDate, $toDate, $placements);
         $funnels = [];
-        $totalLabel = __('admin.ctr.funnels.total');
         $totalViews = 0;
+        $totalLabel = __('admin.ctr.funnels.total');
 
-        foreach ($funnelsRaw as $row) {
+        foreach ($this->funnels($fromDate, $toDate, $placements) as $row) {
             $label = $row['label'];
             $funnels[$label] = [
                 'imps' => (int) $row['imps'],
@@ -68,17 +68,17 @@ class CtrAnalyticsService
         $totals = [
             'impressions' => array_sum(array_map(
                 static fn (array $item): int => (int) $item['impressions'],
-                $summaryData['summary']
+                $summary['summary']
             )),
             'clicks' => array_sum(array_map(
                 static fn (array $item): int => (int) $item['clicks'],
-                $summaryData['summary']
+                $summary['summary']
             )),
             'views' => $totalViews,
         ];
 
         return [
-            'summary' => $summaryData['summary'],
+            'summary' => $summary['summary'],
             'clicksByPlacement' => $clicksByPlacement,
             'funnels' => $funnels,
             'totals' => $totals,
