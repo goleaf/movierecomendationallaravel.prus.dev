@@ -189,7 +189,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => proxy_image_url($item->poster_url, 'poster'),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,
@@ -227,7 +227,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => proxy_image_url($item->poster_url, 'poster'),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,
@@ -252,7 +252,7 @@ class TrendsPage extends Component
                 return [
                     'id' => $movie->id,
                     'title' => $movie->title,
-                    'poster_url' => $movie->poster_url,
+                    'poster_url' => proxy_image_url($movie->poster_url, 'poster'),
                     'year' => $movie->year,
                     'type' => $movie->type,
                     'imdb_rating' => $movie->imdb_rating,

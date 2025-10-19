@@ -68,6 +68,9 @@ class TrendingService
                     return null;
                 }
 
+                $movie->setAttribute('poster_url', proxy_image_url($movie->poster_url, 'poster'));
+                $movie->setAttribute('backdrop_url', proxy_image_url($movie->backdrop_url, 'backdrop'));
+
                 return [
                     'movie' => $movie,
                     'clicks' => $clicks,
@@ -91,10 +94,15 @@ class TrendingService
             ->orderByDesc('imdb_rating')
             ->limit($limit)
             ->get()
-            ->map(fn (Movie $movie) => [
-                'movie' => $movie,
-                'clicks' => null,
-            ]);
+            ->map(function (Movie $movie) {
+                $movie->setAttribute('poster_url', proxy_image_url($movie->poster_url, 'poster'));
+                $movie->setAttribute('backdrop_url', proxy_image_url($movie->backdrop_url, 'backdrop'));
+
+                return [
+                    'movie' => $movie,
+                    'clicks' => null,
+                ];
+            });
     }
 
     /**
@@ -169,10 +177,10 @@ class TrendingService
         }
 
         if ($items->isNotEmpty()) {
-            return $items->map(fn (object $item) => [
+            return $items->map(static fn (object $item) => [
                 'id' => (int) $item->id,
                 'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => proxy_image_url($item->poster_url, 'poster'),
                 'year' => $item->year !== null ? (int) $item->year : null,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
@@ -191,10 +199,10 @@ class TrendingService
             ->limit($limit)
             ->get();
 
-        return $fallback->map(fn (Movie $movie) => [
+        return $fallback->map(static fn (Movie $movie) => [
             'id' => $movie->id,
             'title' => $movie->title,
-            'poster_url' => $movie->poster_url,
+            'poster_url' => proxy_image_url($movie->poster_url, 'poster'),
             'year' => $movie->year,
             'type' => $movie->type,
             'imdb_rating' => $movie->imdb_rating,

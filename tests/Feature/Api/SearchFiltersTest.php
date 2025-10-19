@@ -10,6 +10,17 @@ class SearchFiltersTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('cache.default', 'array');
+        config()->set('database.redis.client', 'predis');
+        config()->set('cache.stores.redis', ['driver' => 'array']);
+
+        $this->withoutMiddleware(\Spatie\Csp\AddCspHeaders::class);
+    }
+
     public function test_it_filters_search_results_by_type_genre_and_year(): void
     {
         $matching = Movie::factory()->create([
@@ -54,7 +65,8 @@ class SearchFiltersTest extends TestCase
                 'id' => $matching->id,
                 'title' => 'Matching Movie',
                 'type' => 'movie',
-            ]);
+            ])
+            ->assertJsonPath('data.0.poster_url', proxy_image_url($matching->poster_url, 'poster'));
     }
 
     public function test_it_handles_inverted_year_filters(): void

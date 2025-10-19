@@ -54,7 +54,7 @@
                 @foreach($items as $item)
                     <a href="{{ route('movies.show', ['movie' => $item['id']]) }}" class="flex flex-col overflow-hidden rounded-xl border border-gray-200 transition hover:border-primary-500">
                         @if($item['poster_url'])
-                            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}" loading="lazy" class="aspect-[2/3] w-full object-cover" />
+                            <img src="{{ proxy_image_url($item['poster_url'], 'poster') }}" alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}" loading="lazy" class="aspect-[2/3] w-full object-cover" />
                         @endif
                         <div class="space-y-2 p-4">
                             <div class="text-base font-semibold text-gray-900">{{ $item['title'] }} <span class="text-sm font-normal text-gray-500">({{ $item['year'] ?? '—' }})</span></div>

@@ -111,7 +111,7 @@ class TrendsPage extends Page implements HasForms
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => proxy_image_url($item->poster_url, 'poster'),
                 'year' => $item->year,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating,

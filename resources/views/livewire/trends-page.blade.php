@@ -69,7 +69,7 @@
                 >
                     @if ($item['poster_url'])
                         <img
-                            src="{{ $item['poster_url'] }}"
+                            src="{{ proxy_image_url($item['poster_url'], 'poster') }}"
                             alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}"
                             loading="lazy"
                             class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"

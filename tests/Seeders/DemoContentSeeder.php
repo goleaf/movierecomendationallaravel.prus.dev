@@ -8,6 +8,7 @@ use App\Models\Movie;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DemoContentSeeder extends Seeder
 {
@@ -100,6 +101,8 @@ class DemoContentSeeder extends Seeder
             Movie::query()->create($movie);
         }
 
+        $hasAbMovieId = Schema::hasColumn('rec_ab_logs', 'movie_id');
+
         $impressionLogs = collect([
             ['device_id' => 'device-even-2', 'variant' => 'A'],
             ['device_id' => 'device-odd', 'variant' => 'B'],
@@ -107,14 +110,20 @@ class DemoContentSeeder extends Seeder
             ['device_id' => 'device-alt-2', 'variant' => 'B'],
             ['device_id' => 'device-alt-3', 'variant' => 'A'],
             ['device_id' => 'device-alt-4', 'variant' => 'A'],
-        ])->map(function (array $row) use ($now): array {
-            return [
+        ])->map(function (array $row) use ($now, $hasAbMovieId): array {
+            $payload = [
                 'device_id' => $row['device_id'],
                 'variant' => $row['variant'],
                 'placement' => 'home',
                 'created_at' => $now->subDays(2),
                 'updated_at' => $now->subDays(2),
             ];
+
+            if ($hasAbMovieId) {
+                $payload['movie_id'] = 1;
+            }
+
+            return $payload;
         });
 
         DB::table('rec_ab_logs')->insert($impressionLogs->all());
@@ -128,15 +137,22 @@ class DemoContentSeeder extends Seeder
             ['movie_id' => 1, 'variant' => 'A', 'placement' => 'home', 'offset' => 5],
         ];
 
-        DB::table('rec_clicks')->insert(array_map(function (array $row) use ($now): array {
-            return [
+        $clicksHasDeviceId = Schema::hasColumn('rec_clicks', 'device_id');
+
+        DB::table('rec_clicks')->insert(array_map(function (array $row) use ($now, $clicksHasDeviceId): array {
+            $record = [
                 'movie_id' => $row['movie_id'],
-                'device_id' => 'device-seed',
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
                 'created_at' => $now->subDays($row['offset']),
                 'updated_at' => $now->subDays($row['offset']),
             ];
+
+            if ($clicksHasDeviceId) {
+                $record['device_id'] = 'device-seed';
+            }
+
+            return $record;
         }, $clicks));
 
         $views = [
