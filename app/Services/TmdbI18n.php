@@ -4,23 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Services\MovieApis\TmdbClient;
 use App\Support\TranslationPayload;
-use Illuminate\Support\Facades\Http;
 
 class TmdbI18n
 {
-    protected ?string $apiKey;
-
-    protected string $base = 'https://api.themoviedb.org/3';
-
-    public function __construct()
-    {
-        $this->apiKey = config('services.tmdb.key', env('TMDB_API_KEY'));
-    }
+    public function __construct(protected TmdbClient $client) {}
 
     public function enabled(): bool
     {
-        return filled($this->apiKey);
+        return $this->client->enabled();
     }
 
     /**
@@ -32,8 +25,7 @@ class TmdbI18n
         if (! $this->enabled()) {
             return null;
         }
-        $resp = Http::timeout(20)->get("{$this->base}/find/{$imdbId}", [
-            'api_key' => $this->apiKey,
+        $resp = $this->client->get("find/{$imdbId}", [
             'external_source' => 'imdb_id',
         ]);
         if ($resp->failed()) {
@@ -74,8 +66,7 @@ class TmdbI18n
     protected function one(string $type, int $id, string $lang): ?array
     {
         $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
-        $resp = Http::timeout(20)->get("{$this->base}/{$path}", [
-            'api_key' => $this->apiKey,
+        $resp = $this->client->get($path, [
             'language' => $lang,
         ]);
         if ($resp->failed()) {
