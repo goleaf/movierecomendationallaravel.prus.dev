@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\Movie;
-use App\Services\Analytics\TrendsRollupService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -121,7 +120,7 @@ class TrendsAnalyticsService
             $items = $query->limit(40)->get();
 
             if ($items->isNotEmpty()) {
-                return $items;
+                return $this->mapPosterUrls($items);
             }
         }
 
@@ -152,16 +151,31 @@ class TrendsAnalyticsService
             $items = $query->limit(40)->get();
 
             if ($items->isNotEmpty()) {
-                return $items;
+                return $this->mapPosterUrls($items);
             }
         }
 
-        return $this->fallback(
-            $filters['type'],
-            $filters['genre'],
-            $filters['year_from'],
-            $filters['year_to'],
+        return $this->mapPosterUrls(
+            $this->fallback(
+                $filters['type'],
+                $filters['genre'],
+                $filters['year_from'],
+                $filters['year_to'],
+            ),
         );
+    }
+
+    /**
+     * @param  Collection<int, object>  $items
+     * @return Collection<int, object>
+     */
+    private function mapPosterUrls(Collection $items): Collection
+    {
+        return $items->map(static function (object $item): object {
+            $item->poster_url = proxy_image_url($item->poster_url ?? null);
+
+            return $item;
+        });
     }
 
     /**

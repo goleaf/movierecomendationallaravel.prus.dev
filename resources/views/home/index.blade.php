@@ -11,8 +11,8 @@
   <div class="grid grid-4">
     @foreach($recommended as $movie)
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>'home', 'variant'=>$homeVariant]) }}">
-        @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" loading="lazy"/>
+        @if($poster = proxy_image_url($movie->poster_url))
+          <img src="{{ $poster }}" alt="{{ $movie->title }}" loading="lazy"/>
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">{{ __('messages.common.imdb_with_votes_colon', ['rating' => $movie->imdb_rating ?? __('messages.common.dash'), 'votes' => number_format($movie->imdb_votes ?? 0, 0, '.', ' ')]) }}</div>
@@ -32,8 +32,8 @@
     @foreach($trending as $row)
       @php($movie = $row['movie'])
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>$row['placement'], 'variant'=>$row['variant']]) }}">
-        @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" loading="lazy"/>
+        @if($poster = proxy_image_url($movie->poster_url))
+          <img src="{{ $poster }}" alt="{{ $movie->title }}" loading="lazy"/>
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">

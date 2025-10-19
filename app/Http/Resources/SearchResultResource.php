@@ -22,9 +22,9 @@ class SearchResultResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'=>$this->id,'imdb_tt'=>$this->imdb_tt,'title'=>$this->title,'type'=>$this->type,
-            'year'=>$this->year,'imdb_rating'=>$this->imdb_rating,'imdb_votes'=>$this->imdb_votes,
-            'genres'=>$this->genres,'poster_url'=>$this->poster_url,
+            'id' => $this->id, 'imdb_tt' => $this->imdb_tt, 'title' => $this->title, 'type' => $this->type,
+            'year' => $this->year, 'imdb_rating' => $this->imdb_rating, 'imdb_votes' => $this->imdb_votes,
+            'genres' => $this->genres, 'poster_url' => proxy_image_url($this->poster_url),
         ];
     }
 }

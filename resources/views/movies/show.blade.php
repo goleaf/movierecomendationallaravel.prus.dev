@@ -3,8 +3,8 @@
 @section('content')
 <div class="card">
   <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;">
-    @if($movie->poster_url)
-      <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}"/>
+    @if($poster = proxy_image_url($movie->poster_url))
+      <img src="{{ $poster }}" alt="{{ $movie->title }}"/>
     @endif
     <div>
       <h2>{{ $movie->title }} ({{ $movie->year ?? __('messages.common.dash') }})</h2>

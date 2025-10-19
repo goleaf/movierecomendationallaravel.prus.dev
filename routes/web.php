@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MovieController;
@@ -22,6 +23,9 @@ use Illuminate\Support\Str;
 Route::get('/', HomePage::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
 Route::get('/trends', TrendsPage::class)->name('trends');
+Route::get('/media/proxy', ImageProxyController::class)
+    ->middleware('signed')
+    ->name('media.proxy');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
