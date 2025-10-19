@@ -32,6 +32,17 @@ return [
         'days_short' => 'days',
         'empty' => 'No data — check click tracking or adjust the filters.',
         'votes' => ':count votes',
+        'filters' => [
+            'heading' => 'Filters',
+            'days' => 'Days',
+            'type' => 'Type',
+            'genre' => 'Genre',
+            'year_from' => 'Year from',
+            'year_to' => 'Year to',
+            'from' => 'From',
+            'to' => 'To',
+            'any' => 'Any',
+        ],
     ],
     'search' => [
         'title' => 'Search',

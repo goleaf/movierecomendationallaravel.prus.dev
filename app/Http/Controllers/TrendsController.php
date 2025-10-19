@@ -19,11 +19,11 @@ class TrendsController extends Controller
         $yf = (int) $request->query('yf', 0);
         $yt = (int) $request->query('yt', 0);
 
-        $result = $this->analytics->getTrendsData($days, $type, $genre, $yf, $yt);
-
-        $items = $result['items'];
-        $filters = $result['filters'];
-        $period = $result['period'];
+        [
+            'items' => $items,
+            'filters' => $filters,
+            'period' => $period,
+        ] = $this->analytics->getTrendsData($days, $type, $genre, $yf, $yt);
 
         if ($request->wantsJson()) {
             return response()->json([
