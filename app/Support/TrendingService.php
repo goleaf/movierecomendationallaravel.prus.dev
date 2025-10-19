@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\Movie;
+use App\Services\Analytics\TrendsRollupService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class TrendingService
 {
+    public function __construct(private readonly TrendsRollupService $rollup) {}
+
     /**
      * @return Collection<int,array{movie:Movie,clicks:int|null}>
      */
@@ -22,18 +25,36 @@ class TrendingService
         }
 
         [$from, $to] = $this->timeframe($days);
+        $fromDate = CarbonImmutable::parse($from);
+        $toDate = CarbonImmutable::parse($to);
 
         if (! Schema::hasTable('rec_clicks')) {
             return $this->fallbackSnapshot($limit);
         }
 
-        $top = DB::table('rec_clicks')
-            ->selectRaw('movie_id, count(*) as clicks')
-            ->whereBetween('created_at', [$from, $to])
-            ->groupBy('movie_id')
-            ->orderByDesc('clicks')
-            ->limit($limit)
-            ->pluck('clicks', 'movie_id');
+        $this->rollup->ensureBackfill($fromDate, $toDate);
+
+        $top = collect();
+
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $top = DB::table('rec_trending_rollups')
+                ->selectRaw('movie_id, sum(clicks) as clicks')
+                ->whereBetween('captured_on', [$fromDate->toDateString(), $toDate->toDateString()])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit($limit)
+                ->pluck('clicks', 'movie_id');
+        }
+
+        if ($top->isEmpty()) {
+            $top = DB::table('rec_clicks')
+                ->selectRaw('movie_id, count(*) as clicks')
+                ->whereBetween('created_at', [$from, $to])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit($limit)
+                ->pluck('clicks', 'movie_id');
+        }
 
         if ($top->isEmpty()) {
             return $this->fallbackSnapshot($limit);
@@ -90,10 +111,41 @@ class TrendingService
         }
 
         [$from, $to] = $this->timeframe($days);
+        $fromDate = CarbonImmutable::parse($from);
+        $toDate = CarbonImmutable::parse($to);
+
+        $this->rollup->ensureBackfill($fromDate, $toDate);
 
         $items = collect();
 
-        if (Schema::hasTable('rec_clicks')) {
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $query = DB::table('rec_trending_rollups')
+                ->join('movies', 'movies.id', '=', 'rec_trending_rollups.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, sum(rec_trending_rollups.clicks) as clicks')
+                ->whereBetween('rec_trending_rollups.captured_on', [$fromDate->toDateString(), $toDate->toDateString()])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($type !== '') {
+                $query->where('movies.type', $type);
+            }
+
+            if ($genre !== '') {
+                $query->whereJsonContains('movies.genres', $genre);
+            }
+
+            if (! is_null($yearFrom)) {
+                $query->where('movies.year', '>=', $yearFrom);
+            }
+
+            if (! is_null($yearTo)) {
+                $query->where('movies.year', '<=', $yearTo);
+            }
+
+            $items = $query->limit($limit)->get();
+        }
+
+        if ($items->isEmpty() && Schema::hasTable('rec_clicks')) {
             $query = DB::table('rec_clicks')
                 ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
                 ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')

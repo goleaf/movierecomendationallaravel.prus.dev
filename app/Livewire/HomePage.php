@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Movie;
+use App\Services\Analytics\TrendsRollupService;
 use App\Services\Recommender;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -19,6 +20,13 @@ class HomePage extends Component
     public Collection $recommended;
 
     public Collection $trending;
+
+    protected TrendsRollupService $rollup;
+
+    public function boot(TrendsRollupService $rollup): void
+    {
+        $this->rollup = $rollup;
+    }
 
     public function mount(Recommender $recommender): void
     {
@@ -83,13 +91,29 @@ class HomePage extends Component
         $from = now()->copy()->subDays(7)->startOfDay();
         $to = now()->endOfDay();
 
-        $top = DB::table('rec_clicks')
-            ->selectRaw('movie_id, count(*) as clicks')
-            ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
-            ->groupBy('movie_id')
-            ->orderByDesc('clicks')
-            ->limit(8)
-            ->pluck('clicks', 'movie_id');
+        $this->rollup->ensureBackfill($from, $to);
+
+        $top = collect();
+
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $top = DB::table('rec_trending_rollups')
+                ->selectRaw('movie_id, sum(clicks) as clicks')
+                ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit(8)
+                ->pluck('clicks', 'movie_id');
+        }
+
+        if ($top->isEmpty()) {
+            $top = DB::table('rec_clicks')
+                ->selectRaw('movie_id, count(*) as clicks')
+                ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit(8)
+                ->pluck('clicks', 'movie_id');
+        }
 
         if ($top->isEmpty()) {
             return collect();

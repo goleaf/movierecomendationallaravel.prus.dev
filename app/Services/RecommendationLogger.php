@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Movie;
+use App\Services\Analytics\TrendsRollupService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Collection;
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\Schema;
 
 class RecommendationLogger
 {
-    public function __construct(protected ConnectionInterface $db) {}
+    public function __construct(
+        protected ConnectionInterface $db,
+        protected TrendsRollupService $trendsRollup,
+    ) {}
 
     /**
      * @param  Collection<int,Movie>  $movies
@@ -63,6 +67,8 @@ class RecommendationLogger
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            $this->trendsRollup->increment($movieId, $now);
         }
 
         $this->recordPageView($deviceId, 'movie', $movieId, $now);
