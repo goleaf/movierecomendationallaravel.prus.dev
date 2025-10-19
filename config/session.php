@@ -105,6 +105,10 @@ return [
 
     'store' => env('SESSION_STORE'),
 
+    'cache' => [
+        'memoize' => env('SESSION_CACHE_MEMOIZE', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Session Sweeping Lottery

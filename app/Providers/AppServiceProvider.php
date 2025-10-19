@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Observers\MovieObserver;
 use App\Services\Ingestion\IdempotencyService;
 use App\Services\SsrMetricsService;
+use App\Support\MemoizingSessionManager;
 use App\Support\SsrMetricsFallbackStore;
 use Filament\Facades\Filament;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(IdempotencyService::class, static fn (): IdempotencyService => new IdempotencyService);
         $this->app->singleton(SsrMetricsService::class, static function ($app): SsrMetricsService {
             return new SsrMetricsService($app->make(SsrMetricsFallbackStore::class));
+        });
+
+        $this->app->extend('session', static function ($manager, $app) {
+            return new MemoizingSessionManager($app);
         });
     }
 
