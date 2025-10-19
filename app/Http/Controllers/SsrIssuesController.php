@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\SsrIssueCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class SsrIssuesController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(): SsrIssueCollection
     {
         $issues = [];
         if (\Schema::hasTable('ssr_metrics')) {
@@ -69,6 +69,6 @@ class SsrIssuesController extends Controller
         }
         usort($issues, fn ($a, $b) => $a['avg_score'] <=> $b['avg_score']);
 
-        return response()->json(['issues' => $issues]);
+        return new SsrIssueCollection($issues);
     }
 }

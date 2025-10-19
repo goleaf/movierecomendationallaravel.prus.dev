@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\TrendCollection;
 use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TrendsController extends Controller
 {
     public function __construct(private readonly TrendsAnalyticsService $analytics) {}
 
-    public function __invoke(Request $request): View|JsonResponse
+    public function __invoke(Request $request): View|TrendCollection
     {
         $days = max(1, min(30, (int) $request->query('days', 7)));
         $type = trim((string) $request->query('type', ''));
@@ -28,10 +28,9 @@ class TrendsController extends Controller
         ] = $this->analytics->getTrendsData($days, $type, $genre, $yf, $yt);
 
         if ($request->wantsJson()) {
-            return response()->json([
+            return (new TrendCollection($items))->additional([
                 'filters' => $filters,
                 'period' => $period,
-                'items' => $items,
             ]);
         }
 
