@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Support\Http\Policy;
 use Illuminate\Http\Request;
 use Illuminate\Http\StreamedResponse;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
@@ -15,9 +15,6 @@ class PosterProxyController extends Controller
 {
     private const DEFAULT_FALLBACK = 'img/og-default.svg';
 
-    /**
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\StreamedResponse
-     */
     public function __invoke(Request $request): BinaryFileResponse|StreamedResponse
     {
         abort_unless($request->hasValidSignature(), 403);
@@ -28,12 +25,11 @@ class PosterProxyController extends Controller
         ]);
 
         try {
-            $response = Http::withHeaders([
-                'Accept' => 'image/*,*/*',
-                'User-Agent' => config('app.name').'/PosterProxy',
-            ])
-                ->timeout(10)
-                ->connectTimeout(5)
+            $response = Policy::external()
+                ->replaceHeaders([
+                    'Accept' => 'image/*,*/*',
+                    'User-Agent' => config('app.name').'/PosterProxy',
+                ])
                 ->withOptions(['stream' => true])
                 ->get($validated['src']);
         } catch (Throwable $exception) {
