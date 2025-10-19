@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Movie;
-use App\Services\TmdbI18n;
+use App\Services\Importers\MovieTranslationImporter;
 use App\Support\TranslationPayload;
 use Closure;
 use Illuminate\Http\Request;
 
 class AutoTranslate
 {
-    public function __construct(protected TmdbI18n $i18n) {}
+    public function __construct(protected MovieTranslationImporter $importer) {}
 
     public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
         $movie = $request->route('movie');
-        if ($movie instanceof Movie && $this->i18n->enabled()) {
+        if ($movie instanceof Movie) {
             $langs = $this->parse($request->header('Accept-Language', ''));
             $supported = array_keys(config('filament-translation-component.languages', []));
             $existing = TranslationPayload::normalize($movie->translations);
@@ -38,15 +38,7 @@ class AutoTranslate
 
             if ($need) {
                 $need = array_values(array_unique($need));
-                try {
-                    $map = $this->i18n->translationsByImdb($movie->imdb_tt, $need);
-
-                    if (! empty($map)) {
-                        $movie->translations = TranslationPayload::merge($movie->translations, $map);
-                        $movie->save();
-                    }
-                } catch (\Throwable $e) {
-                }
+                $this->importer->dispatch($movie, $need);
             }
         }
 
