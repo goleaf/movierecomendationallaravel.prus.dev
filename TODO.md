@@ -12,6 +12,9 @@ Maintain this backlog so the team can quickly align on what still needs to happe
 - [ ] Create feature tests that exercise both recommendation strategies exposed in `routes/web.php` and assert the correct environment flags are honoured.
 - [ ] Extend Filament dashboards with uptime notifications for the SSR metrics API responses (currently only CTR trends are monitored).
 
+## Data ingestion & storage
+- [ ] Ship migrations for the `failed_jobs` and `job_batches` tables that match the expectations in `App\\Http\\Controllers\\AdminMetricsController`, ideally mirroring Laravel's standard queue/Horizon schema so the admin metrics view continues to function once wired up.
+
 ## Documentation & onboarding
 - [ ] Expand `README.md` with a quickstart focused on Horizon/Redis since those steps are only hinted at today.
 - [ ] Publish a `.cursor/rules.json` primer describing preferred generators/prompts for controllers, Livewire components, and Filament resources.
