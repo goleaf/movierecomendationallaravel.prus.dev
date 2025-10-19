@@ -6,7 +6,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ## Project trackers
 
-- [TODO backlog](TODO.md)
+- [TODO backlog](TODO.md) — canonical uppercase filename to prevent case-insensitive checkout conflicts
 - [Works log](WORKS.md)
 
 ---

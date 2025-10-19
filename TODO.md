@@ -3,9 +3,13 @@
 Maintain this backlog so the team can quickly align on what still needs to happen for the overlay to feel production ready. Use the checkboxes to track progress during work sessions and prune items once shipped.
 
 ## Platform setup
-- [ ] Install Laravel Boost locally (`composer require laravel/boost --dev` + `php artisan boost:install`) and commit the generated scaffolding.
-- [ ] Audit the Boost installation output and document any non-default files inside `.cursor/` so editors can attach to the MCP server without guesswork.
+- [ ] Complete the Laravel Boost installation and documentation:
+  - [ ] `composer require laravel/boost --dev`
+  - [ ] `php artisan boost:install`
+  - [ ] Verify installer output and the generated files that land in the repo
+  - [ ] Document any non-default `.cursor/` entries and MCP server registration steps so editors can attach to the Boost server without guesswork
 - [ ] Verify CI covers `vendor/bin/pint`, `php artisan test`, and `phpstan` to match the quality gates described in the README.
+- [ ] Plan follow-up hardening once Boost is stable (Blade/routes audit, Tailwind migration, regression tests).
 
 ## Feature hardening
 - [ ] Add smoke tests for the TMDB/OMDb ingestion commands in `app/Console/Commands` to guarantee queue wiring survives future refactors.
