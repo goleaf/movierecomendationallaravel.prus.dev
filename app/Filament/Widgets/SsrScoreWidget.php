@@ -27,8 +27,10 @@ class SsrScoreWidget extends ChartWidget
         $series = [];
 
         if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+
             $rows = DB::table('ssr_metrics')
-                ->selectRaw('date(created_at) d, avg(score) s')
+                ->selectRaw(sprintf('date(%s) d, avg(score) s', $timestampColumn))
                 ->groupBy('d')
                 ->orderBy('d')
                 ->limit(30)

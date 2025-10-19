@@ -24,9 +24,7 @@ class StoreSsrMetric implements ShouldQueue
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function __construct(public array $payload)
-    {
-    }
+    public function __construct(public array $payload) {}
 
     public function handle(): void
     {
@@ -44,14 +42,25 @@ class StoreSsrMetric implements ShouldQueue
         }
 
         try {
+            $now = now();
+
             $data = [
                 'path' => $this->payload['path'],
                 'score' => $this->payload['score'],
-                'created_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
+
+            if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+                $data['collected_at'] = $now;
+            }
 
             if (Schema::hasColumn('ssr_metrics', 'size') && isset($this->payload['html_size'])) {
                 $data['size'] = $this->payload['html_size'];
+            }
+
+            if (Schema::hasColumn('ssr_metrics', 'html_bytes') && isset($this->payload['html_size'])) {
+                $data['html_bytes'] = $this->payload['html_size'];
             }
 
             if (Schema::hasColumn('ssr_metrics', 'meta_count') && isset($this->payload['meta_count'])) {
@@ -76,6 +85,14 @@ class StoreSsrMetric implements ShouldQueue
 
             if (Schema::hasColumn('ssr_metrics', 'first_byte_ms') && isset($this->payload['first_byte_ms'])) {
                 $data['first_byte_ms'] = $this->payload['first_byte_ms'];
+            }
+
+            if (Schema::hasColumn('ssr_metrics', 'has_json_ld')) {
+                $data['has_json_ld'] = ($this->payload['ldjson_count'] ?? 0) > 0;
+            }
+
+            if (Schema::hasColumn('ssr_metrics', 'has_open_graph')) {
+                $data['has_open_graph'] = ($this->payload['og_count'] ?? 0) > 0;
             }
 
             if (Schema::hasColumn('ssr_metrics', 'meta') && isset($this->payload['meta'])) {

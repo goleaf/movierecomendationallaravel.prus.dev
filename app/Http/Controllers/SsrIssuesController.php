@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\SsrIssueCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class SsrIssuesController extends Controller
@@ -13,9 +14,15 @@ class SsrIssuesController extends Controller
     public function __invoke(): SsrIssueCollection
     {
         $issues = [];
-        if (\Schema::hasTable('ssr_metrics')) {
-            $rows = DB::table('ssr_metrics')->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
-                ->where('created_at', '>=', now()->subDays(2))->groupBy('path')->get();
+        if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+
+            $rows = DB::table('ssr_metrics')->selectRaw(
+                'path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og, avg(first_byte_ms) as avg_first_byte, avg(html_bytes) as avg_html_bytes'
+            )
+                ->where($timestampColumn, '>=', now()->subDays(2))
+                ->groupBy('path')
+                ->get();
             foreach ($rows as $r) {
                 $advice = [];
                 if ((int) $r->avg_block > 0) {

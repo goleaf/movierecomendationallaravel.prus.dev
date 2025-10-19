@@ -8,6 +8,7 @@ use App\Models\Movie;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DemoContentSeeder extends Seeder
 {
@@ -157,20 +158,66 @@ class DemoContentSeeder extends Seeder
         }, $views));
 
         $ssrMetrics = [
-            ['path' => '/', 'score' => 85, 'delta' => 1],
-            ['path' => '/trends', 'score' => 78, 'delta' => 1],
-            ['path' => '/', 'score' => 90, 'delta' => 0],
-            ['path' => '/trends', 'score' => 72, 'delta' => 0],
+            ['path' => '/', 'score' => 85, 'delta' => 1, 'size' => 410000, 'meta' => 18, 'og' => 2, 'ld' => 1, 'img' => 15, 'blocking' => 2, 'first_byte' => 240],
+            ['path' => '/trends', 'score' => 78, 'delta' => 1, 'size' => 395000, 'meta' => 16, 'og' => 2, 'ld' => 0, 'img' => 14, 'blocking' => 1, 'first_byte' => 260],
+            ['path' => '/', 'score' => 90, 'delta' => 0, 'size' => 360000, 'meta' => 20, 'og' => 3, 'ld' => 1, 'img' => 12, 'blocking' => 1, 'first_byte' => 190],
+            ['path' => '/trends', 'score' => 72, 'delta' => 0, 'size' => 405000, 'meta' => 15, 'og' => 2, 'ld' => 0, 'img' => 16, 'blocking' => 3, 'first_byte' => 280],
         ];
 
-        DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
-            return [
+        $metricColumns = [
+            'collected_at' => Schema::hasColumn('ssr_metrics', 'collected_at'),
+            'html_bytes' => Schema::hasColumn('ssr_metrics', 'html_bytes'),
+            'size' => Schema::hasColumn('ssr_metrics', 'size'),
+            'first_byte_ms' => Schema::hasColumn('ssr_metrics', 'first_byte_ms'),
+            'has_json_ld' => Schema::hasColumn('ssr_metrics', 'has_json_ld'),
+            'has_open_graph' => Schema::hasColumn('ssr_metrics', 'has_open_graph'),
+            'meta' => Schema::hasColumn('ssr_metrics', 'meta'),
+        ];
+
+        DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($metricColumns, $now): array {
+            $ts = $now->subDays($row['delta']);
+
+            $data = [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
-                'created_at' => $now->subDays($row['delta']),
-                'updated_at' => $now->subDays($row['delta']),
+                'meta_count' => $row['meta'],
+                'og_count' => $row['og'],
+                'ldjson_count' => $row['ld'],
+                'img_count' => $row['img'],
+                'blocking_scripts' => $row['blocking'],
+                'created_at' => $ts,
+                'updated_at' => $ts,
             ];
+
+            if ($metricColumns['collected_at']) {
+                $data['collected_at'] = $ts;
+            }
+
+            if ($metricColumns['size']) {
+                $data['size'] = $row['size'];
+            }
+
+            if ($metricColumns['html_bytes']) {
+                $data['html_bytes'] = $row['size'];
+            }
+
+            if ($metricColumns['first_byte_ms']) {
+                $data['first_byte_ms'] = $row['first_byte'];
+            }
+
+            if ($metricColumns['has_json_ld']) {
+                $data['has_json_ld'] = $row['ld'] > 0;
+            }
+
+            if ($metricColumns['has_open_graph']) {
+                $data['has_open_graph'] = $row['og'] > 0;
+            }
+
+            if ($metricColumns['meta']) {
+                $data['meta'] = null;
+            }
+
+            return $data;
         }, $ssrMetrics));
     }
 }

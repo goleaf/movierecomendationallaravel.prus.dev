@@ -8,6 +8,7 @@ use App\Models\Movie;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class FixturesSeeder extends Seeder
 {
@@ -176,20 +177,28 @@ class FixturesSeeder extends Seeder
         DB::table('device_history')->insert($views);
 
         $metrics = [
-            ['path' => '/', 'score' => 96, 'days' => 1, 'size' => 512000, 'meta' => 28, 'og' => 4, 'ld' => 2, 'img' => 18, 'blocking' => 1],
-            ['path' => '/', 'score' => 88, 'days' => 0, 'size' => 640000, 'meta' => 24, 'og' => 3, 'ld' => 2, 'img' => 22, 'blocking' => 3],
-            ['path' => '/trends', 'score' => 90, 'days' => 1, 'size' => 420000, 'meta' => 20, 'og' => 3, 'ld' => 1, 'img' => 14, 'blocking' => 1],
-            ['path' => '/trends', 'score' => 92, 'days' => 0, 'size' => 380000, 'meta' => 22, 'og' => 3, 'ld' => 2, 'img' => 12, 'blocking' => 0],
-            ['path' => '/movies/'.$timeTravelers->id, 'score' => 94, 'days' => 0, 'size' => 450000, 'meta' => 26, 'og' => 4, 'ld' => 2, 'img' => 16, 'blocking' => 1],
+            ['path' => '/', 'score' => 96, 'days' => 1, 'size' => 512000, 'meta' => 28, 'og' => 4, 'ld' => 2, 'img' => 18, 'blocking' => 1, 'first_byte' => 180],
+            ['path' => '/', 'score' => 88, 'days' => 0, 'size' => 640000, 'meta' => 24, 'og' => 3, 'ld' => 2, 'img' => 22, 'blocking' => 3, 'first_byte' => 230],
+            ['path' => '/trends', 'score' => 90, 'days' => 1, 'size' => 420000, 'meta' => 20, 'og' => 3, 'ld' => 1, 'img' => 14, 'blocking' => 1, 'first_byte' => 210],
+            ['path' => '/trends', 'score' => 92, 'days' => 0, 'size' => 380000, 'meta' => 22, 'og' => 3, 'ld' => 2, 'img' => 12, 'blocking' => 0, 'first_byte' => 160],
+            ['path' => '/movies/'.$timeTravelers->id, 'score' => 94, 'days' => 0, 'size' => 450000, 'meta' => 26, 'og' => 4, 'ld' => 2, 'img' => 16, 'blocking' => 1, 'first_byte' => 195],
         ];
 
-        DB::table('ssr_metrics')->insert(array_map(static function (array $row) use ($daysAgo): array {
+        $metricColumns = [
+            'collected_at' => Schema::hasColumn('ssr_metrics', 'collected_at'),
+            'html_bytes' => Schema::hasColumn('ssr_metrics', 'html_bytes'),
+            'size' => Schema::hasColumn('ssr_metrics', 'size'),
+            'first_byte_ms' => Schema::hasColumn('ssr_metrics', 'first_byte_ms'),
+            'has_json_ld' => Schema::hasColumn('ssr_metrics', 'has_json_ld'),
+            'has_open_graph' => Schema::hasColumn('ssr_metrics', 'has_open_graph'),
+        ];
+
+        DB::table('ssr_metrics')->insert(array_map(static function (array $row) use ($daysAgo, $metricColumns): array {
             $ts = $daysAgo($row['days']);
 
-            return [
+            $data = [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'size' => $row['size'],
                 'meta_count' => $row['meta'],
                 'og_count' => $row['og'],
                 'ldjson_count' => $row['ld'],
@@ -198,6 +207,32 @@ class FixturesSeeder extends Seeder
                 'created_at' => $ts,
                 'updated_at' => $ts,
             ];
+
+            if ($metricColumns['collected_at']) {
+                $data['collected_at'] = $ts;
+            }
+
+            if ($metricColumns['size']) {
+                $data['size'] = $row['size'];
+            }
+
+            if ($metricColumns['html_bytes']) {
+                $data['html_bytes'] = $row['size'];
+            }
+
+            if ($metricColumns['first_byte_ms']) {
+                $data['first_byte_ms'] = $row['first_byte'];
+            }
+
+            if ($metricColumns['has_json_ld']) {
+                $data['has_json_ld'] = $row['ld'] > 0;
+            }
+
+            if ($metricColumns['has_open_graph']) {
+                $data['has_open_graph'] = $row['og'] > 0;
+            }
+
+            return $data;
         }, $metrics));
     }
 }
