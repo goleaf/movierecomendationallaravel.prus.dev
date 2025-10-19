@@ -19,10 +19,66 @@ class TrendsController extends Controller
         $yf = (int) $request->query('yf', 0);
         $yt = (int) $request->query('yt', 0);
 
-        $result = $this->trendAnalytics->getTrends($days, $type, $genre, $yf, $yt);
-        $items = $result['items'];
-        $period = $result['period'];
-        $filters = $result['filters'];
+        $from = now()->subDays($days)->format('Y-m-d 00:00:00');
+        $to = now()->format('Y-m-d 23:59:59');
+
+        $items = collect();
+        if (Schema::hasTable('rec_clicks')) {
+            $query = DB::table('rec_clicks')
+                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
+                ->whereBetween('rec_clicks.created_at', [$from, $to])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($type !== '') {
+                $query->where('movies.type', $type);
+            }
+            if ($genre !== '') {
+                $query->whereJsonContains('movies.genres', $genre);
+            }
+            if ($yf > 0) {
+                $query->where('movies.year', '>=', $yf);
+            }
+            if ($yt > 0) {
+                $query->where('movies.year', '<=', $yt);
+            }
+
+            $items = $query
+                ->limit(40)
+                ->get()
+                ->map(function ($item) {
+                    $item->placement = 'trends';
+                    $item->variant = 'mixed';
+
+                    return $item;
+                });
+        }
+
+        if ($items->isEmpty()) {
+            $fallback = Movie::query()
+                ->when($type !== '', fn ($q) => $q->where('type', $type))
+                ->when($genre !== '', fn ($q) => $q->whereJsonContains('genres', $genre))
+                ->when($yf > 0, fn ($q) => $q->where('year', '>=', $yf))
+                ->when($yt > 0, fn ($q) => $q->where('year', '<=', $yt))
+                ->orderByDesc('imdb_votes')
+                ->orderByDesc('imdb_rating')
+                ->limit(40)
+                ->get();
+
+            $items = $fallback->map(fn (Movie $movie) => (object) [
+                'id' => $movie->id,
+                'title' => $movie->title,
+                'poster_url' => $movie->poster_url,
+                'year' => $movie->year,
+                'type' => $movie->type,
+                'imdb_rating' => $movie->imdb_rating,
+                'imdb_votes' => $movie->imdb_votes,
+                'clicks' => null,
+                'placement' => 'trends',
+                'variant' => 'mixed',
+            ]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json([

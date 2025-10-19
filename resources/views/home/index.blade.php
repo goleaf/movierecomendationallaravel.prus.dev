@@ -10,7 +10,7 @@
 @else
   <div class="grid grid-4">
     @foreach($recommended as $movie)
-      <a class="card" href="{{ route('movies.show', $movie) }}">
+      <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>'home', 'variant'=>$homeVariant]) }}">
         @if($movie->poster_url)
           <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" loading="lazy"/>
         @endif
@@ -31,7 +31,7 @@
   <div class="grid grid-4">
     @foreach($trending as $row)
       @php($movie = $row['movie'])
-      <a class="card" href="{{ route('movies.show', $movie) }}">
+      <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>$row['placement'], 'variant'=>$row['variant']]) }}">
         @if($movie->poster_url)
           <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" loading="lazy"/>
         @endif

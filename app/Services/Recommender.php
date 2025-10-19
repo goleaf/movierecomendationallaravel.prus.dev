@@ -8,18 +8,14 @@ use Illuminate\Support\Facades\Log;
 
 class Recommender
 {
-    public function __construct(protected RecAb $ab) {}
+    public function __construct(protected RecAb $ab, protected RecommendationLogger $logger) {}
 
-    /**
-     * @return array{variant:string,recommendations:Collection<int,Movie>}
-     */
-    public function recommendForDevice(string $deviceId, int $limit = 12): array
+    /** @return array{variant:string,movies:Collection<int,Movie>} */
+    public function recommendForDevice(string $deviceId, int $limit = 12, string $placement = 'home'): array
     {
         [$variant, $list] = $this->ab->forDevice($deviceId, $limit);
+        $this->logger->recordRecommendation($deviceId, $variant, $placement, $list);
 
-        return [
-            'variant' => $variant,
-            'recommendations' => $list,
-        ];
+        return ['variant' => $variant, 'movies' => $list];
     }
 }

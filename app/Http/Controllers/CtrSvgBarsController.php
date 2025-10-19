@@ -21,9 +21,10 @@ class CtrSvgBarsController extends Controller
             ->get();
 
         $impsVar = DB::table('rec_ab_logs')
-            ->selectRaw('variant, count(*) as c')
+            ->selectRaw('placement, variant, count(*) as c')
             ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-            ->groupBy('variant')->pluck('c', 'variant')->all();
+            ->groupBy('placement', 'variant')
+            ->get();
 
         $placements = ['home', 'show', 'trends'];
         $variants = ['A', 'B'];
@@ -32,10 +33,10 @@ class CtrSvgBarsController extends Controller
             foreach ($variants as $v) {
                 $row = $clicks->where('placement', $p)->where('variant', $v)->first();
                 $clks = (int) ($row->c ?? 0);
-                $imps = (int) ($impsVar[$v] ?? 0);
+                $impRow = $impsVar->where('placement', $p)->where('variant', $v)->first();
+                $imps = (int) ($impRow->c ?? 0);
                 $ctr = $imps > 0 ? 100.0 * $clks / $imps : 0.0;
-                $placementLabel = __('analytics.widgets.funnel.placements.'.$p);
-                $bars[] = ['label' => $placementLabel.'-'.$v, 'ctr' => $ctr];
+                $bars[] = ['label' => "$p-$v", 'ctr' => $ctr];
             }
         }
 
@@ -66,11 +67,10 @@ class CtrSvgBarsController extends Controller
             $y1 = $h - $pad - $hbar;
             $color = (str_contains($b['label'], '-A')) ? '#5aa0ff' : '#8ee38b';
             $svg .= '<rect x="'.$x1.'" y="'.$y1.'" width="'.$barw.'" height="'.$hbar.'" fill="'.$color.'"/>';
-            $svg .= '<text x="'.($x1).'" y="'.($h - $pad + 12).'" fill="#aaa" font-size="10" transform="rotate(45 '.($x1).','.($h - $pad + 12).')">'.e($b['label']).'</text>';
+            $svg .= '<text x="'.($x1).'" y="'.($h - $pad + 12).'" fill="#aaa" font-size="10" transform="rotate(45 '.($x1).','.($h - $pad + 12).')">'.$b['label'].'</text>';
         }
 
-        $title = __('analytics.svg.ctr_bars_title');
-        $svg .= '<text x="10" y="16" fill="#ddd">'.e($title).'</text></svg>';
+        $svg .= '<text x="10" y="16" fill="#ddd">CTR по площадкам (A — синий, B — зелёный)</text></svg>';
 
         return response($svg)->header('Content-Type', 'image/svg+xml');
     }
