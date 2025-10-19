@@ -87,6 +87,14 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
+            if (! isset($payload['recorded_at']) || ! is_string($payload['recorded_at'])) {
+                return false;
+            }
+
+            if ($payload['recorded_at'] !== $payload['collected_at']) {
+                return false;
+            }
+
             if (($payload['has_json_ld'] ?? null) !== true) {
                 return false;
             }
@@ -116,6 +124,14 @@ class SsrMetricsMiddlewareTest extends TestCase
             }
 
             if (($meta['has_open_graph'] ?? null) !== true) {
+                return false;
+            }
+
+            if (array_key_exists('movie_id', $meta) && $meta['movie_id'] !== null) {
+                return false;
+            }
+
+            if (($meta['recorded_at'] ?? null) !== $payload['recorded_at']) {
                 return false;
             }
 

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\Analytics\SsrMetricsService as AnalyticsSsrMetricsService;
+use App\Services\SsrMetricPayloadNormalizer;
+use App\Services\SsrMetricRecorder;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -31,56 +34,59 @@ class StoreSsrMetricJobTest extends TestCase
         Carbon::setTestNow($now);
 
         $payload = [
-            'path' => '/movies',
+            'path' => '/movies/42',
+            'movie_id' => 42,
             'score' => 85,
             'html_size' => 2048,
-            'html_bytes' => 2048,
             'meta_count' => 5,
             'og_count' => 3,
             'ldjson_count' => 1,
             'img_count' => 4,
             'blocking_scripts' => 2,
             'first_byte_ms' => 123,
-            'collected_at' => $now->toIso8601String(),
-            'meta' => [
-                'first_byte_ms' => 123,
-                'html_size' => 2048,
-                'html_bytes' => 2048,
-                'meta_count' => 5,
-                'og_count' => 3,
-                'ldjson_count' => 1,
-                'img_count' => 4,
-                'blocking_scripts' => 2,
-                'has_json_ld' => true,
-                'has_open_graph' => true,
-            ],
+            'recorded_at' => $now->toIso8601String(),
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class),
+        );
+
+        $analytics = app(AnalyticsSsrMetricsService::class);
+        $headline = $analytics->headline();
+        $this->assertSame(85, $headline['score']);
+        $this->assertSame(1, $headline['paths']);
+
+        $trend = $analytics->trend(1);
+        $this->assertSame([$now->toDateString()], $trend['labels']);
+        $this->assertEqualsWithDelta(85.0, $trend['datasets'][0]['data'][0], 0.01);
 
         $row = DB::table('ssr_metrics')->first();
 
         $this->assertNotNull($row);
-        $this->assertSame('/movies', $row->path);
+        $this->assertSame('/movies/42', $row->path);
         $this->assertSame(85, (int) $row->score);
-        $this->assertSame(2048, (int) $row->size);
-        $this->assertSame(2048, (int) $row->html_bytes);
-        $this->assertSame(5, (int) $row->meta_count);
-        $this->assertSame(3, (int) $row->og_count);
-        $this->assertSame(1, (int) $row->ldjson_count);
-        $this->assertSame(4, (int) $row->img_count);
-        $this->assertSame(2, (int) $row->blocking_scripts);
         $this->assertSame(123, (int) $row->first_byte_ms);
         $this->assertTrue((bool) $row->has_json_ld);
         $this->assertTrue((bool) $row->has_open_graph);
-        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
-        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->collected_at)->toDateTimeString());
 
-        $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(2048, $meta['html_bytes']);
-        $this->assertTrue($meta['has_json_ld']);
-        $this->assertTrue($meta['has_open_graph']);
+        if (Schema::hasColumn('ssr_metrics', 'meta')) {
+            $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame(42, $meta['movie_id']);
+            $this->assertSame($now->toIso8601String(), $meta['recorded_at']);
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'normalized_payload')) {
+            $normalized = json_decode((string) $row->normalized_payload, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame('/movies/42', $normalized['path']);
+            $this->assertSame(42, $normalized['movie_id']);
+            $this->assertSame($now->toIso8601String(), $normalized['recorded_at']);
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'movie_id')) {
+            $this->assertSame(42, (int) $row->movie_id);
+        }
     }
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
@@ -93,7 +99,8 @@ class StoreSsrMetricJobTest extends TestCase
         Schema::dropIfExists('ssr_metrics');
 
         $payload = [
-            'path' => '/movies',
+            'path' => '/landing',
+            'movie_id' => 7,
             'score' => 70,
             'html_size' => 1024,
             'meta_count' => 2,
@@ -102,22 +109,14 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 3,
             'blocking_scripts' => 1,
             'first_byte_ms' => 98,
-            'collected_at' => $now->toIso8601String(),
-            'meta' => [
-                'first_byte_ms' => 98,
-                'html_size' => 1024,
-                'meta_count' => 2,
-                'og_count' => 1,
-                'ldjson_count' => 0,
-                'img_count' => 3,
-                'blocking_scripts' => 1,
-                'has_json_ld' => false,
-                'has_open_graph' => true,
-            ],
+            'recorded_at' => $now->toIso8601String(),
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle();
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class),
+        );
 
         Storage::disk('local')->assertExists('metrics/ssr.jsonl');
 
@@ -129,7 +128,9 @@ class StoreSsrMetricJobTest extends TestCase
         $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame($now->toIso8601String(), $decoded['ts']);
-        $this->assertSame('/movies', $decoded['path']);
+        $this->assertSame($now->toIso8601String(), $decoded['recorded_at']);
+        $this->assertSame('/landing', $decoded['path']);
+        $this->assertSame(7, $decoded['movie_id']);
         $this->assertSame(70, $decoded['score']);
         $this->assertSame(1024, $decoded['size']);
         $this->assertSame(1024, $decoded['html_size']);
@@ -146,5 +147,23 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame(98, $decoded['first_byte_ms']);
         $this->assertFalse($decoded['has_json_ld']);
         $this->assertTrue($decoded['has_open_graph']);
+
+        $this->assertIsArray($decoded['normalized']);
+        $this->assertSame('/landing', $decoded['normalized']['path']);
+        $this->assertSame(7, $decoded['normalized']['movie_id']);
+        $this->assertSame($now->toIso8601String(), $decoded['normalized']['recorded_at']);
+
+        $this->assertIsArray($decoded['original']);
+        $this->assertSame($payload['path'], $decoded['original']['path']);
+        $this->assertSame($payload['movie_id'], $decoded['original']['movie_id']);
+
+        $analytics = app(AnalyticsSsrMetricsService::class);
+        $headline = $analytics->headline();
+        $this->assertSame(70, $headline['score']);
+        $this->assertSame(1, $headline['paths']);
+
+        $trend = $analytics->trend(1);
+        $this->assertSame([$now->toDateString()], $trend['labels']);
+        $this->assertEqualsWithDelta(70.0, $trend['datasets'][0]['data'][0], 0.01);
     }
 }

@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Database\Seeders\Testing;
 
 use App\Models\Movie;
+use App\Services\SsrMetricPayloadNormalizer;
+use App\Services\SsrMetricRecorder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class FixturesSeeder extends Seeder
 {
@@ -105,29 +108,30 @@ class FixturesSeeder extends Seeder
         $neon = $movies['Neon City'];
 
         $impressions = [
-            ['device' => 'dev-a-1', 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-a-2', 'variant' => 'A', 'placement' => 'home', 'days' => 2],
-            ['device' => 'dev-a-3', 'variant' => 'A', 'placement' => 'show', 'days' => 2],
-            ['device' => 'dev-a-4', 'variant' => 'A', 'placement' => 'trends', 'days' => 3],
-            ['device' => 'dev-a-5', 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-a-6', 'variant' => 'A', 'placement' => 'show', 'days' => 1],
-            ['device' => 'dev-a-7', 'variant' => 'A', 'placement' => 'home', 'days' => 0],
-            ['device' => 'dev-a-8', 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['device' => 'dev-a-9', 'variant' => 'A', 'placement' => 'home', 'days' => 4],
-            ['device' => 'dev-b-1', 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-b-2', 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-b-3', 'variant' => 'B', 'placement' => 'show', 'days' => 2],
-            ['device' => 'dev-b-4', 'variant' => 'B', 'placement' => 'show', 'days' => 0],
-            ['device' => 'dev-b-5', 'variant' => 'B', 'placement' => 'trends', 'days' => 3],
-            ['device' => 'dev-b-6', 'variant' => 'B', 'placement' => 'trends', 'days' => 1],
-            ['device' => 'dev-b-7', 'variant' => 'B', 'placement' => 'home', 'days' => 5],
-            ['device' => 'dev-b-8', 'variant' => 'B', 'placement' => 'trends', 'days' => 4],
+            ['device' => 'dev-a-1', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 1],
+            ['device' => 'dev-a-2', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 2],
+            ['device' => 'dev-a-3', 'variant' => 'A', 'placement' => 'show', 'movie' => $indie, 'days' => 2],
+            ['device' => 'dev-a-4', 'variant' => 'A', 'placement' => 'trends', 'movie' => $space, 'days' => 3],
+            ['device' => 'dev-a-5', 'variant' => 'A', 'placement' => 'home', 'movie' => $neon, 'days' => 1],
+            ['device' => 'dev-a-6', 'variant' => 'A', 'placement' => 'show', 'movie' => $indie, 'days' => 1],
+            ['device' => 'dev-a-7', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 0],
+            ['device' => 'dev-a-8', 'variant' => 'A', 'placement' => 'trends', 'movie' => $space, 'days' => 0],
+            ['device' => 'dev-a-9', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 4],
+            ['device' => 'dev-b-1', 'variant' => 'B', 'placement' => 'home', 'movie' => $neon, 'days' => 1],
+            ['device' => 'dev-b-2', 'variant' => 'B', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 1],
+            ['device' => 'dev-b-3', 'variant' => 'B', 'placement' => 'show', 'movie' => $indie, 'days' => 2],
+            ['device' => 'dev-b-4', 'variant' => 'B', 'placement' => 'show', 'movie' => $indie, 'days' => 0],
+            ['device' => 'dev-b-5', 'variant' => 'B', 'placement' => 'trends', 'movie' => $space, 'days' => 3],
+            ['device' => 'dev-b-6', 'variant' => 'B', 'placement' => 'trends', 'movie' => $space, 'days' => 1],
+            ['device' => 'dev-b-7', 'variant' => 'B', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 5],
+            ['device' => 'dev-b-8', 'variant' => 'B', 'placement' => 'trends', 'movie' => $space, 'days' => 4],
         ];
 
-        DB::table('rec_ab_logs')->insert(array_map(static function (array $row) use ($daysAgo): array {
+        DB::table('rec_ab_logs')->insert(array_map(function (array $row) use ($daysAgo): array {
             $ts = $daysAgo($row['days']);
 
             return [
+                'movie_id' => $row['movie']->id,
                 'device_id' => $row['device'],
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
@@ -137,23 +141,24 @@ class FixturesSeeder extends Seeder
         }, $impressions));
 
         $clicks = [
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 2],
-            ['movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 0],
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['movie' => $indie, 'variant' => 'A', 'placement' => 'show', 'days' => 1],
-            ['movie' => $indie, 'variant' => 'B', 'placement' => 'show', 'days' => 0],
-            ['movie' => $indie, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['movie' => $space, 'variant' => 'A', 'placement' => 'trends', 'days' => 1],
-            ['movie' => $space, 'variant' => 'B', 'placement' => 'trends', 'days' => 2],
-            ['movie' => $neon, 'variant' => 'A', 'placement' => 'show', 'days' => 3],
+            ['device' => 'dev-a-1', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 1],
+            ['device' => 'dev-a-2', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 2],
+            ['device' => 'dev-b-1', 'movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 1],
+            ['device' => 'dev-b-2', 'movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 0],
+            ['device' => 'dev-a-8', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
+            ['device' => 'dev-a-6', 'movie' => $indie, 'variant' => 'A', 'placement' => 'show', 'days' => 1],
+            ['device' => 'dev-b-4', 'movie' => $indie, 'variant' => 'B', 'placement' => 'show', 'days' => 0],
+            ['device' => 'dev-a-4', 'movie' => $indie, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
+            ['device' => 'dev-b-5', 'movie' => $space, 'variant' => 'A', 'placement' => 'trends', 'days' => 1],
+            ['device' => 'dev-b-6', 'movie' => $space, 'variant' => 'B', 'placement' => 'trends', 'days' => 2],
+            ['device' => 'dev-a-3', 'movie' => $neon, 'variant' => 'A', 'placement' => 'show', 'days' => 3],
         ];
 
         DB::table('rec_clicks')->insert(array_map(static function (array $row) use ($daysAgo): array {
             $ts = $daysAgo($row['days']);
 
             return [
+                'device_id' => $row['device'],
                 'movie_id' => $row['movie']->id,
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
@@ -163,15 +168,40 @@ class FixturesSeeder extends Seeder
         }, $clicks));
 
         $views = [];
+        $hasDeviceHistoryMovie = Schema::hasColumn('device_history', 'movie_id');
+        $hasDeviceHistoryPlacement = Schema::hasColumn('device_history', 'placement');
+        $hasDeviceHistoryVariant = Schema::hasColumn('device_history', 'variant');
+        $hasDeviceHistoryPage = Schema::hasColumn('device_history', 'page');
+
         for ($i = 0; $i < 12; $i++) {
             $ts = $now->copy()->subHours($i + 1);
-            $views[] = [
+
+            $placementValue = $i % 2 === 0 ? 'home' : 'trends';
+
+            $row = [
                 'device_id' => 'viewer-'.$i,
-                'path' => $i % 2 === 0 ? '/' : '/trends',
                 'viewed_at' => $ts,
                 'created_at' => $ts,
                 'updated_at' => $ts,
             ];
+
+            if ($hasDeviceHistoryMovie) {
+                $row['movie_id'] = null;
+            }
+
+            if ($hasDeviceHistoryPlacement) {
+                $row['placement'] = $placementValue;
+            }
+
+            if ($hasDeviceHistoryVariant) {
+                $row['variant'] = $i % 2 === 0 ? 'A' : 'B';
+            }
+
+            if ($hasDeviceHistoryPage) {
+                $row['page'] = $placementValue;
+            }
+
+            $views[] = $row;
         }
         DB::table('device_history')->insert($views);
 
@@ -180,16 +210,22 @@ class FixturesSeeder extends Seeder
             ['path' => '/', 'score' => 88, 'days' => 0, 'size' => 640000, 'meta' => 24, 'og' => 3, 'ld' => 2, 'img' => 22, 'blocking' => 3, 'first_byte_ms' => 244],
             ['path' => '/trends', 'score' => 90, 'days' => 1, 'size' => 420000, 'meta' => 20, 'og' => 3, 'ld' => 1, 'img' => 14, 'blocking' => 1, 'first_byte_ms' => 201],
             ['path' => '/trends', 'score' => 92, 'days' => 0, 'size' => 380000, 'meta' => 22, 'og' => 3, 'ld' => 2, 'img' => 12, 'blocking' => 0, 'first_byte_ms' => 176],
-            ['path' => '/movies/'.$timeTravelers->id, 'score' => 94, 'days' => 0, 'size' => 450000, 'meta' => 26, 'og' => 4, 'ld' => 2, 'img' => 16, 'blocking' => 1, 'first_byte_ms' => 192],
+            ['path' => '/movies/'.$timeTravelers->id, 'score' => 94, 'days' => 0, 'size' => 450000, 'meta' => 26, 'og' => 4, 'ld' => 2, 'img' => 16, 'blocking' => 1, 'first_byte_ms' => 192, 'movie_id' => $timeTravelers->id],
         ];
 
-        DB::table('ssr_metrics')->insert(array_map(static function (array $row) use ($daysAgo): array {
+        /** @var SsrMetricPayloadNormalizer $payloadNormalizer */
+        $payloadNormalizer = app(SsrMetricPayloadNormalizer::class);
+
+        /** @var SsrMetricRecorder $recorder */
+        $recorder = app(SsrMetricRecorder::class);
+
+        foreach ($metrics as $row) {
             $ts = $daysAgo($row['days']);
 
-            return [
+            $payload = [
                 'path' => $row['path'],
+                'movie_id' => $row['movie_id'] ?? null,
                 'score' => $row['score'],
-                'size' => $row['size'],
                 'html_bytes' => $row['size'],
                 'meta_count' => $row['meta'],
                 'og_count' => $row['og'],
@@ -199,10 +235,12 @@ class FixturesSeeder extends Seeder
                 'first_byte_ms' => $row['first_byte_ms'],
                 'has_json_ld' => $row['ld'] > 0,
                 'has_open_graph' => $row['og'] > 0,
-                'created_at' => $ts,
-                'updated_at' => $ts,
-                'collected_at' => $ts,
+                'recorded_at' => $ts->toIso8601String(),
             ];
-        }, $metrics));
+
+            $normalized = $payloadNormalizer->normalize($payload);
+
+            $recorder->record($normalized, $payload);
+        }
     }
 }

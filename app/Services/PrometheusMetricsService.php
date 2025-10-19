@@ -279,6 +279,14 @@ class PrometheusMetricsService
             return 'created_at';
         }
 
-        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+        if (Schema::hasColumn('ssr_metrics', 'recorded_at')) {
+            return 'recorded_at';
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+            return 'collected_at';
+        }
+
+        return 'created_at';
     }
 }
