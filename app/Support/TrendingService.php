@@ -62,7 +62,10 @@ class TrendingService
             ->keyBy('id');
 
         return $top
-            ->map(function (int $clicks, int $movieId) use ($movies) {
+            ->map(function ($clicks, $movieId) use ($movies) {
+                $movieId = (int) $movieId;
+                $clicks = (int) $clicks;
+
                 $movie = $movies->get($movieId);
                 if (! $movie) {
                     return null;
