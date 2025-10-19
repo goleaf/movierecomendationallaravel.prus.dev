@@ -1,44 +1,8 @@
 <div class="space-y-6">
-  <form wire:submit.prevent="refreshData" class="grid gap-4 md:grid-cols-4">
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-semibold text-gray-400">{{ __('admin.trends.filters.days') }}</label>
-      <select wire:model.live="days" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
-        @foreach($dayOptions as $option)
-          <option value="{{ $option }}">{{ __('admin.trends.days_option', ['days' => $option]) }}</option>
-        @endforeach
-      </select>
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-semibold text-gray-400">{{ __('admin.trends.filters.type') }}</label>
-      <select wire:model.live="type" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
-        @foreach($typeOptions as $value => $label)
-          <option value="{{ $value }}">{{ $label }}</option>
-        @endforeach
-      </select>
-    </div>
-    @if($showAdvancedFilters)
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.trends.filters.genre') }}</label>
-        <input type="text" wire:model.live="genre" placeholder="{{ __('admin.trends.genre_placeholder') }}" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.trends.filters.year_from') }}</label>
-        <input type="number" wire:model.live="yearFrom" placeholder="{{ __('admin.trends.year_from_placeholder') }}" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.trends.filters.year_to') }}</label>
-        <input type="number" wire:model.live="yearTo" placeholder="{{ __('admin.trends.year_to_placeholder') }}" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
-      </div>
-    @endif
-    <div class="md:col-span-2 lg:col-span-1 flex items-end">
-      <button type="submit" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400">
-        {{ __('admin.trends.apply') }}
-      </button>
-    </div>
-  </form>
+  {{ $this->form }}
 
   <x-filament::card>
-    <div class="text-sm text-gray-400">{{ __('messages.trends.period', ['from' => $fromDate, 'to' => $toDate, 'days' => $days, 'days_short' => __('messages.trends.days_short')]) }}</div>
+    <div class="text-sm text-gray-400">{{ __('messages.trends.period', ['from' => $filters['from'], 'to' => $filters['to'], 'days' => $filters['days'], 'days_short' => __('messages.trends.days_short')]) }}</div>
   </x-filament::card>
 
   @if(empty($items))

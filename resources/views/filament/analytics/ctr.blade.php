@@ -1,39 +1,9 @@
 <x-filament-panels::page>
   <div class="space-y-6">
-    <form wire:submit.prevent="refreshData" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.from') }}</label>
-        <input type="date" wire:model.live="from" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.to') }}</label>
-        <input type="date" wire:model.live="to" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.placement') }}</label>
-        <select wire:model.live="placement" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
-          @foreach($placementOptions as $value => $label)
-            <option value="{{ $value }}">{{ $label }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.variant') }}</label>
-        <select wire:model.live="variant" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
-          @foreach($variantOptions as $value => $label)
-            <option value="{{ $value }}">{{ $label }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
-        <button type="submit" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400">
-          {{ __('admin.ctr.filters.refresh') }}
-        </button>
-      </div>
-    </form>
+    {{ $this->form }}
 
     <x-filament::card>
-      <div class="text-sm text-gray-400">{{ __('admin.ctr.period', ['from' => $from, 'to' => $to]) }}</div>
+      <div class="text-sm text-gray-400">{{ __('admin.ctr.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
       <ul class="mt-4 space-y-2">
         @forelse($summary as $row)
           <li class="text-sm text-gray-200">
@@ -101,7 +71,7 @@
 
     <x-filament::card>
       <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.funnels.heading') }}</h3>
-      <div class="text-sm text-gray-400">{{ __('admin.funnel.period', ['from' => $from, 'to' => $to]) }}</div>
+      <div class="text-sm text-gray-400">{{ __('admin.funnel.period', ['from' => $filters['from'], 'to' => $filters['to']]) }}</div>
       <div class="mt-4 overflow-x-auto">
         <table class="min-w-full text-left text-sm text-gray-200">
           <thead class="uppercase text-xs text-gray-400">

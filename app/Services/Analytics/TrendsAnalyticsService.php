@@ -10,9 +10,16 @@ use Illuminate\Support\Facades\Schema;
 
 class TrendsAnalyticsService
 {
-    public function trending(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): Collection
-    {
-        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo);
+    public function trending(
+        int $days,
+        string $type = '',
+        string $genre = '',
+        int $yearFrom = 0,
+        int $yearTo = 0,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
+    ): Collection {
+        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo, $from, $to);
 
         return $this->buildTrendingItems($normalized['filters'], $normalized['period']);
     }
@@ -50,9 +57,16 @@ class TrendsAnalyticsService
      *     period: array{from: string, to: string, days: int}
      * }
      */
-    public function getTrendsData(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): array
-    {
-        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo);
+    public function getTrendsData(
+        int $days,
+        string $type = '',
+        string $genre = '',
+        int $yearFrom = 0,
+        int $yearTo = 0,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
+    ): array {
+        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo, $from, $to);
 
         $items = $this->buildTrendingItems($normalized['filters'], $normalized['period']);
 
@@ -118,15 +132,36 @@ class TrendsAnalyticsService
      *     period: array{from: CarbonImmutable, to: CarbonImmutable}
      * }
      */
-    private function normalizeParameters(int $days, string $type, string $genre, int $yearFrom, int $yearTo): array
-    {
+    private function normalizeParameters(
+        int $days,
+        string $type,
+        string $genre,
+        int $yearFrom,
+        int $yearTo,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
+    ): array {
         $normalizedDays = max(1, min(30, $days));
         $normalizedType = trim($type);
         $normalizedGenre = trim($genre);
         $normalizedYearFrom = max(0, $yearFrom);
         $normalizedYearTo = max(0, $yearTo);
 
-        $now = CarbonImmutable::now();
+        $periodFrom = $from?->startOfDay();
+        $periodTo = $to?->endOfDay();
+
+        if ($periodFrom === null || $periodTo === null) {
+            $now = CarbonImmutable::now();
+            $periodFrom = $now->subDays($normalizedDays)->startOfDay();
+            $periodTo = $now->endOfDay();
+        }
+
+        if ($periodFrom->greaterThan($periodTo)) {
+            [$periodFrom, $periodTo] = [$periodTo, $periodFrom];
+        }
+
+        $rangeDays = max(1, $periodFrom->diffInDays($periodTo) ?: 0);
+        $normalizedDays = max(1, min(30, $rangeDays));
 
         return [
             'filters' => [
@@ -137,8 +172,8 @@ class TrendsAnalyticsService
                 'year_to' => $normalizedYearTo,
             ],
             'period' => [
-                'from' => $now->subDays($normalizedDays)->startOfDay(),
-                'to' => $now->endOfDay(),
+                'from' => $periodFrom,
+                'to' => $periodTo,
             ],
         ];
     }

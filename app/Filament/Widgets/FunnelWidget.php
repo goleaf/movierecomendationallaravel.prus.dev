@@ -8,9 +8,7 @@ use Filament\Widgets\Widget;
 
 class FunnelWidget extends Widget
 {
-    protected static string $view = 'filament.widgets.funnel';
-
-    protected static ?string $heading = 'Funnels (7 дней)';
+    protected string $view = 'filament.widgets.funnel';
 
     protected function getViewData(): array
     {
@@ -26,5 +24,10 @@ class FunnelWidget extends Widget
             'from' => $from->format('Y-m-d'),
             'to' => $to->format('Y-m-d'),
         ];
+    }
+
+    public function getHeading(): ?string
+    {
+        return 'Funnels (7 дней)';
     }
 }
