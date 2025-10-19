@@ -22,37 +22,39 @@ class SsrDropWidget extends BaseWidget
     protected function getTableQuery(): Builder|Relation|null
     {
         if (! Schema::hasTable('ssr_metrics')) {
-            return SsrMetric::query()->whereRaw('1=0');
+            return null;
         }
 
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
 
-        $sql = <<<'SQL'
-            with agg as (
-                select path, date(created_at) as d, avg(score) as avg_score
-                from ssr_metrics
-                where date(created_at) in (?, ?)
-                group by path, date(created_at)
-            ), pivot as (
-                select path,
-                    max(case when d = ? then avg_score end) as score_today,
-                    max(case when d = ? then avg_score end) as score_yesterday
-                from agg
-                group by path
-            )
-            select row_number() over (order by coalesce(score_today, 0) - coalesce(score_yesterday, 0), path) as id,
-                path,
-                coalesce(score_today, 0) as score_today,
-                coalesce(score_yesterday, 0) as score_yesterday,
-                coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta
-            from pivot
-            order by delta asc
-            limit 10
-        SQL;
-
         return SsrMetric::query()
-            ->fromRaw("({$sql}) as ssr_metrics", [$yesterday, $today, $today, $yesterday]);
+            ->fromSub(function ($query) use ($today, $yesterday) {
+                $query
+                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday) {
+                        $aggregateQuery
+                            ->from('ssr_metrics')
+                            ->selectRaw('path, date(created_at) as d, avg(score) as avg_score')
+                            ->whereIn(DB::raw('date(created_at)'), [$yesterday, $today])
+                            ->groupBy('path', 'd');
+                    }, 'agg')
+                    ->selectRaw(
+                        'path,
+                        max(case when d = ? then avg_score end) as score_today,
+                        max(case when d = ? then avg_score end) as score_yesterday',
+                        [$today, $yesterday]
+                    )
+                    ->groupBy('path');
+            }, 'pivot')
+            ->select([
+                DB::raw('row_number() over (order by coalesce(score_today, 0) - coalesce(score_yesterday, 0), path) as id'),
+                'path',
+                DB::raw('coalesce(score_today, 0) as score_today'),
+                DB::raw('coalesce(score_yesterday, 0) as score_yesterday'),
+                DB::raw('coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta'),
+            ])
+            ->orderBy('delta')
+            ->limit(10);
     }
 
     protected function getTableColumns(): array
