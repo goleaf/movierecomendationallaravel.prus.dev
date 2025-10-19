@@ -10,6 +10,88 @@ use Illuminate\Support\Facades\Schema;
 class CtrAnalyticsService
 {
     /**
+     * @return array{
+     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     clicksByPlacement: array<string, int>,
+     *     funnels: array<string, array{imps: int, clks: int, views: int}>,
+     *     totals: array{impressions: int, clicks: int, views: int},
+     *     period: array{from: string, to: string},
+     *     variants: array<int, string>,
+     *     placements: array<int, string>
+     * }
+     */
+    public function getMetrics(
+        string $from,
+        string $to,
+        ?string $placement = null,
+        ?string $variant = null
+    ): array {
+        $fromDate = CarbonImmutable::parse($from);
+        $toDate = CarbonImmutable::parse($to);
+
+        $summaryData = $this->variantSummary($fromDate, $toDate, $placement, $variant);
+        $placementCtrData = $this->placementCtrs($fromDate, $toDate);
+
+        $placements = $placementCtrData
+            ->map(static fn (array $row) => explode('-', $row['label'])[0])
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($placements === []) {
+            $placements = ['home', 'show', 'trends'];
+        }
+
+        $clicksByPlacement = array_fill_keys($placements, 0);
+        foreach ($summaryData['placementClicks'] as $placementKey => $clickCount) {
+            $clicksByPlacement[$placementKey] = (int) $clickCount;
+        }
+
+        $funnelsRaw = $this->funnels($fromDate, $toDate, $placements);
+        $funnels = [];
+        $totalLabel = __('admin.ctr.funnels.total');
+        $totalViews = 0;
+
+        foreach ($funnelsRaw as $row) {
+            $label = $row['label'];
+            $funnels[$label] = [
+                'imps' => (int) $row['imps'],
+                'clks' => (int) $row['clicks'],
+                'views' => (int) $row['views'],
+            ];
+
+            if ($label === $totalLabel) {
+                $totalViews = (int) $row['views'];
+            }
+        }
+
+        $totals = [
+            'impressions' => array_sum(array_map(
+                static fn (array $item): int => (int) $item['impressions'],
+                $summaryData['summary']
+            )),
+            'clicks' => array_sum(array_map(
+                static fn (array $item): int => (int) $item['clicks'],
+                $summaryData['summary']
+            )),
+            'views' => $totalViews,
+        ];
+
+        return [
+            'summary' => $summaryData['summary'],
+            'clicksByPlacement' => $clicksByPlacement,
+            'funnels' => $funnels,
+            'totals' => $totals,
+            'period' => [
+                'from' => $fromDate->toDateString(),
+                'to' => $toDate->toDateString(),
+            ],
+            'variants' => ['A', 'B'],
+            'placements' => array_values($placements),
+        ];
+    }
+
+    /**
      * @return array{summary: array<int, array<string, mixed>>, impressions: array<string, int>, clicks: array<string, int>, placementClicks: array<string, int>}
      */
     public function variantSummary(CarbonImmutable $from, CarbonImmutable $to, ?string $placement = null, ?string $variant = null): array
