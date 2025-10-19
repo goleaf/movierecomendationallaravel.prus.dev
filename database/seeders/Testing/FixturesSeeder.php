@@ -81,7 +81,14 @@ class FixturesSeeder extends Seeder
             return Movie::query()->create([
                 'title' => $title,
                 ...$attributes,
-                'translations' => ['ru' => ['title' => $title, 'plot' => $attributes['plot']]],
+                'translations' => [
+                    'title' => [
+                        'ru' => $title,
+                    ],
+                    'plot' => [
+                        'ru' => $attributes['plot'],
+                    ],
+                ],
                 'raw' => ['source' => 'testing'],
                 'created_at' => $now,
                 'updated_at' => $now,

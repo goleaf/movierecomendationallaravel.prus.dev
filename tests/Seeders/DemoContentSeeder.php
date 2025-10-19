@@ -31,9 +31,11 @@ class DemoContentSeeder extends Seeder
                 'poster_url' => 'https://example.com/posters/quantum.jpg',
                 'backdrop_url' => 'https://example.com/backdrops/quantum.jpg',
                 'translations' => [
-                    'ru' => [
-                        'title' => 'Квантовая Загадка',
-                        'plot' => 'Учёная обнаруживает аномалию, меняющую ход времени.',
+                    'title' => [
+                        'ru' => 'Квантовая Загадка',
+                    ],
+                    'plot' => [
+                        'ru' => 'Учёная обнаруживает аномалию, меняющую ход времени.',
                     ],
                 ],
                 'raw' => ['source' => 'seed'],
@@ -55,9 +57,11 @@ class DemoContentSeeder extends Seeder
                 'poster_url' => 'https://example.com/posters/solaris.jpg',
                 'backdrop_url' => 'https://example.com/backdrops/solaris.jpg',
                 'translations' => [
-                    'ru' => [
-                        'title' => 'Восход Соляриса',
-                        'plot' => 'Команда спасателей сталкивается с разумной бурей.',
+                    'title' => [
+                        'ru' => 'Восход Соляриса',
+                    ],
+                    'plot' => [
+                        'ru' => 'Команда спасателей сталкивается с разумной бурей.',
                     ],
                 ],
                 'raw' => ['source' => 'seed'],
@@ -79,9 +83,11 @@ class DemoContentSeeder extends Seeder
                 'poster_url' => 'https://example.com/posters/nebula.jpg',
                 'backdrop_url' => 'https://example.com/backdrops/nebula.jpg',
                 'translations' => [
-                    'ru' => [
-                        'title' => 'Туманность в Дрейфе',
-                        'plot' => 'Пилоты пытаются обойти расширяющуюся туманность.',
+                    'title' => [
+                        'ru' => 'Туманность в Дрейфе',
+                    ],
+                    'plot' => [
+                        'ru' => 'Пилоты пытаются обойти расширяющуюся туманность.',
                     ],
                 ],
                 'raw' => ['source' => 'seed'],

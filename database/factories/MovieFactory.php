@@ -51,9 +51,11 @@ class MovieFactory extends Factory
             'poster_url' => fake()->imageUrl(600, 900, 'movie', true),
             'backdrop_url' => fake()->imageUrl(1280, 720, 'movie', true),
             'translations' => [
-                'en' => [
-                    'title' => $title,
-                    'plot' => fake()->paragraph(),
+                'title' => [
+                    'en' => $title,
+                ],
+                'plot' => [
+                    'en' => fake()->paragraph(),
                 ],
             ],
             'raw' => [

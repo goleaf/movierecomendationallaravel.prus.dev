@@ -27,10 +27,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
-use Kirschbaum\Commentions\Filament\Actions\CommentsTableAction;
-use Kirschbaum\Commentions\Filament\Actions\SubscriptionTableAction;
-use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
+use TomatoPHP\FilamentTranslationComponent\Components\Translation;
 
 /**
  * @extends Resource<Movie>
