@@ -5,10 +5,21 @@ declare(strict_types=1);
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\TrendsAnalyticsService;
+use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Jacobtims\InlineDateTimePicker\Forms\Components\InlineDateTimePicker;
 
 class TrendsPage extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-chart-line-square';
 
     protected static string $view = 'filament.analytics.trends';
@@ -112,9 +123,9 @@ class TrendsPage extends Page implements HasForms
         $this->form->fill($this->filters);
     }
 
-    public function form(Schema $schema): Schema
+    public function form(Form $form): Form
     {
-        return $schema
+        return $form
             ->statePath('filters')
             ->extraAttributes([
                 'class' => 'grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6',

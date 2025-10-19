@@ -10,7 +10,7 @@ use Filament\Widgets\Widget;
 
 class FunnelWidget extends Widget
 {
-    protected string $view = 'filament.widgets.funnel';
+    protected static string $view = 'filament.widgets.funnel';
 
     protected function getViewData(): array
     {

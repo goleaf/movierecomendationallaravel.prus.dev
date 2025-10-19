@@ -10,7 +10,7 @@ use Filament\Widgets\Widget;
 
 class CtrBarsWidget extends Widget
 {
-    protected string $view = 'filament.widgets.ctr_bars';
+    protected static string $view = 'filament.widgets.ctr_bars';
 
     protected function getViewData(): array
     {
