@@ -45,10 +45,14 @@ return [
         'retry' => [
             'attempts' => (int) env('TMDB_RETRY_ATTEMPTS', 2),
             'delay_ms' => (int) env('TMDB_RETRY_DELAY_MS', 250),
+            'jitter_ms' => (int) env('TMDB_RETRY_JITTER_MS', 125),
         ],
         'backoff' => [
             'multiplier' => (float) env('TMDB_BACKOFF_MULTIPLIER', 2.0),
             'max_delay_ms' => (int) env('TMDB_BACKOFF_MAX_DELAY_MS', 2000),
+        ],
+        'batch' => [
+            'concurrency' => (int) env('TMDB_BATCH_CONCURRENCY', 4),
         ],
         'rate_limit' => [
             'window' => (int) env('TMDB_RATE_LIMIT_WINDOW', 10),
@@ -68,10 +72,14 @@ return [
         'retry' => [
             'attempts' => (int) env('OMDB_RETRY_ATTEMPTS', 1),
             'delay_ms' => (int) env('OMDB_RETRY_DELAY_MS', 300),
+            'jitter_ms' => (int) env('OMDB_RETRY_JITTER_MS', 100),
         ],
         'backoff' => [
             'multiplier' => (float) env('OMDB_BACKOFF_MULTIPLIER', 2.0),
             'max_delay_ms' => (int) env('OMDB_BACKOFF_MAX_DELAY_MS', 1200),
+        ],
+        'batch' => [
+            'concurrency' => (int) env('OMDB_BATCH_CONCURRENCY', 3),
         ],
         'rate_limit' => [
             'window' => (int) env('OMDB_RATE_LIMIT_WINDOW', 1),

@@ -9,6 +9,7 @@ use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\RateLimitedClientConfig;
 use App\Services\MovieApis\TmdbClient;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 
 class MovieApiServiceProvider extends ServiceProvider
@@ -34,6 +35,9 @@ class MovieApiServiceProvider extends ServiceProvider
                 ],
                 defaultHeaders: (array) ($config['headers'] ?? []),
                 rateLimiterKey: 'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
+                concurrency: max(1, (int) (Arr::get($config, 'batch.concurrency') ?? Arr::get($config, 'concurrency') ?? 4)),
+                retryJitterMs: max(0, (int) Arr::get($config, 'retry.jitter_ms', 0)),
+                serviceName: 'tmdb',
             );
 
             $client = new RateLimitedClient(
@@ -58,6 +62,9 @@ class MovieApiServiceProvider extends ServiceProvider
                 ],
                 defaultHeaders: (array) ($config['headers'] ?? []),
                 rateLimiterKey: 'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
+                concurrency: max(1, (int) (Arr::get($config, 'batch.concurrency') ?? Arr::get($config, 'concurrency') ?? 3)),
+                retryJitterMs: max(0, (int) Arr::get($config, 'retry.jitter_ms', 0)),
+                serviceName: 'omdb',
             );
 
             $client = new RateLimitedClient(

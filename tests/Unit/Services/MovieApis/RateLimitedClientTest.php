@@ -2,47 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Services\MovieApis {
-    use Tests\Unit\Services\MovieApis\RateLimitedClientTest;
-
-    function usleep(int $microseconds): void
-    {
-        RateLimitedClientTest::recordSleep($microseconds);
-    }
-}
-
-namespace Tests\Unit\Services\MovieApis {
+namespace Tests\Unit\Services\MovieApis;
 
 use App\Services\MovieApis\RateLimitedClient;
-use DomainException;
+use App\Services\MovieApis\RateLimitedClientConfig;
 use Illuminate\Http\Client\Factory as HttpFactory;
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Mockery;
-use Mockery\MockInterface;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Tests\TestCase;
 
 class RateLimitedClientTest extends TestCase
 {
-    /**
-     * @var list<int>
-     */
-    private static array $sleepCalls = [];
-
-    public static function recordSleep(int $microseconds): void
-    {
-        self::$sleepCalls[] = $microseconds;
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        self::$sleepCalls = [];
-    }
-
     protected function tearDown(): void
     {
         Mockery::close();
@@ -52,158 +26,132 @@ class RateLimitedClientTest extends TestCase
 
     public function test_request_executes_successfully(): void
     {
-        $response = Mockery::mock(Response::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('successful')->once()->andReturnTrue();
-            $mock->shouldReceive('json')->once()->andReturn(['ok' => true]);
+        $requests = [];
+
+        Http::fake(function (HttpRequest $request) use (&$requests) {
+            $requests[] = $request->url();
+
+            return Http::response(['ok' => true], 200);
         });
 
-        $request = Mockery::mock(PendingRequest::class, function (MockInterface $mock) use ($response): void {
-            $mock->shouldReceive('timeout')->once()->with(5.0)->andReturnSelf();
-            $mock->shouldReceive('acceptJson')->once()->andReturnSelf();
-            $mock->shouldReceive('send')
-                ->once()
-                ->with('GET', 'resource', ['query' => ['foo' => 'bar']])
-                ->andReturn($response);
-        });
-
-        $http = Mockery::mock(HttpFactory::class, function (MockInterface $mock) use ($request): void {
-            $mock->shouldReceive('baseUrl')
-                ->once()
-                ->with('https://example.test')
-                ->andReturn($request);
-        });
-
-        RateLimiter::shouldReceive('attempt')
+        RateLimiter::shouldReceive('tooManyAttempts')
             ->once()
-            ->andReturnUsing(function (string $key, int $max, callable $callback, int $decay) {
-                $this->assertSame('movie-apis:' . md5('https://example.test'), $key);
-                $this->assertSame(60, $max);
-                $this->assertSame(60, $decay);
+            ->with('example:rate', 10)
+            ->andReturnFalse();
 
-                $callback();
+        RateLimiter::shouldReceive('hit')
+            ->once()
+            ->with('example:rate', 30);
 
-                return true;
-            });
-
-        $client = new RateLimitedClient($http, 'https://example.test', 5.0);
+        $client = $this->makeClient();
 
         $result = $client->request('GET', 'resource', ['foo' => 'bar']);
 
         $this->assertSame(['ok' => true], $result);
-        $this->assertSame([], self::$sleepCalls);
+        $this->assertSame(['https://example.test/resource?foo=bar'], $requests);
     }
 
-    public function test_request_retries_with_exponential_backoff(): void
+    public function test_request_retries_until_successful(): void
     {
-        $responseFailureOne = Mockery::mock(Response::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('successful')->once()->andReturnFalse();
-            $mock->shouldReceive('serverError')->once()->andReturnTrue();
-            $mock->shouldReceive('tooManyRequests')->andReturnFalse();
+        $attempts = 0;
+
+        Http::fake(function (HttpRequest $request) use (&$attempts) {
+            $attempts++;
+
+            if ($attempts < 3) {
+                return Http::response([], 500);
+            }
+
+            return Http::response(['ok' => true], 200);
         });
 
-        $responseFailureTwo = Mockery::mock(Response::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('successful')->once()->andReturnFalse();
-            $mock->shouldReceive('serverError')->once()->andReturnTrue();
-            $mock->shouldReceive('tooManyRequests')->andReturnFalse();
-        });
+        RateLimiter::shouldReceive('tooManyAttempts')
+            ->times(3)
+            ->with('example:rate', 10)
+            ->andReturnFalse();
 
-        $responseSuccess = Mockery::mock(Response::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('successful')->once()->andReturnTrue();
-            $mock->shouldReceive('json')->once()->andReturn(['ok' => true]);
-        });
+        RateLimiter::shouldReceive('hit')
+            ->times(3)
+            ->with('example:rate', 30);
 
-        $request = Mockery::mock(PendingRequest::class, function (MockInterface $mock) use ($responseFailureOne, $responseFailureTwo, $responseSuccess): void {
-            $mock->shouldReceive('timeout')->times(3)->with(5.0)->andReturnSelf();
-            $mock->shouldReceive('acceptJson')->times(3)->andReturnSelf();
-            $mock->shouldReceive('send')
-                ->times(3)
-                ->with('GET', 'resource', ['query' => ['foo' => 'bar']])
-                ->andReturn($responseFailureOne, $responseFailureTwo, $responseSuccess);
-        });
-
-        $http = Mockery::mock(HttpFactory::class, function (MockInterface $mock) use ($request): void {
-            $mock->shouldReceive('baseUrl')
-                ->times(3)
-                ->with('https://example.test')
-                ->andReturn($request);
-        });
-
-        RateLimiter::shouldReceive('attempt')
-            ->once()
-            ->andReturnUsing(function (string $key, int $max, callable $callback, int $decay) {
-                $callback();
-
-                return true;
-            });
-
-        $client = new RateLimitedClient(
-            $http,
-            'https://example.test',
-            5.0,
-            retry: ['attempts' => 2, 'delay_ms' => 100],
-            backoff: ['multiplier' => 2, 'max_delay_ms' => 250],
+        $client = $this->makeClient(
+            retry: ['attempts' => 2, 'delay_ms' => 10, 'jitter_ms' => 0],
+            backoff: ['multiplier' => 2, 'max_delay_ms' => 20],
         );
 
         $result = $client->request('GET', 'resource', ['foo' => 'bar']);
 
         $this->assertSame(['ok' => true], $result);
-        $this->assertSame([100000, 200000], self::$sleepCalls);
+        $this->assertSame(3, $attempts);
     }
 
-    public function test_request_throws_when_retries_exhausted(): void
+    public function test_request_throws_on_failure(): void
     {
-        $request = Mockery::mock(PendingRequest::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('timeout')->times(2)->with(5.0)->andReturnSelf();
-            $mock->shouldReceive('acceptJson')->times(2)->andReturnSelf();
-            $mock->shouldReceive('send')
-                ->twice()
-                ->with('GET', 'resource', ['query' => ['foo' => 'bar']])
-                ->andThrow(new DomainException('API unavailable'));
+        $attempts = 0;
+
+        Http::fake(function (HttpRequest $request) use (&$attempts) {
+            $attempts++;
+
+            return Http::response([], 500);
         });
 
-        $http = Mockery::mock(HttpFactory::class, function (MockInterface $mock) use ($request): void {
-            $mock->shouldReceive('baseUrl')
-                ->times(2)
-                ->with('https://example.test')
-                ->andReturn($request);
-        });
-
-        RateLimiter::shouldReceive('attempt')
+        RateLimiter::shouldReceive('tooManyAttempts')
             ->once()
-            ->andReturnUsing(function (string $key, int $max, callable $callback, int $decay) {
-                $callback();
+            ->with('example:rate', 10)
+            ->andReturnFalse();
 
-                return true;
-            });
+        RateLimiter::shouldReceive('hit')
+            ->once()
+            ->with('example:rate', 30);
 
-        $client = new RateLimitedClient(
-            $http,
-            'https://example.test',
-            5.0,
-            retry: ['attempts' => 1, 'delay_ms' => 0],
+        $client = $this->makeClient(
+            retry: ['attempts' => 0, 'delay_ms' => 0, 'jitter_ms' => 0],
         );
 
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('API unavailable');
+        $this->expectException(RequestException::class);
 
-        $client->request('GET', 'resource', ['foo' => 'bar']);
+        try {
+            $client->request('GET', 'resource', ['foo' => 'bar']);
+        } finally {
+            $this->assertSame(1, $attempts);
+        }
     }
 
-    public function test_request_throws_when_rate_limiter_rejects(): void
+    public function test_request_throws_when_rate_limit_exceeded(): void
     {
-        $http = Mockery::mock(HttpFactory::class);
-        $http->shouldNotReceive('baseUrl');
-
-        RateLimiter::shouldReceive('attempt')
+        RateLimiter::shouldReceive('tooManyAttempts')
             ->once()
-            ->andReturn(false);
+            ->with('example:rate', 10)
+            ->andReturnTrue();
 
-        $client = new RateLimitedClient($http, 'https://example.test', 5.0);
+        $client = $this->makeClient();
 
         $this->expectException(TooManyRequestsHttpException::class);
 
         $client->request('GET', 'resource', ['foo' => 'bar']);
+        Http::assertNothingSent();
     }
-}
 
+    /**
+     * @param  array<string, mixed>  $retry
+     * @param  array<string, mixed>  $backoff
+     */
+    private function makeClient(array $retry = [], array $backoff = []): RateLimitedClient
+    {
+        $config = new RateLimitedClientConfig(
+            baseUrl: 'https://example.test/',
+            timeout: 5.0,
+            retry: $retry,
+            backoff: $backoff,
+            rateLimit: ['window' => 30, 'allowance' => 10],
+            defaultQuery: [],
+            defaultHeaders: [],
+            rateLimiterKey: 'example:rate',
+            concurrency: 3,
+            retryJitterMs: (int) ($retry['jitter_ms'] ?? 0),
+            serviceName: 'example',
+        );
+
+        return new RateLimitedClient(app(HttpFactory::class), $config);
+    }
 }

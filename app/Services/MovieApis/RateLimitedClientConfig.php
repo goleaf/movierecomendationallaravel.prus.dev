@@ -24,6 +24,10 @@ class RateLimitedClientConfig
 
     protected int $rateLimitAllowance;
 
+    protected int $retryJitterMs;
+
+    protected int $concurrency;
+
     /**
      * @var array<string, mixed>
      */
@@ -35,6 +39,8 @@ class RateLimitedClientConfig
     protected array $defaultHeaders;
 
     protected string $rateLimiterKey;
+
+    protected string $serviceName;
 
     /**
      * @param  array<string, mixed>  $retry
@@ -52,6 +58,9 @@ class RateLimitedClientConfig
         array $defaultQuery = [],
         array $defaultHeaders = [],
         ?string $rateLimiterKey = null,
+        ?int $concurrency = null,
+        ?int $retryJitterMs = null,
+        ?string $serviceName = null,
     ) {
         $this->baseUrl = $this->normaliseBaseUrl($baseUrl);
         $this->timeout = $this->normaliseTimeout($timeout);
@@ -61,9 +70,12 @@ class RateLimitedClientConfig
         $this->backoffMaxDelayMs = $this->normaliseNonNegativeInt($backoff, 'max_delay_ms', 0);
         $this->rateLimitWindow = $this->normalisePositiveInt($rateLimit, 'window', 60);
         $this->rateLimitAllowance = $this->normalisePositiveInt($rateLimit, 'allowance', 60);
+        $this->retryJitterMs = $this->normaliseOptionalNonNegativeInt($retryJitterMs, 0);
+        $this->concurrency = $this->normaliseOptionalPositiveInt($concurrency, 1);
         $this->defaultQuery = $this->normaliseKeyValueArray($defaultQuery);
         $this->defaultHeaders = $this->normaliseKeyValueArray($defaultHeaders);
         $this->rateLimiterKey = $this->normaliseRateLimiterKey($rateLimiterKey);
+        $this->serviceName = $this->normaliseServiceName($serviceName);
     }
 
     public function baseUrl(): string
@@ -106,6 +118,16 @@ class RateLimitedClientConfig
         return $this->rateLimitAllowance;
     }
 
+    public function retryJitterMs(): int
+    {
+        return $this->retryJitterMs;
+    }
+
+    public function concurrency(): int
+    {
+        return $this->concurrency;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -125,6 +147,11 @@ class RateLimitedClientConfig
     public function rateLimiterKey(): string
     {
         return $this->rateLimiterKey;
+    }
+
+    public function serviceName(): string
+    {
+        return $this->serviceName;
     }
 
     protected function normaliseBaseUrl(string $baseUrl): string
@@ -243,6 +270,47 @@ class RateLimitedClientConfig
 
         if ($trimmed === '') {
             throw new InvalidArgumentException('The rate limiter key must be a non-empty string.');
+        }
+
+        return $trimmed;
+    }
+
+    protected function normaliseOptionalNonNegativeInt(?int $value, int $default): int
+    {
+        if ($value === null) {
+            return $default;
+        }
+
+        if ($value < 0) {
+            throw new InvalidArgumentException('Configuration values must be zero or greater.');
+        }
+
+        return $value;
+    }
+
+    protected function normaliseOptionalPositiveInt(?int $value, int $default): int
+    {
+        if ($value === null) {
+            return $default;
+        }
+
+        if ($value <= 0) {
+            throw new InvalidArgumentException('Configuration values must be greater than zero.');
+        }
+
+        return $value;
+    }
+
+    protected function normaliseServiceName(?string $serviceName): string
+    {
+        if ($serviceName === null) {
+            return 'movie-api';
+        }
+
+        $trimmed = trim($serviceName);
+
+        if ($trimmed === '') {
+            throw new InvalidArgumentException('The service name must be a non-empty string.');
         }
 
         return $trimmed;

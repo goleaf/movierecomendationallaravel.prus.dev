@@ -19,6 +19,7 @@ class RateLimitedClientConfigTest extends TestCase
             retry: [
                 'attempts' => '2',
                 'delay_ms' => 250,
+                'jitter_ms' => 75,
             ],
             backoff: [
                 'multiplier' => 2,
@@ -36,6 +37,9 @@ class RateLimitedClientConfigTest extends TestCase
                 'X-Test' => 'value',
             ],
             rateLimiterKey: ' custom-key ',
+            concurrency: 6,
+            retryJitterMs: 50,
+            serviceName: 'tmdb-example',
         );
 
         $this->assertSame('https://example.com/', $config->baseUrl());
@@ -46,6 +50,8 @@ class RateLimitedClientConfigTest extends TestCase
         $this->assertSame(2_000, $config->backoffMaxDelayMs());
         $this->assertSame(120, $config->rateLimitWindow());
         $this->assertSame(10, $config->rateLimitAllowance());
+        $this->assertSame(50, $config->retryJitterMs());
+        $this->assertSame(6, $config->concurrency());
         $this->assertSame([
             'api_key' => 'secret',
         ], $config->defaultQuery());
@@ -53,6 +59,7 @@ class RateLimitedClientConfigTest extends TestCase
             'X-Test' => 'value',
         ], $config->defaultHeaders());
         $this->assertSame('custom-key', $config->rateLimiterKey());
+        $this->assertSame('tmdb-example', $config->serviceName());
     }
 
     /**
@@ -98,6 +105,27 @@ class RateLimitedClientConfigTest extends TestCase
                     'rateLimiterKey' => '   ',
                 ],
             ],
+            'invalid concurrency' => [
+                'args' => [
+                    'baseUrl' => 'https://example.com',
+                    'timeout' => 1.0,
+                    'concurrency' => 0,
+                ],
+            ],
+            'negative jitter' => [
+                'args' => [
+                    'baseUrl' => 'https://example.com',
+                    'timeout' => 1.0,
+                    'retryJitterMs' => -5,
+                ],
+            ],
+            'empty service name' => [
+                'args' => [
+                    'baseUrl' => 'https://example.com',
+                    'timeout' => 1.0,
+                    'serviceName' => '  ',
+                ],
+            ],
         ];
     }
 
@@ -115,6 +143,9 @@ class RateLimitedClientConfigTest extends TestCase
             defaultQuery: $args['defaultQuery'] ?? [],
             defaultHeaders: $args['defaultHeaders'] ?? [],
             rateLimiterKey: $args['rateLimiterKey'] ?? null,
+            concurrency: $args['concurrency'] ?? null,
+            retryJitterMs: $args['retryJitterMs'] ?? null,
+            serviceName: $args['serviceName'] ?? null,
         );
     }
 }

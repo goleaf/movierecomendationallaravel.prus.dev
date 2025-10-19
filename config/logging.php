@@ -133,6 +133,25 @@ return [
             ],
         ],
 
+        'ingestion' => [
+            'driver' => 'monolog',
+            'level' => env('INGESTION_LOG_LEVEL', 'info'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/ingestion.log'),
+                'level' => env('INGESTION_LOG_LEVEL', 'info'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'formatter_with' => [
+                'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
+                'appendNewline' => true,
+            ],
+            'processors' => [
+                RequestContextProcessor::class,
+                PsrLogMessageProcessor::class,
+            ],
+        ],
+
         'syslog' => [
             'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),

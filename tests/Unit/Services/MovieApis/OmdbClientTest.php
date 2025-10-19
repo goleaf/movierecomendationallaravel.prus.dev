@@ -22,15 +22,23 @@ class OmdbClientTest extends TestCase
     public function test_find_by_imdb_id_merges_optional_parameters(): void
     {
         $client = Mockery::mock(RateLimitedClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('get')
+            $mock->shouldReceive('batch')
                 ->once()
-                ->with('/', [
-                    'r' => 'json',
-                    'plot' => 'full',
-                    'type' => 'movie',
-                    'i' => 'tt7654321',
-                ])
-                ->andReturn(['Response' => 'True']);
+                ->with(Mockery::on(function (array $requests): bool {
+                    $this->assertCount(1, $requests);
+                    $payload = $requests[0];
+                    $this->assertSame('single', $payload['key']);
+                    $this->assertSame('/', $payload['path']);
+                    $this->assertSame([
+                        'r' => 'json',
+                        'plot' => 'full',
+                        'type' => 'movie',
+                        'i' => 'tt7654321',
+                    ], $payload['query']);
+
+                    return true;
+                }))
+                ->andReturn(['single' => ['Response' => 'True']]);
         });
 
         $service = new OmdbClient($client, [
