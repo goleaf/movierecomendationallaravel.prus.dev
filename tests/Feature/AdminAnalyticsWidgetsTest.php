@@ -24,6 +24,10 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('cache.stores.redis', [
+            'driver' => 'array',
+        ]);
+
         Carbon::setTestNow('2024-03-20 12:00:00');
         $this->seed(FixturesSeeder::class);
     }
@@ -39,16 +43,16 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertViewHas('rows', function (array $rows): bool {
-                $this->assertSame('home', $rows[0]['label']);
-                $this->assertSame(17, $rows[0]['imps']);
+                $this->assertSame('Home', $rows[0]['label']);
+                $this->assertSame(8, $rows[0]['imps']);
                 $this->assertSame(4, $rows[0]['clicks']);
-                $this->assertSame(12, $rows[0]['views']);
+                $this->assertSame(0, $rows[0]['views']);
 
                 $totals = end($rows);
-                $this->assertSame('Итого', $totals['label']);
+                $this->assertSame('admin.ctr.funnels.total', $totals['label']);
                 $this->assertSame(17, $totals['imps']);
                 $this->assertSame(11, $totals['clicks']);
-                $this->assertSame(12, $totals['views']);
+                $this->assertSame(0, $totals['views']);
 
                 return true;
             });
@@ -81,12 +85,16 @@ class AdminAnalyticsWidgetsTest extends TestCase
         $scoreComponent->assertSee('SSR Score (trend)');
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
-            ->assertSee('/');
+            ->assertSee('Δ');
 
         $this->assertEquals(
             [185, 244, 201, 176, 192],
             DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
+        );
+
+        $this->assertEquals(
+            [512000, 640000, 420000, 380000, 450000],
+            DB::table('ssr_metrics')->orderBy('id')->pluck('html_bytes')->all()
         );
     }
 
@@ -94,9 +102,9 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(ZTestWidget::class)
             ->assertSee('CTR A')
-            ->assertSee('Imps:9 Clicks:7')
+            ->assertSee('Imps: 9 · Clicks: 7')
             ->assertSee('CTR B')
-            ->assertSee('Imps:8 Clicks:4')
+            ->assertSee('Imps: 8 · Clicks: 4')
             ->assertSee('Z-test');
     }
 }

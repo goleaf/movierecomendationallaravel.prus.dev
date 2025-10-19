@@ -18,7 +18,9 @@ class SsrStatsWidget extends BaseWidget
         $paths = 0;
 
         if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')->orderByDesc('id')->first();
+            $timestampColumn = Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+
+            $row = DB::table('ssr_metrics')->orderByDesc($timestampColumn)->first();
 
             if ($row) {
                 $score = (int) $row->score;

@@ -13,12 +13,16 @@ use Illuminate\Support\Carbon;
  * @property string $path
  * @property int $score
  * @property int $size
+ * @property int|null $html_bytes
  * @property int $meta_count
  * @property int $og_count
  * @property int $ldjson_count
  * @property int $img_count
  * @property int $blocking_scripts
  * @property int $first_byte_ms
+ * @property bool $has_json_ld
+ * @property bool $has_open_graph
+ * @property Carbon|null $collected_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -29,4 +33,13 @@ class SsrMetric extends Model
     protected $table = 'ssr_metrics';
 
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'collected_at' => 'immutable_datetime',
+            'has_json_ld' => 'boolean',
+            'has_open_graph' => 'boolean',
+        ];
+    }
 }

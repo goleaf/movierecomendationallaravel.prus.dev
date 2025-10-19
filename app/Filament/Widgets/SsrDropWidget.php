@@ -29,15 +29,18 @@ class SsrDropWidget extends BaseWidget
 
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
+        $timestampColumn = Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
 
         return SsrMetric::query()
-            ->fromSub(function ($query) use ($today, $yesterday) {
+            ->fromSub(function ($query) use ($today, $timestampColumn, $yesterday) {
                 $query
-                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday) {
+                    ->fromSub(function ($aggregateQuery) use ($timestampColumn, $today, $yesterday) {
+                        $dateExpression = sprintf('date(%s)', $timestampColumn);
+
                         $aggregateQuery
                             ->from('ssr_metrics')
-                            ->selectRaw('path, date(created_at) as d, avg(score) as avg_score')
-                            ->whereIn(DB::raw('date(created_at)'), [$yesterday, $today])
+                            ->selectRaw(sprintf('path, %s as d, avg(score) as avg_score', $dateExpression))
+                            ->whereIn(DB::raw($dateExpression), [$yesterday, $today])
                             ->groupBy('path', 'd');
                     }, 'agg')
                     ->selectRaw(

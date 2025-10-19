@@ -44,16 +44,19 @@ class SsrMetricsMiddleware
         $imgs = preg_match_all('/<img\b[^>]*>/i', $html);
         $blocking = preg_match_all('/<script\b(?![^>]*defer)(?![^>]*type=["\']application\/ld\+json["\'])[^>]*>/i', $html);
 
+        $hasJsonLd = $ld > 0;
+        $hasOpenGraph = $og > 0;
+
         $metaPayload = [
             'first_byte_ms' => $firstByteMs,
-            'html_size' => $size,
+            'html_bytes' => $size,
             'meta_count' => $meta,
             'og_count' => $og,
             'ldjson_count' => $ld,
             'img_count' => $imgs,
             'blocking_scripts' => $blocking,
-            'has_json_ld' => $ld > 0,
-            'has_open_graph' => $og > 0,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
         ];
 
         $score = 100;
@@ -83,13 +86,16 @@ class SsrMetricsMiddleware
         $payload = [
             'path' => $path,
             'score' => $score,
-            'html_size' => $size,
+            'html_bytes' => $size,
             'meta_count' => $meta,
             'og_count' => $og,
             'ldjson_count' => $ld,
             'img_count' => $imgs,
             'blocking_scripts' => $blocking,
             'first_byte_ms' => $firstByteMs,
+            'has_json_ld' => $hasJsonLd,
+            'has_open_graph' => $hasOpenGraph,
+            'collected_at' => now(),
             'meta' => $metaPayload,
         ];
 

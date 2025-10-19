@@ -14,8 +14,9 @@ class SsrIssuesController extends Controller
     {
         $issues = [];
         if (\Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = \Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
             $rows = DB::table('ssr_metrics')->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
-                ->where('created_at', '>=', now()->subDays(2))->groupBy('path')->get();
+                ->where($timestampColumn, '>=', now()->subDays(2))->groupBy('path')->get();
             foreach ($rows as $r) {
                 $advice = [];
                 if ((int) $r->avg_block > 0) {

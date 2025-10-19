@@ -57,7 +57,7 @@ class SsrMetricsMiddlewareTest extends TestCase
             }
 
             $expectedCounts = [
-                'html_size' => $expectedSize,
+                'html_bytes' => $expectedSize,
                 'meta_count' => 2,
                 'og_count' => 1,
                 'ldjson_count' => 1,
@@ -75,6 +75,18 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
+            if (! ($payload['collected_at'] instanceof \DateTimeInterface)) {
+                return false;
+            }
+
+            if (($payload['has_json_ld'] ?? null) !== true) {
+                return false;
+            }
+
+            if (($payload['has_open_graph'] ?? null) !== true) {
+                return false;
+            }
+
             if (! isset($payload['meta']) || ! is_array($payload['meta'])) {
                 return false;
             }
@@ -85,7 +97,7 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
-            foreach (['html_size', 'meta_count', 'og_count', 'ldjson_count', 'img_count', 'blocking_scripts'] as $key) {
+            foreach (['html_bytes', 'meta_count', 'og_count', 'ldjson_count', 'img_count', 'blocking_scripts'] as $key) {
                 if (($meta[$key] ?? null) !== $payload[$key]) {
                     return false;
                 }

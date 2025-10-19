@@ -105,23 +105,23 @@ class FixturesSeeder extends Seeder
         $neon = $movies['Neon City'];
 
         $impressions = [
-            ['device' => 'dev-a-1', 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-a-2', 'variant' => 'A', 'placement' => 'home', 'days' => 2],
-            ['device' => 'dev-a-3', 'variant' => 'A', 'placement' => 'show', 'days' => 2],
-            ['device' => 'dev-a-4', 'variant' => 'A', 'placement' => 'trends', 'days' => 3],
-            ['device' => 'dev-a-5', 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-a-6', 'variant' => 'A', 'placement' => 'show', 'days' => 1],
-            ['device' => 'dev-a-7', 'variant' => 'A', 'placement' => 'home', 'days' => 0],
-            ['device' => 'dev-a-8', 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['device' => 'dev-a-9', 'variant' => 'A', 'placement' => 'home', 'days' => 4],
-            ['device' => 'dev-b-1', 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-b-2', 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['device' => 'dev-b-3', 'variant' => 'B', 'placement' => 'show', 'days' => 2],
-            ['device' => 'dev-b-4', 'variant' => 'B', 'placement' => 'show', 'days' => 0],
-            ['device' => 'dev-b-5', 'variant' => 'B', 'placement' => 'trends', 'days' => 3],
-            ['device' => 'dev-b-6', 'variant' => 'B', 'placement' => 'trends', 'days' => 1],
-            ['device' => 'dev-b-7', 'variant' => 'B', 'placement' => 'home', 'days' => 5],
-            ['device' => 'dev-b-8', 'variant' => 'B', 'placement' => 'trends', 'days' => 4],
+            ['device' => 'dev-a-1', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 1],
+            ['device' => 'dev-a-2', 'variant' => 'A', 'placement' => 'home', 'movie' => $indie, 'days' => 2],
+            ['device' => 'dev-a-3', 'variant' => 'A', 'placement' => 'show', 'movie' => $indie, 'days' => 2],
+            ['device' => 'dev-a-4', 'variant' => 'A', 'placement' => 'trends', 'movie' => $space, 'days' => 3],
+            ['device' => 'dev-a-5', 'variant' => 'A', 'placement' => 'home', 'movie' => $neon, 'days' => 1],
+            ['device' => 'dev-a-6', 'variant' => 'A', 'placement' => 'show', 'movie' => $neon, 'days' => 1],
+            ['device' => 'dev-a-7', 'variant' => 'A', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 0],
+            ['device' => 'dev-a-8', 'variant' => 'A', 'placement' => 'trends', 'movie' => $space, 'days' => 0],
+            ['device' => 'dev-a-9', 'variant' => 'A', 'placement' => 'home', 'movie' => $indie, 'days' => 4],
+            ['device' => 'dev-b-1', 'variant' => 'B', 'placement' => 'home', 'movie' => $timeTravelers, 'days' => 1],
+            ['device' => 'dev-b-2', 'variant' => 'B', 'placement' => 'home', 'movie' => $neon, 'days' => 1],
+            ['device' => 'dev-b-3', 'variant' => 'B', 'placement' => 'show', 'movie' => $indie, 'days' => 2],
+            ['device' => 'dev-b-4', 'variant' => 'B', 'placement' => 'show', 'movie' => $neon, 'days' => 0],
+            ['device' => 'dev-b-5', 'variant' => 'B', 'placement' => 'trends', 'movie' => $space, 'days' => 3],
+            ['device' => 'dev-b-6', 'variant' => 'B', 'placement' => 'trends', 'movie' => $timeTravelers, 'days' => 1],
+            ['device' => 'dev-b-7', 'variant' => 'B', 'placement' => 'home', 'movie' => $space, 'days' => 5],
+            ['device' => 'dev-b-8', 'variant' => 'B', 'placement' => 'trends', 'movie' => $indie, 'days' => 4],
         ];
 
         DB::table('rec_ab_logs')->insert(array_map(static function (array $row) use ($daysAgo): array {
@@ -131,29 +131,31 @@ class FixturesSeeder extends Seeder
                 'device_id' => $row['device'],
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
+                'movie_id' => $row['movie']->id,
                 'created_at' => $ts,
                 'updated_at' => $ts,
             ];
         }, $impressions));
 
         $clicks = [
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 1],
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 2],
-            ['movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 1],
-            ['movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 0],
-            ['movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['movie' => $indie, 'variant' => 'A', 'placement' => 'show', 'days' => 1],
-            ['movie' => $indie, 'variant' => 'B', 'placement' => 'show', 'days' => 0],
-            ['movie' => $indie, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
-            ['movie' => $space, 'variant' => 'A', 'placement' => 'trends', 'days' => 1],
-            ['movie' => $space, 'variant' => 'B', 'placement' => 'trends', 'days' => 2],
-            ['movie' => $neon, 'variant' => 'A', 'placement' => 'show', 'days' => 3],
+            ['device' => 'dev-a-1', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 1],
+            ['device' => 'dev-a-2', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'home', 'days' => 2],
+            ['device' => 'dev-b-1', 'movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 1],
+            ['device' => 'dev-b-2', 'movie' => $timeTravelers, 'variant' => 'B', 'placement' => 'home', 'days' => 0],
+            ['device' => 'dev-a-5', 'movie' => $timeTravelers, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
+            ['device' => 'dev-a-3', 'movie' => $indie, 'variant' => 'A', 'placement' => 'show', 'days' => 1],
+            ['device' => 'dev-b-3', 'movie' => $indie, 'variant' => 'B', 'placement' => 'show', 'days' => 0],
+            ['device' => 'dev-a-4', 'movie' => $indie, 'variant' => 'A', 'placement' => 'trends', 'days' => 0],
+            ['device' => 'dev-a-8', 'movie' => $space, 'variant' => 'A', 'placement' => 'trends', 'days' => 1],
+            ['device' => 'dev-b-6', 'movie' => $space, 'variant' => 'B', 'placement' => 'trends', 'days' => 2],
+            ['device' => 'dev-a-6', 'movie' => $neon, 'variant' => 'A', 'placement' => 'show', 'days' => 3],
         ];
 
         DB::table('rec_clicks')->insert(array_map(static function (array $row) use ($daysAgo): array {
             $ts = $daysAgo($row['days']);
 
             return [
+                'device_id' => $row['device'],
                 'movie_id' => $row['movie']->id,
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
@@ -167,7 +169,7 @@ class FixturesSeeder extends Seeder
             $ts = $now->copy()->subHours($i + 1);
             $views[] = [
                 'device_id' => 'viewer-'.$i,
-                'path' => $i % 2 === 0 ? '/' : '/trends',
+                'page' => $i % 2 === 0 ? '/' : '/trends',
                 'viewed_at' => $ts,
                 'created_at' => $ts,
                 'updated_at' => $ts,
@@ -190,12 +192,16 @@ class FixturesSeeder extends Seeder
                 'path' => $row['path'],
                 'score' => $row['score'],
                 'size' => $row['size'],
+                'html_bytes' => $row['size'],
                 'meta_count' => $row['meta'],
                 'og_count' => $row['og'],
                 'ldjson_count' => $row['ld'],
                 'img_count' => $row['img'],
                 'blocking_scripts' => $row['blocking'],
                 'first_byte_ms' => $row['first_byte_ms'],
+                'has_json_ld' => $row['ld'] > 0,
+                'has_open_graph' => $row['og'] > 0,
+                'collected_at' => $ts,
                 'created_at' => $ts,
                 'updated_at' => $ts,
             ];

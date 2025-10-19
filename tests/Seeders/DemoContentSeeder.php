@@ -101,17 +101,18 @@ class DemoContentSeeder extends Seeder
         }
 
         $impressionLogs = collect([
-            ['device_id' => 'device-even-2', 'variant' => 'A'],
-            ['device_id' => 'device-odd', 'variant' => 'B'],
-            ['device_id' => 'device-alt-1', 'variant' => 'A'],
-            ['device_id' => 'device-alt-2', 'variant' => 'B'],
-            ['device_id' => 'device-alt-3', 'variant' => 'A'],
-            ['device_id' => 'device-alt-4', 'variant' => 'A'],
+            ['device_id' => 'device-even-2', 'variant' => 'A', 'movie_id' => 1],
+            ['device_id' => 'device-odd', 'variant' => 'B', 'movie_id' => 2],
+            ['device_id' => 'device-alt-1', 'variant' => 'A', 'movie_id' => 3],
+            ['device_id' => 'device-alt-2', 'variant' => 'B', 'movie_id' => 2],
+            ['device_id' => 'device-alt-3', 'variant' => 'A', 'movie_id' => 1],
+            ['device_id' => 'device-alt-4', 'variant' => 'A', 'movie_id' => 3],
         ])->map(function (array $row) use ($now): array {
             return [
                 'device_id' => $row['device_id'],
                 'variant' => $row['variant'],
                 'placement' => 'home',
+                'movie_id' => $row['movie_id'],
                 'created_at' => $now->subDays(2),
                 'updated_at' => $now->subDays(2),
             ];
@@ -149,7 +150,7 @@ class DemoContentSeeder extends Seeder
         DB::table('device_history')->insert(array_map(function (array $row) use ($now): array {
             return [
                 'device_id' => $row['device_id'],
-                'path' => $row['path'],
+                'page' => $row['path'],
                 'viewed_at' => $now->subDays(1),
                 'created_at' => $now->subDays(1),
                 'updated_at' => $now->subDays(1),
@@ -157,20 +158,31 @@ class DemoContentSeeder extends Seeder
         }, $views));
 
         $ssrMetrics = [
-            ['path' => '/', 'score' => 85, 'delta' => 1, 'first_byte_ms' => 210],
-            ['path' => '/trends', 'score' => 78, 'delta' => 1, 'first_byte_ms' => 238],
-            ['path' => '/', 'score' => 90, 'delta' => 0, 'first_byte_ms' => 192],
-            ['path' => '/trends', 'score' => 72, 'delta' => 0, 'first_byte_ms' => 265],
+            ['path' => '/', 'score' => 85, 'delta' => 1, 'first_byte_ms' => 210, 'html_bytes' => 480_000, 'meta_count' => 24, 'og_count' => 3, 'ldjson_count' => 2, 'img_count' => 18, 'blocking_scripts' => 2],
+            ['path' => '/trends', 'score' => 78, 'delta' => 1, 'first_byte_ms' => 238, 'html_bytes' => 512_000, 'meta_count' => 20, 'og_count' => 2, 'ldjson_count' => 1, 'img_count' => 16, 'blocking_scripts' => 3],
+            ['path' => '/', 'score' => 90, 'delta' => 0, 'first_byte_ms' => 192, 'html_bytes' => 420_000, 'meta_count' => 26, 'og_count' => 4, 'ldjson_count' => 2, 'img_count' => 14, 'blocking_scripts' => 1],
+            ['path' => '/trends', 'score' => 72, 'delta' => 0, 'first_byte_ms' => 265, 'html_bytes' => 550_000, 'meta_count' => 18, 'og_count' => 1, 'ldjson_count' => 0, 'img_count' => 20, 'blocking_scripts' => 4],
         ];
 
         DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
+            $collectedAt = $now->subDays($row['delta']);
+
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
+                'size' => $row['html_bytes'],
+                'html_bytes' => $row['html_bytes'],
+                'meta_count' => $row['meta_count'],
+                'og_count' => $row['og_count'],
+                'ldjson_count' => $row['ldjson_count'],
+                'img_count' => $row['img_count'],
+                'blocking_scripts' => $row['blocking_scripts'],
+                'has_json_ld' => $row['ldjson_count'] > 0,
+                'has_open_graph' => $row['og_count'] > 0,
                 'first_byte_ms' => $row['first_byte_ms'],
-                'created_at' => $now->subDays($row['delta']),
-                'updated_at' => $now->subDays($row['delta']),
+                'collected_at' => $collectedAt,
+                'created_at' => $collectedAt,
+                'updated_at' => $collectedAt,
             ];
         }, $ssrMetrics));
     }
