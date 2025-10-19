@@ -190,14 +190,18 @@ class FixturesSeeder extends Seeder
                 'path' => $row['path'],
                 'score' => $row['score'],
                 'size' => $row['size'],
+                'html_bytes' => $row['size'],
                 'meta_count' => $row['meta'],
                 'og_count' => $row['og'],
                 'ldjson_count' => $row['ld'],
                 'img_count' => $row['img'],
                 'blocking_scripts' => $row['blocking'],
                 'first_byte_ms' => $row['first_byte_ms'],
+                'has_json_ld' => $row['ld'] > 0,
+                'has_open_graph' => $row['og'] > 0,
                 'created_at' => $ts,
                 'updated_at' => $ts,
+                'collected_at' => $ts,
             ];
         }, $metrics));
     }

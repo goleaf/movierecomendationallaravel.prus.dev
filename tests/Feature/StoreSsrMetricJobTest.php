@@ -34,15 +34,18 @@ class StoreSsrMetricJobTest extends TestCase
             'path' => '/movies',
             'score' => 85,
             'html_size' => 2048,
+            'html_bytes' => 2048,
             'meta_count' => 5,
             'og_count' => 3,
             'ldjson_count' => 1,
             'img_count' => 4,
             'blocking_scripts' => 2,
             'first_byte_ms' => 123,
+            'collected_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 123,
                 'html_size' => 2048,
+                'html_bytes' => 2048,
                 'meta_count' => 5,
                 'og_count' => 3,
                 'ldjson_count' => 1,
@@ -62,12 +65,22 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame('/movies', $row->path);
         $this->assertSame(85, (int) $row->score);
         $this->assertSame(2048, (int) $row->size);
+        $this->assertSame(2048, (int) $row->html_bytes);
         $this->assertSame(5, (int) $row->meta_count);
         $this->assertSame(3, (int) $row->og_count);
         $this->assertSame(1, (int) $row->ldjson_count);
         $this->assertSame(4, (int) $row->img_count);
         $this->assertSame(2, (int) $row->blocking_scripts);
+        $this->assertSame(123, (int) $row->first_byte_ms);
+        $this->assertTrue((bool) $row->has_json_ld);
+        $this->assertTrue((bool) $row->has_open_graph);
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
+        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->collected_at)->toDateTimeString());
+
+        $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(2048, $meta['html_bytes']);
+        $this->assertTrue($meta['has_json_ld']);
+        $this->assertTrue($meta['has_open_graph']);
     }
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
@@ -89,6 +102,7 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 3,
             'blocking_scripts' => 1,
             'first_byte_ms' => 98,
+            'collected_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 98,
                 'html_size' => 1024,
@@ -119,11 +133,16 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame(70, $decoded['score']);
         $this->assertSame(1024, $decoded['size']);
         $this->assertSame(1024, $decoded['html_size']);
+        $this->assertSame(1024, $decoded['html_bytes']);
         $this->assertSame(2, $decoded['meta_count']);
         $this->assertSame(1, $decoded['og']);
+        $this->assertSame(1, $decoded['og_count']);
         $this->assertSame(0, $decoded['ld']);
+        $this->assertSame(0, $decoded['ldjson_count']);
         $this->assertSame(3, $decoded['imgs']);
+        $this->assertSame(3, $decoded['img_count']);
         $this->assertSame(1, $decoded['blocking']);
+        $this->assertSame(1, $decoded['blocking_scripts']);
         $this->assertSame(98, $decoded['first_byte_ms']);
         $this->assertFalse($decoded['has_json_ld']);
         $this->assertTrue($decoded['has_open_graph']);

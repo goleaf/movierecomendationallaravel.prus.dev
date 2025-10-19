@@ -14,8 +14,14 @@ class SsrIssuesController extends Controller
     {
         $issues = [];
         if (\Schema::hasTable('ssr_metrics')) {
-            $rows = DB::table('ssr_metrics')->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
-                ->where('created_at', '>=', now()->subDays(2))->groupBy('path')->get();
+            $timestampColumn = \Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+
+            $rows = DB::table('ssr_metrics')
+                ->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')
+                ->whereNotNull($timestampColumn)
+                ->where($timestampColumn, '>=', now()->subDays(2)->toDateTimeString())
+                ->groupBy('path')
+                ->get();
             foreach ($rows as $r) {
                 $advice = [];
                 if ((int) $r->avg_block > 0) {
@@ -48,9 +54,9 @@ class SsrIssuesController extends Controller
                 $agg[$p] = $agg[$p] ?? ['sum' => 0, 'n' => 0, 'block' => 0, 'ld' => 0, 'og' => 0];
                 $agg[$p]['sum'] += (int) ($j['score'] ?? 0);
                 $agg[$p]['n'] += 1;
-                $agg[$p]['block'] += (int) ($j['blocking'] ?? 0);
-                $agg[$p]['ld'] += (int) ($j['ld'] ?? 0);
-                $agg[$p]['og'] += (int) ($j['og'] ?? 0);
+                $agg[$p]['block'] += (int) ($j['blocking_scripts'] ?? $j['blocking'] ?? 0);
+                $agg[$p]['ld'] += (int) ($j['ldjson_count'] ?? $j['ld'] ?? 0);
+                $agg[$p]['og'] += (int) ($j['og_count'] ?? $j['og'] ?? 0);
             }
             foreach ($agg as $p => $a) {
                 $avg = $a['n'] ? $a['sum'] / $a['n'] : 0;

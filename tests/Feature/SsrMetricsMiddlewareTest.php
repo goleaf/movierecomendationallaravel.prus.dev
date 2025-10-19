@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\SsrMetricsMiddleware;
 use App\Jobs\StoreSsrMetric;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
 use Symfony\Component\HttpFoundation\Response;
@@ -57,6 +58,7 @@ class SsrMetricsMiddlewareTest extends TestCase
             }
 
             $expectedCounts = [
+                'html_bytes' => $expectedSize,
                 'html_size' => $expectedSize,
                 'meta_count' => 2,
                 'og_count' => 1,
@@ -75,6 +77,24 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
+            if (! isset($payload['collected_at']) || ! is_string($payload['collected_at'])) {
+                return false;
+            }
+
+            try {
+                Carbon::parse($payload['collected_at']);
+            } catch (\Throwable) {
+                return false;
+            }
+
+            if (($payload['has_json_ld'] ?? null) !== true) {
+                return false;
+            }
+
+            if (($payload['has_open_graph'] ?? null) !== true) {
+                return false;
+            }
+
             if (! isset($payload['meta']) || ! is_array($payload['meta'])) {
                 return false;
             }
@@ -85,7 +105,7 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
-            foreach (['html_size', 'meta_count', 'og_count', 'ldjson_count', 'img_count', 'blocking_scripts'] as $key) {
+            foreach (['html_bytes', 'html_size', 'meta_count', 'og_count', 'ldjson_count', 'img_count', 'blocking_scripts'] as $key) {
                 if (($meta[$key] ?? null) !== $payload[$key]) {
                     return false;
                 }
