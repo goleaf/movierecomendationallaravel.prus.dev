@@ -5,6 +5,9 @@
   <div class="muted">{{ __('admin.ctr.period', ['from' => $from, 'to' => $to]) }}</div>
   <img src="{{ route('admin.ctr.svg',['from'=>$from,'to'=>$to]) }}" alt="{{ __('admin.ctr.line_alt') }}"/>
   <img src="{{ route('admin.ctr.bars.svg',['from'=>$from,'to'=>$to]) }}" alt="{{ __('admin.ctr.bars_alt') }}" style="margin-top:10px;"/>
+  <noscript>
+    <p class="muted" style="margin-top:12px;">{{ __('admin.ctr.noscript_notice') }}</p>
+  </noscript>
   <h3>{{ __('admin.ctr.ab_summary_heading') }}</h3>
   <ul>
     @foreach($summary as $s)

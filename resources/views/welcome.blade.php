@@ -1,10 +1,37 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php
+    $htmlLocale = str_replace('_', '-', app()->getLocale());
+    $rtlLocales = ['ar', 'dv', 'fa', 'he', 'ku', 'ps', 'ur', 'yi'];
+    $htmlDirection = in_array(\Illuminate\Support\Str::before($htmlLocale, '-'), $rtlLocales, true) ? 'rtl' : 'ltr';
+    $appName = config('app.name', 'Laravel');
+    $appDescription = __('messages.app.meta_description');
+@endphp
+<html lang="{{ $htmlLocale }}" dir="{{ $htmlDirection }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ $appName }}</title>
+        <meta name="description" content="{{ $appDescription }}">
+        <link rel="canonical" href="{{ url()->current() }}">
+        <meta property="og:type" content="website">
+        <meta property="og:locale" content="{{ $htmlLocale }}">
+        <meta property="og:site_name" content="{{ $appName }}">
+        <meta property="og:title" content="{{ $appName }}">
+        <meta property="og:description" content="{{ $appDescription }}">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:image" content="{{ asset('img/og_default.jpg') }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $appName }}">
+        <meta name="twitter:description" content="{{ $appDescription }}">
+        <meta name="twitter:image" content="{{ asset('img/og_default.jpg') }}">
+        <script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $appName,
+            'url' => url('/'),
+            'description' => $appDescription,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
