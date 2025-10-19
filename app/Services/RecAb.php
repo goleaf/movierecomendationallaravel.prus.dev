@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Movie;
 use App\Settings\RecommendationWeightsSettings;
+use App\Support\ArrayHelpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
@@ -146,55 +147,106 @@ class RecAb
             return [];
         }
 
-        $scores = [];
+        $aggregates = [];
 
         if (Schema::hasTable('rec_clicks')) {
-            $clicks = DB::table('rec_clicks')
+            $rows = DB::table('rec_clicks')
                 ->selectRaw('movie_id, count(*) as total')
                 ->where('device_id', $deviceId)
                 ->whereNotNull('movie_id')
                 ->groupBy('movie_id')
-                ->pluck('total', 'movie_id')
+                ->get()
+                ->map(static fn (object $row): array => [
+                    'movie_id' => $row->movie_id === null ? null : (int) $row->movie_id,
+                    'total' => (float) $row->total,
+                ])
                 ->all();
 
-            foreach ($clicks as $movieId => $total) {
-                if ($movieId === null) {
-                    continue;
-                }
-
-                $scores[(int) $movieId] = ($scores[(int) $movieId] ?? 0.0) + (float) $total;
-            }
+            $aggregates = $this->mergeMovieAggregates($aggregates, $rows);
         }
 
         if (Schema::hasTable('device_history')) {
-            $history = DB::table('device_history')
+            $rows = DB::table('device_history')
                 ->selectRaw('movie_id, count(*) as total')
                 ->where('device_id', $deviceId)
                 ->whereNotNull('movie_id')
                 ->groupBy('movie_id')
-                ->pluck('total', 'movie_id')
+                ->get()
+                ->map(static fn (object $row): array => [
+                    'movie_id' => $row->movie_id === null ? null : (int) $row->movie_id,
+                    'total' => (float) $row->total,
+                ])
                 ->all();
 
-            foreach ($history as $movieId => $total) {
-                if ($movieId === null) {
-                    continue;
-                }
-
-                $scores[(int) $movieId] = ($scores[(int) $movieId] ?? 0.0) + (float) $total;
-            }
+            $aggregates = $this->mergeMovieAggregates($aggregates, $rows);
         }
 
-        if ($scores === []) {
+        if (! ArrayHelpers::recursiveContains($aggregates, static function (mixed $value): bool {
+            return is_array($value) && array_key_exists('movie_id', $value);
+        })) {
             return [];
         }
 
-        $sum = array_sum($scores);
+        if (ArrayHelpers::recursiveFindByKeyValue(
+            $aggregates,
+            'total',
+            static fn (mixed $value): bool => is_numeric($value) && (float) $value > 0.0,
+        ) === null) {
+            return [];
+        }
+
+        $sum = array_reduce($aggregates, static function (float $carry, array $entry): float {
+            return $carry + (float) $entry['total'];
+        }, 0.0);
 
         if ($sum <= 0.0) {
             return [];
         }
 
-        return array_map(static fn (float $value): float => $value / $sum, $scores);
+        $scores = [];
+
+        foreach ($aggregates as $entry) {
+            $movieId = $entry['movie_id'];
+
+            if (! is_int($movieId)) {
+                continue;
+            }
+
+            $scores[$movieId] = $entry['total'] / $sum;
+        }
+
+        return $scores;
+    }
+
+    /**
+     * @param  array<int, array{movie_id:int, total:float}>  $existing
+     * @param  array<int, array{movie_id:int|null, total:float}>  $rows
+     * @return array<int, array{movie_id:int, total:float}>
+     */
+    private function mergeMovieAggregates(array $existing, array $rows): array
+    {
+        foreach ($rows as $row) {
+            $movieId = $row['movie_id'];
+
+            if ($movieId === null) {
+                continue;
+            }
+
+            $index = ArrayHelpers::columnSearch($existing, 'movie_id', $movieId);
+
+            if ($index === null) {
+                $existing[] = [
+                    'movie_id' => (int) $movieId,
+                    'total' => (float) $row['total'],
+                ];
+
+                continue;
+            }
+
+            $existing[$index]['total'] += (float) $row['total'];
+        }
+
+        return $existing;
     }
 
     private function settings(): RecommendationWeightsSettings
