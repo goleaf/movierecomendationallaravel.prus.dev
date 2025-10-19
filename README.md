@@ -146,6 +146,31 @@ features.
 
 ---
 
+## Log Map
+
+The logging configuration exposes a curated set of channels that balance local
+investigations with container-friendly streams. Use the table below to locate
+files quickly and to understand how retention is handled. The source of truth
+for these values lives in [`config/logging.php`](config/logging.php).
+
+| Channel | Writes to | Rotation / cleanup | Notes |
+| --- | --- | --- | --- |
+| `stack` | Delegates to the channels listed in `LOG_STACK` (defaults to `single`). | Clean up by targeting the nested channels. Switch to `stack/json` when you need both file and stdout logs. | Default channel for the framework. |
+| `stack/json` | `storage/logs/laravel.log` **and** `php://stdout` via nested channels. | File cleanup mirrors `single`; stdout retention depends on the process manager. | Handy when running in Docker/Kubernetes. |
+| `single` | `storage/logs/laravel.log`. | Manually delete or truncate the file (`rm storage/logs/laravel.log` or `truncate -s 0 storage/logs/laravel.log`), or delegate to OS logrotate. | Great for quick local debugging. |
+| `daily` | `storage/logs/laravel-YYYY-MM-DD.log`. | Laravel removes files older than `LOG_DAILY_DAYS` (14 by default). | Opt in by setting `LOG_CHANNEL=daily`. |
+| `importers` | `storage/logs/importers-YYYY-MM-DD.log`. | Keeps 14 days of ingestion logs before pruning. | Keeps importer noise out of the main app logs. |
+| `json` | `php://stdout`. | Stream retention is managed by your container runtime or log collector. | Structured JSON payloads for observability pipelines. |
+| `stderr` | `php://stderr`. | Managed by the host runtime. | Surface fatal issues to orchestrators. |
+| `slack` | Remote Slack webhook defined by `LOG_SLACK_WEBHOOK_URL`. | Retention handled by Slack. | Sends critical alerts to on-call chat. |
+| `papertrail` | Remote Papertrail endpoint configured via `PAPERTRAIL_URL` / `PAPERTRAIL_PORT`. | Retention handled by Papertrail. | Use for long-term hosted retention. |
+| `syslog` | Host syslog daemon (`LOG_SYSLOG_FACILITY`). | Host syslog policy governs cleanup. | Forward logs to system-level collectors. |
+| `errorlog` | `php.ini` `error_log` destination. | Managed by PHP / host. | Fallback to PHP error logging. |
+| `null` | Discarded. | Not applicable. | Use when you need silence in tests. |
+| `emergency` | `storage/logs/laravel.log`. | Same manual cleanup as `single`. | Framework fallback if a primary channel fails. |
+
+---
+
 ## Environment configuration
 
 Configure the application in `.env` (examples below):

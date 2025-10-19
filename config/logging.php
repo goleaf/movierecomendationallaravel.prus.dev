@@ -182,4 +182,83 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Documented Log Map
+    |--------------------------------------------------------------------------
+    |
+    | This map keeps human-facing documentation in sync with the configured
+    | channels. Each entry surfaces the storage target and rotation strategy
+    | so README guidance can reference a single source of truth.
+    |
+    */
+
+    'log_map' => [
+        'stack' => [
+            'purpose' => 'Default aggregate channel. Delegates to channels listed in LOG_STACK (defaults to "single").',
+            'storage' => 'Inherits storage from nested channels.',
+            'rotation' => 'Managed by nested channels. Switch LOG_STACK=stack/json when JSON + file logs are both required.',
+        ],
+        'stack/json' => [
+            'purpose' => 'Aggregates "single" and "json" so containers receive structured stdout logs alongside local files.',
+            'storage' => 'storage/logs/laravel.log and php://stdout via nested channels.',
+            'rotation' => 'File rotation handled by "single"; stdout streams handled by the process manager.',
+        ],
+        'single' => [
+            'purpose' => 'Local development log file for web and queue workers.',
+            'storage' => storage_path('logs/laravel.log'),
+            'rotation' => 'Single rolling file. Clear manually (rm/truncate) or hand off to logrotate/CI cleanup.',
+        ],
+        'daily' => [
+            'purpose' => 'Date-stamped application logs when long-running history is needed.',
+            'storage' => sprintf('%s/%s', storage_path('logs'), 'laravel-YYYY-MM-DD.log'),
+            'rotation' => 'Keeps the most recent LOG_DAILY_DAYS (default 14) files, older files are deleted automatically.',
+        ],
+        'importers' => [
+            'purpose' => 'Dedicated channel for ingestion jobs and feed importers.',
+            'storage' => sprintf('%s/%s', storage_path('logs'), 'importers-YYYY-MM-DD.log'),
+            'rotation' => 'Daily files retained for 14 days to keep ingestion noise out of primary logs.',
+        ],
+        'json' => [
+            'purpose' => 'Structured JSON logs for observability pipelines and container stdout collectors.',
+            'storage' => 'php://stdout',
+            'rotation' => 'Stream handled by container runtime or host service (e.g. CloudWatch, Loki).',
+        ],
+        'stderr' => [
+            'purpose' => 'Critical output surfaced to process managers and Docker stderr collectors.',
+            'storage' => 'php://stderr',
+            'rotation' => 'Handled by the host runtime.',
+        ],
+        'slack' => [
+            'purpose' => 'Notifies a Slack channel of critical production failures.',
+            'storage' => 'Remote Slack webhook defined via LOG_SLACK_WEBHOOK_URL.',
+            'rotation' => 'Retention controlled by Slack history, not the application.',
+        ],
+        'papertrail' => [
+            'purpose' => 'Ships logs to Papertrail over TLS.',
+            'storage' => 'Remote Papertrail endpoint defined by PAPERTRAIL_URL and PAPERTRAIL_PORT.',
+            'rotation' => 'Retention handled by Papertrail.',
+        ],
+        'syslog' => [
+            'purpose' => 'Pushes logs into the host operating system syslog.',
+            'storage' => 'Host syslog daemon (facility configurable via LOG_SYSLOG_FACILITY).',
+            'rotation' => 'Host syslog rotation policy applies.',
+        ],
+        'errorlog' => [
+            'purpose' => 'Falls back to PHP\'s default error_log handler.',
+            'storage' => 'php.ini error_log destination.',
+            'rotation' => 'Managed outside Laravel by the PHP handler.',
+        ],
+        'null' => [
+            'purpose' => 'Silences output entirely (useful for local testing).',
+            'storage' => 'Discarded.',
+            'rotation' => 'Not applicable.',
+        ],
+        'emergency' => [
+            'purpose' => 'Fallback channel if the configured stack fails.',
+            'storage' => storage_path('logs/laravel.log'),
+            'rotation' => 'Same manual process as "single".',
+        ],
+    ],
+
 ];
