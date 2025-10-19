@@ -2,5 +2,5 @@
 
 return [
     'enabled' => env('SSR_METRICS', false),
-    'paths' => ['/', '/trends', '/admin/ctr'],
+    'paths' => ['/', '/trends', '/analytics/ctr'],
 ];
