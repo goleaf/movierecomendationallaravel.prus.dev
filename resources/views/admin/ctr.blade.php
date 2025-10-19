@@ -2,7 +2,7 @@
 @section('title','CTR Analytics')
 @section('content')
 <div class="card">
-  <div class="muted">Период: {{ $from }} — {{ $to }}</div>
+  <div class="muted">Период: {{ $from }} — {{ $to }} · <a href="{{ route('works') }}" target="_blank">Works log</a></div>
   <img src="{{ route('admin.ctr.svg',['from'=>$from,'to'=>$to]) }}" alt="CTR line"/>
   <img src="{{ route('admin.ctr.bars.svg',['from'=>$from,'to'=>$to]) }}" alt="CTR bars" style="margin-top:10px;"/>
   <h3>Итоги A/B</h3>

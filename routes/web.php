@@ -9,12 +9,24 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SearchPageController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Http\Controllers\TrendsController;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
 Route::get('/trends', TrendsController::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
+
+Route::get('/works', function () {
+    $path = base_path('WORKS.md');
+    abort_unless(File::exists($path), 404);
+
+    $markdown = File::get($path);
+    $content = Str::markdown($markdown);
+
+    return view('works', ['content' => $content]);
+})->name('works');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/ctr', [CtrController::class, 'index'])->name('ctr');

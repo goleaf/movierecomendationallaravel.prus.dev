@@ -14,6 +14,10 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 - **Quality gates** – PHPUnit feature/unit coverage, PHPStan level 7, Pint formatting, and helpful helper/service providers.
 - **Performance** – Database indexes and caching presets with Redis/Horizon integration.
 
+## Works log
+
+Review the consolidated delivery log in [WORKS.md](WORKS.md) or visit `/works` when the application is running to explore the list via the web UI.
+
 ---
 
 ## Requirements

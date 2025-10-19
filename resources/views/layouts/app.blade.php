@@ -19,6 +19,11 @@
 a{color:#9fc5ff;text-decoration:none}.container{max-width:1200px;margin:0 auto;padding:20px}
 .grid{display:grid;gap:14px}.grid-4{grid-template-columns:repeat(4,1fr)}.card{background:#11151a;border:1px solid #171b22;border-radius:14px;padding:12px}
 .muted{color:#98a2b3;font-size:.92em}img{max-width:100%;border-radius:10px;display:block}
+.markdown h1{font-size:1.8rem;margin-top:0}
+.markdown h2{margin-top:1.6rem;font-size:1.4rem}
+.markdown h3{margin-top:1.2rem;font-size:1.15rem}
+.markdown ul{padding-left:1.2rem}
+.markdown li{margin-bottom:.35rem;line-height:1.5}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.grid-4{grid-template-columns:1fr}}
 </style>
 </head>
