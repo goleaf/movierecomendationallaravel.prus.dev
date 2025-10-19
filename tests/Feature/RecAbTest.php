@@ -8,7 +8,6 @@ use App\Models\Movie;
 use App\Services\RecAb;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -18,7 +17,7 @@ class RecAbTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('recs', [
+        $this->storeRecommendationWeights([
             'A' => [
                 'pop' => 0.7,
                 'recent' => 0.3,

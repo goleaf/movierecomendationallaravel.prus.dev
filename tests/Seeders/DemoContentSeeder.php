@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Seeders;
 
 use App\Models\Movie;
+use App\Settings\RecommendationWeightsSettings;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Spatie\LaravelSettings\SettingsRepositories\SettingsRepository;
 
 class DemoContentSeeder extends Seeder
 {
@@ -183,5 +185,13 @@ class DemoContentSeeder extends Seeder
                 'collected_at' => $now->subDays($row['delta']),
             ];
         }, $ssrMetrics));
+
+        /** @var SettingsRepository $repository */
+        $repository = app(SettingsRepository::class);
+
+        RecommendationWeightsSettings::store($repository, [
+            'A' => ['pop' => 0.7, 'recent' => 0.2, 'pref' => 0.1],
+            'B' => ['pop' => 0.3, 'recent' => 0.2, 'pref' => 0.5],
+        ]);
     }
 }

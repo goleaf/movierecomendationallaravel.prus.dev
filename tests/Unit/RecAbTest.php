@@ -46,6 +46,11 @@ class RecAbTest extends TestCase
             'imdb_votes' => 50000,
         ]);
 
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'B' => ['pop' => 0.2, 'recent' => 0.8, 'pref' => 0.0],
+        ]);
+
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $serviceA = app(RecAb::class);
         [$variantA, $listA] = $serviceA->forDevice('dev4', 3);

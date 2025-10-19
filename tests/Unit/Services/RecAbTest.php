@@ -6,6 +6,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Settings\RecommendationWeightsSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Spatie\LaravelSettings\SettingsRepositories\SettingsRepository;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
@@ -40,6 +42,12 @@ class RecAbTest extends TestCase
             });
         }
 
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'path')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->string('path')->nullable();
+            });
+        }
+
         Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
     }
 
@@ -54,8 +62,10 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(3)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'B' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $serviceA = app(RecAb::class);
@@ -76,8 +86,10 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.ab_split', ['A' => 100.0, 'B' => 0.0]);
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'ab_split' => ['A' => 100.0, 'B' => 0.0],
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET'));
 
@@ -96,10 +108,12 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.ab_split', ['A' => 70.0, 'B' => 30.0]);
-        config()->set('recs.seed', 'experiment-2025');
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'B' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'ab_split' => ['A' => 70.0, 'B' => 30.0],
+            'seed' => 'experiment-2025',
+        ]);
 
         $threshold = 70.0 / (70.0 + 30.0);
 
@@ -148,8 +162,10 @@ class RecAbTest extends TestCase
         ]);
 
         $weights = ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0];
-        config()->set('recs.A', $weights);
-        config()->set('recs.B', $weights);
+        $this->storeRecommendationWeights([
+            'A' => $weights,
+            'B' => $weights,
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);
@@ -194,13 +210,16 @@ class RecAbTest extends TestCase
             'year' => 2024,
         ]);
 
-        config()->set('recs.A', ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.2, 'recent' => 0.3, 'pref' => 0.5]);
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0],
+            'B' => ['pop' => 0.2, 'recent' => 0.3, 'pref' => 0.5],
+        ]);
 
         DB::table('device_history')->insert([
             'movie_id' => $preferred->id,
             'device_id' => 'device-pref',
             'placement' => 'home',
+            'page' => 'home',
             'path' => '/variant-b-test',
             'viewed_at' => now(),
             'created_at' => now(),
@@ -243,6 +262,55 @@ class RecAbTest extends TestCase
         $this->assertEqualsWithDelta(0.5, $fallback['pop'], 0.00001);
         $this->assertEqualsWithDelta(0.2, $fallback['recent'], 0.00001);
         $this->assertEqualsWithDelta(0.3, $fallback['pref'], 0.00001);
+    }
+
+    public function test_negative_weights_are_clamped_when_stored(): void
+    {
+        $payload = $this->storeRecommendationWeights([
+            'A' => ['pop' => -5.0, 'recent' => 0.4, 'pref' => -2.0],
+            'ab_split' => ['A' => -10.0, 'B' => 90.0],
+            'seed' => '',
+        ]);
+
+        $this->assertSame(0.0, $payload['A']['pop']);
+        $this->assertSame(0.4, $payload['A']['recent']);
+        $this->assertSame(0.0, $payload['A']['pref']);
+        $this->assertSame(0.0, $payload['ab_split']['A']);
+        $this->assertSame(90.0, $payload['ab_split']['B']);
+        $this->assertNull($payload['seed']);
+    }
+
+    public function test_settings_fall_back_to_defaults_when_missing(): void
+    {
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.8, 'recent' => 0.2, 'pref' => 0.0],
+        ]);
+
+        $this->forgetRecommendationWeightProperties('B', 'ab_split', 'seed');
+
+        /** @var SettingsRepository $repository */
+        $repository = app(SettingsRepository::class);
+        $settings = RecommendationWeightsSettings::fromRepository($repository);
+
+        $this->assertEqualsWithDelta(0.8, $settings->A['pop'], 0.00001);
+        $this->assertSame(RecommendationWeightsSettings::defaults()['B'], $settings->B);
+        $this->assertSame(RecommendationWeightsSettings::defaults()['ab_split'], $settings->ab_split);
+        $this->assertNull($settings->seed);
+    }
+
+    public function test_variant_selection_defaults_to_a_when_split_is_zero(): void
+    {
+        Movie::factory()->count(2)->create();
+
+        $this->storeRecommendationWeights([
+            'ab_split' => ['A' => 0.0, 'B' => 0.0],
+        ]);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+
+        [$variant] = app(RecAb::class)->forDevice('device-zero-split', 1);
+
+        $this->assertSame('A', $variant);
     }
 
     private function expectedVariantForSeed(string $deviceId, float $threshold, string $seed): string

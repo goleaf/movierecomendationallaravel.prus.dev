@@ -23,8 +23,10 @@ class VisitorRoutesTest extends TestCase
 
         $this->seed(DemoContentSeeder::class);
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+            'B' => ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0],
+        ]);
     }
 
     protected function tearDown(): void
