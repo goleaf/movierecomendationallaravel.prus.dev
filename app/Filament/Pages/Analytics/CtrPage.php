@@ -125,6 +125,8 @@ class CtrPage extends Page implements HasForms
             ->statePath('filters')
             ->extraAttributes([
                 'class' => 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4',
+                'role' => 'group',
+                'aria-label' => __('admin.ctr.filters.aria_label'),
             ])
             ->schema([
                 InlineDateTimePicker::make('from')
