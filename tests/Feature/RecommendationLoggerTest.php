@@ -71,6 +71,17 @@ class RecommendationLoggerTest extends TestCase
         $this->assertDatabaseHas('rec_trending_rollups', [
             'movie_id' => $movie->id,
             'captured_on' => now()->toDateString(),
+            'clicks' => 1,
+        ]);
+
+        $this->withCookie('did', $deviceId)
+            ->get(route('movies.show', ['movie' => $movie->id, 'placement' => 'home', 'variant' => 'A']))
+            ->assertOk();
+
+        $this->assertDatabaseHas('rec_trending_rollups', [
+            'movie_id' => $movie->id,
+            'captured_on' => now()->toDateString(),
+            'clicks' => 2,
         ]);
 
         $this->assertDatabaseHas('device_history', [

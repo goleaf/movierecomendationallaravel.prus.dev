@@ -84,7 +84,7 @@ class HomePage extends Component
      */
     protected function fetchTrendingSnapshot(): Collection
     {
-        if (! Schema::hasTable('rec_clicks') || ! Schema::hasTable('movies')) {
+        if (! Schema::hasTable('movies')) {
             return collect();
         }
 
@@ -105,7 +105,7 @@ class HomePage extends Component
                 ->pluck('clicks', 'movie_id');
         }
 
-        if ($top->isEmpty()) {
+        if ($top->isEmpty() && Schema::hasTable('rec_clicks')) {
             $top = DB::table('rec_clicks')
                 ->selectRaw('movie_id, count(*) as clicks')
                 ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])

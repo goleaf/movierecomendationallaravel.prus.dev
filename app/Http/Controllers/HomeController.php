@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
-use App\Services\Recommender;
 use App\Services\Analytics\TrendsRollupService;
+use App\Services\Recommender;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +56,7 @@ class HomeController extends Controller
      */
     protected function fetchTrendingSnapshot(): Collection
     {
-        if (! Schema::hasTable('rec_clicks')) {
+        if (! Schema::hasTable('movies')) {
             return collect();
         }
 
@@ -77,7 +77,7 @@ class HomeController extends Controller
                 ->pluck('clicks', 'movie_id');
         }
 
-        if ($top->isEmpty()) {
+        if ($top->isEmpty() && Schema::hasTable('rec_clicks')) {
             $top = DB::table('rec_clicks')
                 ->selectRaw('movie_id, count(*) as clicks')
                 ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
