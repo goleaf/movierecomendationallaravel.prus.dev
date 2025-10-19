@@ -4,38 +4,24 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class SsrStatsWidget extends BaseWidget
 {
+    private SsrMetricsService $ssrMetricsService;
+
+    public function boot(SsrMetricsService $ssrMetricsService): void
+    {
+        $this->ssrMetricsService = $ssrMetricsService;
+    }
+
     protected function getStats(): array
     {
-        $score = 0;
-        $paths = 0;
-
-        if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')->orderByDesc('id')->first();
-
-            if ($row) {
-                $score = (int) $row->score;
-                $paths = 1;
-            }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
-            $paths = count($json);
-
-            foreach ($json as $r) {
-                $score += (int) ($r['score'] ?? 0);
-            }
-
-            if ($paths > 0) {
-                $score = (int) round($score / $paths);
-            }
-        }
+        $summary = ($this->ssrMetricsService ??= app(SsrMetricsService::class))->latestScoreSummary();
+        $score = $summary['score'];
+        $paths = $summary['path_count'];
 
         $description = trans_choice(
             'analytics.widgets.ssr_stats.description',

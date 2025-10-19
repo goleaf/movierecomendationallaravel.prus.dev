@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Models\SsrMetric;
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Tables;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class SsrDropWidget extends BaseWidget
 {
     protected int|string|array $columnSpan = 'full';
+
+    private SsrMetricsService $ssrMetricsService;
+
+    public function boot(SsrMetricsService $ssrMetricsService): void
+    {
+        $this->ssrMetricsService = $ssrMetricsService;
+    }
 
     public function getHeading(): ?string
     {
@@ -23,40 +28,7 @@ class SsrDropWidget extends BaseWidget
 
     protected function getTableQuery(): Builder|Relation|null
     {
-        if (! Schema::hasTable('ssr_metrics')) {
-            return null;
-        }
-
-        $yesterday = now()->subDay()->toDateString();
-        $today = now()->toDateString();
-
-        return SsrMetric::query()
-            ->fromSub(function ($query) use ($today, $yesterday) {
-                $query
-                    ->fromSub(function ($aggregateQuery) use ($today, $yesterday) {
-                        $aggregateQuery
-                            ->from('ssr_metrics')
-                            ->selectRaw('path, date(created_at) as d, avg(score) as avg_score')
-                            ->whereIn(DB::raw('date(created_at)'), [$yesterday, $today])
-                            ->groupBy('path', 'd');
-                    }, 'agg')
-                    ->selectRaw(
-                        'path,
-                        max(case when d = ? then avg_score end) as score_today,
-                        max(case when d = ? then avg_score end) as score_yesterday',
-                        [$today, $yesterday]
-                    )
-                    ->groupBy('path');
-            }, 'pivot')
-            ->select([
-                DB::raw('row_number() over (order by coalesce(score_today, 0) - coalesce(score_yesterday, 0), path) as id'),
-                'path',
-                DB::raw('coalesce(score_today, 0) as score_today'),
-                DB::raw('coalesce(score_yesterday, 0) as score_yesterday'),
-                DB::raw('coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta'),
-            ])
-            ->whereRaw('(coalesce(score_today, 0) - coalesce(score_yesterday, 0)) < 0')
-            ->orderBy('delta');
+        return ($this->ssrMetricsService ??= app(SsrMetricsService::class))->dropDatasetQuery();
     }
 
     protected function getTableColumns(): array
