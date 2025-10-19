@@ -9,6 +9,10 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 - [TODO backlog](TODO.md)
 - [Works log](WORKS.md)
 
+## Onboarding callouts
+
+- Review the dated backlog in [`TODO.md`](TODO.md) during your first sync so owners stay aligned on analytics, SSR, and ingestion follow-ups.
+
 ---
 
 ## Feature overview
