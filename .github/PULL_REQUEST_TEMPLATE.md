@@ -1,11 +1,9 @@
 ## Summary
-- [ ] Description of changes
+- [ ] Linked issue or context is documented
+- [ ] Tests or QA notes are included when behaviour changes
 
-## Testing
-- [ ] `composer validate`
-- [ ] `composer install --no-dev --prefer-dist`
-
-## Dependencies
-- [ ] Updated `composer.json` constraints where required
-- [ ] Regenerated `composer.lock`
-- [ ] Documented dependency changes in `CHANGELOG.md`
+## Dependency Review
+- [ ] composer.json constraints updated when dependencies change
+- [ ] `composer validate` has been run locally
+- [ ] `composer install --no-dev --prefer-dist` succeeds locally or in CI
+- [ ] CHANGELOG updated with "Dependencies" notes (include any composer why-not reasoning)

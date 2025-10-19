@@ -1,12 +1,12 @@
 # Changelog (All-in-One)
 
-## 2025-10-19
+## 2025-10-21
 
 ### Dependencies
-- Locked `laravel/framework` to `^12.34.0` so upgrades stay within the 12.x line that Filament 3.3 and the rest of the stack already validate against; `composer why-not laravel/framework 13.0` would fail because Laravel 13 is unreleased and would break the Illuminate contracts required by Filament.
-- Narrowed `filament/filament` to `^3.3.43`, which keeps us on the 3.3 feature release that supports Laravel 12 while allowing only forward-compatible 3.x bugfixes—`composer why-not filament/filament 4.0` would point to missing Livewire 4 support.
-- Required `predis/predis` as `^3.2.0`, matching the Redis client shipped with Laravel 12 and ensuring we avoid the 2.x API as well as any future 4.x BC breaks that `composer why-not predis/predis 4.0` would highlight.
-- Set `symfony/uid` to `^7.3.1` so we stay aligned with the Symfony 7.3 components bundled with Laravel; newer 8.x releases would fail the UID polyfill contract.
-- Bumped the static analysis toolchain to `phpstan/phpstan:^2.1.29` and `nunomaduro/larastan:^3.7.2` because Larastan 3.7 requires PHPStan ≥2.1.28; this mirrors the upstream Laravel 12 dev requirements while keeping us below 3.0.
-- Pinned `laravel/pint` to `^1.25.1` so formatting runs use the same binary the framework builds against without jumping to a future major with incompatible rules.
+- Locked `laravel/framework` to `~12.34.0` so our app only receives patch updates on the 12.34 line that Filament 3.3.43 and Larastan 3.7.2 already ship against; `composer why-not laravel/framework 12.35.0` fails because of this tilde constraint, keeping us away from minors that may tighten Symfony requirements before Filament catches up.
+- Narrowed `filament/filament` to `~3.3.43` to remain on the Laravel 12–certified build tested with Livewire 3.6; a hypothetical `composer why-not filament/filament 3.4.0` now surfaces the tilde guard, ensuring we avoid minors that could demand Laravel 13 or Livewire 4 upgrades.
+- Required `predis/predis` as `~3.2.0`, which keeps Redis integration locked to the v3.2 API Laravel 12 uses; attempting `composer why-not predis/predis 3.3.0` points back to our constraint so we do not unknowingly absorb protocol changes.
+- Set `symfony/uid` to `~7.3.1` to match the Symfony 7.3 components bundled with Laravel 12; `composer why-not symfony/uid 7.4.0` confirms we cannot jump to a minor that might require PHP 8.4 before Laravel raises its floor.
+- Pinned the static analysis toolchain to `phpstan/phpstan` `~2.1.31` and `nunomaduro/larastan` `~3.7.2`, satisfying Larastan’s `^2.1.28` floor while blocking the next PHPStan minor that historically introduced rule changes needing config updates.
+- Locked `laravel/pint` to `~1.25.1` so formatting remains consistent with the Laravel 12 preset—`composer why-not laravel/pint 1.26.0` reinforces that we only accept 1.25.x patches which avoid style drift mid-cycle.
 
