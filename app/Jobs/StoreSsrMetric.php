@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Services\SsrMetricsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class StoreSsrMetric implements ShouldQueue
@@ -24,130 +22,16 @@ class StoreSsrMetric implements ShouldQueue
     use SerializesModels;
 
     /**
-     * @var array<string, mixed>
-     */
-    private array $normalizedPayload = [];
-
-    /**
      * @param  array<string, mixed>  $payload
      */
     public function __construct(public array $payload) {}
 
     public function handle(): void
     {
-        $this->normalizedPayload = $this->normalizePayload($this->payload);
-
-        if ($this->storeInDatabase()) {
-            return;
-        }
-
-        $this->storeInJsonl();
-    }
-
-    private function storeInDatabase(): bool
-    {
-        if (! Schema::hasTable('ssr_metrics')) {
-            return false;
-        }
+        $normalizedPayload = $this->normalizePayload($this->payload);
 
         try {
-            $data = [
-                'path' => $this->normalizedPayload['path'],
-                'score' => $this->normalizedPayload['score'],
-                'created_at' => $this->normalizedPayload['collected_at']->toDateTimeString(),
-                'updated_at' => $this->normalizedPayload['collected_at']->toDateTimeString(),
-            ];
-
-            if (Schema::hasColumn('ssr_metrics', 'first_byte_ms')) {
-                $data['first_byte_ms'] = $this->normalizedPayload['first_byte_ms'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
-                $data['collected_at'] = $this->normalizedPayload['collected_at']->toDateTimeString();
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'size') && $this->normalizedPayload['html_bytes'] !== null) {
-                $data['size'] = $this->normalizedPayload['html_bytes'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'html_bytes') && $this->normalizedPayload['html_bytes'] !== null) {
-                $data['html_bytes'] = $this->normalizedPayload['html_bytes'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'meta_count') && $this->normalizedPayload['meta_count'] !== null) {
-                $data['meta_count'] = $this->normalizedPayload['meta_count'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'og_count') && $this->normalizedPayload['og_count'] !== null) {
-                $data['og_count'] = $this->normalizedPayload['og_count'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'ldjson_count') && $this->normalizedPayload['ldjson_count'] !== null) {
-                $data['ldjson_count'] = $this->normalizedPayload['ldjson_count'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'img_count') && $this->normalizedPayload['img_count'] !== null) {
-                $data['img_count'] = $this->normalizedPayload['img_count'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'blocking_scripts') && $this->normalizedPayload['blocking_scripts'] !== null) {
-                $data['blocking_scripts'] = $this->normalizedPayload['blocking_scripts'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'has_json_ld')) {
-                $data['has_json_ld'] = $this->normalizedPayload['has_json_ld'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'has_open_graph')) {
-                $data['has_open_graph'] = $this->normalizedPayload['has_open_graph'];
-            }
-
-            if (Schema::hasColumn('ssr_metrics', 'meta')) {
-                $data['meta'] = json_encode($this->normalizedPayload['meta'], JSON_THROW_ON_ERROR);
-            }
-
-            DB::table('ssr_metrics')->insert($data);
-
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Failed storing SSR metric in database, falling back to JSONL.', [
-                'exception' => $e,
-            ]);
-
-            return false;
-        }
-    }
-
-    private function storeInJsonl(): void
-    {
-        try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
-            }
-
-            $payload = [
-                'ts' => $this->normalizedPayload['collected_at']->toIso8601String(),
-                'path' => $this->normalizedPayload['path'],
-                'score' => $this->normalizedPayload['score'],
-                'html_bytes' => $this->normalizedPayload['html_bytes'],
-                'size' => $this->normalizedPayload['html_bytes'],
-                'html_size' => $this->normalizedPayload['html_bytes'],
-                'meta' => $this->normalizedPayload['meta'],
-                'meta_count' => $this->normalizedPayload['meta_count'],
-                'og_count' => $this->normalizedPayload['og_count'],
-                'og' => $this->normalizedPayload['og_count'],
-                'ldjson_count' => $this->normalizedPayload['ldjson_count'],
-                'ld' => $this->normalizedPayload['ldjson_count'],
-                'img_count' => $this->normalizedPayload['img_count'],
-                'imgs' => $this->normalizedPayload['img_count'],
-                'blocking_scripts' => $this->normalizedPayload['blocking_scripts'],
-                'blocking' => $this->normalizedPayload['blocking_scripts'],
-                'first_byte_ms' => $this->normalizedPayload['first_byte_ms'],
-                'has_json_ld' => $this->normalizedPayload['has_json_ld'],
-                'has_open_graph' => $this->normalizedPayload['has_open_graph'],
-            ];
-
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+            app(SsrMetricsService::class)->store($normalizedPayload);
         } catch (Throwable $e) {
             Log::error('Failed storing SSR metric.', [
                 'exception' => $e,
