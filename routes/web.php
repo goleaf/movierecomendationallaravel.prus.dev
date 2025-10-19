@@ -27,6 +27,7 @@ Route::middleware([ResolveHost::class])->group(function (): void {
     Route::get('/', HomePage::class)->name('home');
     Route::get('/search', SearchPageController::class)->name('search');
     Route::get('/trends', TrendsPage::class)->name('trends');
+    Route::get('/movies', [MovieController::class, 'index'])->name('movies.index');
     Route::get('/movies/{movie}', [MovieController::class, 'show'])
         ->middleware(AutoTranslate::class)
         ->name('movies.show');
