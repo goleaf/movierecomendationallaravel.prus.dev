@@ -3,24 +3,39 @@
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use BackedEnum;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Url;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Schema;
+use Jacobtims\InlineDateTimePicker\Forms\Components\InlineDateTimePicker;
+use UnitEnum;
 
-class CtrPage extends Page
+class CtrPage extends Page implements HasForms
 {
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
-    protected static string $view = 'filament.analytics.ctr';
+    use InteractsWithForms;
+
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-bar';
+
+    protected string $view = 'filament.analytics.ctr';
+
     protected static ?string $navigationLabel = 'CTR';
-    protected static ?string $navigationGroup = 'Analytics';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+
     protected static ?string $slug = 'ctr';
 
-    public string $from;
-    public string $to;
-    public string $placement = '';
-    public string $variant = '';
+    /** @var array{from: string, to: string, placement: string, variant: string} */
+    public array $filters = [
+        'from' => '',
+        'to' => '',
+        'placement' => '',
+        'variant' => '',
+    ];
 
     /** @var array<int, array<string, mixed>> */
     public array $summary = [];
@@ -32,6 +47,7 @@ class CtrPage extends Page
     public array $funnels = [];
 
     public ?string $lineSvg = null;
+
     public ?string $barsSvg = null;
 
     /** @var array<int, string> */
@@ -42,8 +58,12 @@ class CtrPage extends Page
 
     public function mount(): void
     {
-        $this->from = now()->subDays(7)->format('Y-m-d');
-        $this->to = now()->format('Y-m-d');
+        $this->filters = [
+            'from' => now()->subDays(7)->format('Y-m-d'),
+            'to' => now()->format('Y-m-d'),
+            'placement' => '',
+            'variant' => '',
+        ];
         $this->placementOptions = [
             '' => __('admin.ctr.filters.placements.all'),
             'home' => __('admin.ctr.filters.placements.home'),
@@ -56,13 +76,16 @@ class CtrPage extends Page
             'B' => __('admin.ctr.filters.variants.b'),
         ];
 
+        $this->form->fill($this->filters);
         $this->refreshData();
     }
 
     public function refreshData(): void
     {
-        $fromDate = $this->parseDate($this->from, now()->subDays(7)->format('Y-m-d'));
-        $toDate = $this->parseDate($this->to, now()->format('Y-m-d'));
+        $defaultFrom = now()->subDays(7)->format('Y-m-d');
+        $defaultTo = now()->format('Y-m-d');
+        $fromDate = $this->parseDate($this->filters['from'] ?? null, $defaultFrom);
+        $toDate = $this->parseDate($this->filters['to'] ?? null, $defaultTo);
 
         if ($fromDate->greaterThan($toDate)) {
             [$fromDate, $toDate] = [$toDate, $fromDate];
@@ -70,22 +93,21 @@ class CtrPage extends Page
 
         $service = app(CtrAnalyticsService::class);
 
-        $summary = $service->variantSummary($fromDate, $toDate, $this->placement ?: null, $this->variant ?: null);
+        $summary = $service->variantSummary(
+            $fromDate,
+            $toDate,
+            $this->filters['placement'] ?: null,
+            $this->filters['variant'] ?: null,
+        );
         $this->summary = $summary['summary'];
         $this->placementClicks = $summary['placementClicks'];
         $this->funnels = $service->funnels($fromDate, $toDate);
         $this->lineSvg = $service->buildDailyCtrSvg($fromDate, $toDate);
         $this->barsSvg = $service->buildPlacementCtrSvg($fromDate, $toDate);
 
-        $this->from = $fromDate->format('Y-m-d');
-        $this->to = $toDate->format('Y-m-d');
-    }
-
-    public function updated($property): void
-    {
-        if (in_array($property, ['from', 'to', 'placement', 'variant'], true)) {
-            $this->refreshData();
-        }
+        $this->filters['from'] = $fromDate->format('Y-m-d');
+        $this->filters['to'] = $toDate->format('Y-m-d');
+        $this->form->fill($this->filters);
     }
 
     private function parseDate(?string $value, string $fallback): CarbonImmutable
@@ -95,5 +117,58 @@ class CtrPage extends Page
         } catch (\Throwable) {
             return CarbonImmutable::parse($fallback);
         }
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->statePath('filters')
+            ->extraAttributes([
+                'class' => 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4',
+            ])
+            ->schema([
+                InlineDateTimePicker::make('from')
+                    ->label(__('admin.ctr.filters.from'))
+                    ->time(false)
+                    ->seconds(false)
+                    ->afterStateUpdated(function (?string $state): void {
+                        $this->filters['from'] = $state ?? '';
+                        $this->refreshData();
+                    }),
+                InlineDateTimePicker::make('to')
+                    ->label(__('admin.ctr.filters.to'))
+                    ->time(false)
+                    ->seconds(false)
+                    ->afterStateUpdated(function (?string $state): void {
+                        $this->filters['to'] = $state ?? '';
+                        $this->refreshData();
+                    }),
+                Select::make('placement')
+                    ->label(__('admin.ctr.filters.placement'))
+                    ->options(fn (): array => $this->placementOptions)
+                    ->searchable()
+                    ->afterStateUpdated(function (?string $state): void {
+                        $this->filters['placement'] = $state ?? '';
+                        $this->refreshData();
+                    }),
+                Select::make('variant')
+                    ->label(__('admin.ctr.filters.variant'))
+                    ->options(fn (): array => $this->variantOptions)
+                    ->searchable()
+                    ->afterStateUpdated(function (?string $state): void {
+                        $this->filters['variant'] = $state ?? '';
+                        $this->refreshData();
+                    }),
+                Actions::make([
+                    Action::make('refresh')
+                        ->label(__('admin.ctr.filters.refresh'))
+                        ->color('primary')
+                        ->action(function (): void {
+                            $this->refreshData();
+                        }),
+                ])
+                    ->columnSpanFull()
+                    ->alignEnd(),
+            ]);
     }
 }

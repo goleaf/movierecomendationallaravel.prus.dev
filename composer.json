@@ -6,17 +6,14 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
-        "filament/filament": "^3.0",
-        "jeffersongoncalves/filament-cep-field": "^1.1",
+        "php": "^8.2",
+        "filament/filament": "^4.0",
+        "jacobtims/inline-date-time-picker": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "inertiajs/inertia-laravel": "^2.0",
         "predis/predis": "^3.2",
-        "solution-forest/tab-layout-plugin": "^2.2",
-        "symfony/uid": "^7.3",
-        "tomatophp/filament-helpers": "*",
-        "tomatophp/filament-translations": "^2.0"
+        "symfony/uid": "^7.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

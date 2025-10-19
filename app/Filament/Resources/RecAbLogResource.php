@@ -4,34 +4,32 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RecAbLogResource\Pages;
 use App\Models\RecAbLog;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Form;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkAction as BookmarkTableAction;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkAction;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Tables\BookmarkBulkClearAction;
+use UnitEnum;
 
 class RecAbLogResource extends Resource
 {
     protected static ?string $model = RecAbLog::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bolt';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-bolt';
 
-    protected static ?string $navigationGroup = 'Telemetry';
+    protected static UnitEnum|string|null $navigationGroup = 'Telemetry';
 
     protected static ?string $modelLabel = 'A/B Impression';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([]);
+        return $schema;
     }
 
     public static function table(Table $table): Table
@@ -111,9 +109,9 @@ class RecAbLogResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
                 TextEntry::make('id')->label('ID'),
                 TextEntry::make('created_at')

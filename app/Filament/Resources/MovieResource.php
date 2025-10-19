@@ -7,34 +7,35 @@ use App\Filament\Resources\MovieResource\RelationManagers\DeviceHistoryRelationM
 use App\Filament\Resources\MovieResource\RelationManagers\RecAbLogsRelationManager;
 use App\Filament\Resources\MovieResource\RelationManagers\RecClicksRelationManager;
 use App\Models\Movie;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use TomatoPHP\FilamentTranslationComponent\Components\Translation;
+use UnitEnum;
 
 class MovieResource extends Resource
 {
     protected static ?string $model = Movie::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-film';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-film';
 
-    protected static ?string $navigationGroup = 'Catalog';
+    protected static UnitEnum|string|null $navigationGroup = 'Catalog';
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Section::make('Details')
                     ->schema([
