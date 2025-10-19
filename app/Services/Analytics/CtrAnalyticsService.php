@@ -15,7 +15,7 @@ class CtrAnalyticsService
      * @return array{
      *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
      *     clicksByPlacement: array<string, int>,
-     *     funnels: array<string, array{imps: int, clks: int, views: int}>,
+     *     funnels: array<string, array{imps: int, clks: int, views: int, ctr: float, cuped_ctr: float, view_rate: float}>,
      *     totals: array{impressions: int, clicks: int, views: int},
      *     period: array{from: string, to: string},
      *     variants: array<int, string>,
@@ -58,6 +58,9 @@ class CtrAnalyticsService
                         'imps' => (int) $row['imps'],
                         'clks' => (int) $row['clicks'],
                         'views' => (int) $row['views'],
+                        'ctr' => (float) $row['ctr'],
+                        'cuped_ctr' => (float) $row['cuped_ctr'],
+                        'view_rate' => (float) $row['view_rate'],
                     ],
                 ];
             })
@@ -179,7 +182,7 @@ class CtrAnalyticsService
     }
 
     /**
-     * @return array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float}>
+     * @return array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}>
      */
     public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
     {
@@ -188,6 +191,11 @@ class CtrAnalyticsService
         }
 
         [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
+
+        $baselineStats = $this->deviceBaselineStats($from);
+        if ($baselineStats['device'] === []) {
+            $baselineStats = $this->fetchDeviceBaselineStats(null);
+        }
 
         $impressionsQuery = DB::table('rec_ab_logs')
             ->select('placement', DB::raw('count(*) as imps'))
@@ -240,6 +248,60 @@ class CtrAnalyticsService
                 ->all();
         }
 
+        $deviceImpressionsQuery = DB::table('rec_ab_logs')
+            ->select('device_id', 'placement', DB::raw('count(*) as imps'))
+            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+            ->groupBy('device_id', 'placement');
+
+        if ($placements !== []) {
+            $deviceImpressionsQuery->whereIn('placement', $placements);
+        }
+
+        $deviceImpressions = $deviceImpressionsQuery->get();
+
+        $deviceClicks = collect();
+        if (Schema::hasTable('rec_clicks')) {
+            $deviceClicksQuery = DB::table('rec_clicks')
+                ->select('device_id', 'placement', DB::raw('count(*) as clks'))
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
+                ->groupBy('device_id', 'placement');
+
+            if ($placements !== []) {
+                $deviceClicksQuery->whereIn('placement', $placements);
+            }
+
+            $deviceClicks = $deviceClicksQuery->get();
+        }
+
+        /** @var array<string, array<string, int>> $clicksByDevice */
+        $clicksByDevice = [];
+        foreach ($deviceClicks as $row) {
+            $placement = (string) $row->placement;
+            $deviceId = (string) $row->device_id;
+            $clicksByDevice[$placement][$deviceId] = (int) $row->clks;
+        }
+
+        /** @var array<string, array<int, array{device_id: string, imps: int, clicks: int}>> $placementEntries */
+        $placementEntries = [];
+        /** @var array<int, array{device_id: string, imps: int, clicks: int}> $totalEntries */
+        $totalEntries = [];
+
+        foreach ($deviceImpressions as $row) {
+            $placement = (string) $row->placement;
+            $deviceId = (string) $row->device_id;
+            $imps = (int) $row->imps;
+            $clickCount = (int) ($clicksByDevice[$placement][$deviceId] ?? 0);
+
+            $entry = [
+                'device_id' => $deviceId,
+                'imps' => $imps,
+                'clicks' => $clickCount,
+            ];
+
+            $placementEntries[$placement][] = $entry;
+            $totalEntries[] = $entry;
+        }
+
         $rows = [];
         $totalImps = 0;
         $totalClicks = 0;
@@ -250,13 +312,18 @@ class CtrAnalyticsService
             $placementClicks = (int) ($clicks[$placement] ?? 0);
             $placementViews = (int) ($views[$placement] ?? 0);
 
+            $ctr = $placementImps > 0 ? round(100 * $placementClicks / $placementImps, 2) : 0.0;
+            $cuped = $this->calculateCupedCtr($placementEntries[$placement] ?? [], $baselineStats);
+            $cupedCtr = $cuped ?? $ctr;
+
             $rows[] = [
                 'label' => $this->translatePlacement($placement),
                 'imps' => $placementImps,
                 'clicks' => $placementClicks,
                 'views' => $placementViews,
-                'ctr' => $placementImps > 0 ? round(100 * $placementClicks / $placementImps, 2) : 0.0,
+                'ctr' => $ctr,
                 'view_rate' => $placementViews > 0 ? round(100 * $placementClicks / $placementViews, 2) : 0.0,
+                'cuped_ctr' => $cupedCtr,
             ];
 
             $totalImps += $placementImps;
@@ -264,17 +331,17 @@ class CtrAnalyticsService
             $totalViews += $placementViews;
         }
 
-        $totalImps = array_sum($impressionsByPlacement);
-        $totalClicks = array_sum($clicksByPlacement);
-        $totalViews = array_sum($viewsByPlacement);
+        $totalCtr = $totalImps > 0 ? round(100 * $totalClicks / $totalImps, 2) : 0.0;
+        $totalCuped = $this->calculateCupedCtr($totalEntries, $baselineStats) ?? $totalCtr;
 
         $rows[] = [
             'label' => __('admin.ctr.funnels.total'),
             'imps' => $totalImps,
             'clicks' => $totalClicks,
             'views' => $totalViews,
-            'ctr' => $totalImps > 0 ? round(100 * $totalClicks / $totalImps, 2) : 0.0,
+            'ctr' => $totalCtr,
             'view_rate' => $totalViews > 0 ? round(100 * $totalClicks / $totalViews, 2) : 0.0,
+            'cuped_ctr' => $totalCuped,
         ];
 
         return $rows;
@@ -505,5 +572,153 @@ class CtrAnalyticsService
         $translated = __($key);
 
         return $translated === $key ? ucfirst($placement) : $translated;
+    }
+
+    /**
+     * @return array{device: array<string, float>, mean: float|null}
+     */
+    private function deviceBaselineStats(?CarbonImmutable $before): array
+    {
+        $beforeTimestamp = $before?->startOfDay()->format('Y-m-d H:i:s');
+
+        return $this->fetchDeviceBaselineStats($beforeTimestamp);
+    }
+
+    /**
+     * @return array{device: array<string, float>, mean: float|null}
+     */
+    private function fetchDeviceBaselineStats(?string $before): array
+    {
+        if (! Schema::hasTable('rec_ab_logs')) {
+            return ['device' => [], 'mean' => null];
+        }
+
+        $impressionsQuery = DB::table('rec_ab_logs')
+            ->select('device_id', DB::raw('count(*) as imps'));
+
+        if ($before !== null) {
+            $impressionsQuery->where('created_at', '<', $before);
+        }
+
+        /** @var array<string, int> $impressions */
+        $impressions = $impressionsQuery
+            ->groupBy('device_id')
+            ->pluck('imps', 'device_id')
+            ->map(fn ($value) => (int) $value)
+            ->all();
+
+        if ($impressions === []) {
+            return ['device' => [], 'mean' => null];
+        }
+
+        /** @var array<string, int> $clicks */
+        $clicks = [];
+        if (Schema::hasTable('rec_clicks')) {
+            $clicksQuery = DB::table('rec_clicks')
+                ->select('device_id', DB::raw('count(*) as clks'));
+
+            if ($before !== null) {
+                $clicksQuery->where('created_at', '<', $before);
+            }
+
+            $clicks = $clicksQuery
+                ->groupBy('device_id')
+                ->pluck('clks', 'device_id')
+                ->map(fn ($value) => (int) $value)
+                ->all();
+        }
+
+        $totalImps = 0;
+        $totalClicks = 0;
+        $baselines = [];
+
+        foreach ($impressions as $deviceId => $imps) {
+            if ($imps <= 0) {
+                continue;
+            }
+
+            $clickCount = (int) ($clicks[$deviceId] ?? 0);
+            $baselines[$deviceId] = $imps > 0 ? max(0.0, min(1.0, $clickCount / $imps)) : 0.0;
+
+            $totalImps += $imps;
+            $totalClicks += $clickCount;
+        }
+
+        $mean = $totalImps > 0 ? $totalClicks / $totalImps : null;
+
+        return ['device' => $baselines, 'mean' => $mean];
+    }
+
+    /**
+     * @param  array<int, array{device_id: string, imps: int, clicks: int}>  $entries
+     * @param  array{device: array<string, float>, mean: float|null}  $baselineStats
+     */
+    private function calculateCupedCtr(array $entries, array $baselineStats): ?float
+    {
+        if ($entries === []) {
+            return null;
+        }
+
+        $baselineByDevice = $baselineStats['device'];
+        $globalBaseline = $baselineStats['mean'];
+
+        $weightedEntries = [];
+        $totalWeight = 0.0;
+        $sumX = 0.0;
+        $sumY = 0.0;
+
+        foreach ($entries as $entry) {
+            $imps = (int) $entry['imps'];
+            if ($imps <= 0) {
+                continue;
+            }
+
+            $deviceId = $entry['device_id'];
+            $baseline = $baselineByDevice[$deviceId] ?? $globalBaseline;
+            if ($baseline === null) {
+                continue;
+            }
+
+            $ctr = $entry['clicks'] > 0 ? (float) $entry['clicks'] / $imps : 0.0;
+
+            $weightedEntries[] = [
+                'w' => $imps,
+                'x' => (float) $baseline,
+                'y' => $ctr,
+            ];
+
+            $totalWeight += $imps;
+            $sumX += $imps * (float) $baseline;
+            $sumY += $imps * $ctr;
+        }
+
+        if ($weightedEntries === [] || $totalWeight <= 0.0) {
+            return null;
+        }
+
+        $meanX = $sumX / $totalWeight;
+        $meanY = $sumY / $totalWeight;
+
+        $varianceX = 0.0;
+        $covariance = 0.0;
+
+        foreach ($weightedEntries as $entry) {
+            $dx = $entry['x'] - $meanX;
+            $dy = $entry['y'] - $meanY;
+            $varianceX += $entry['w'] * $dx * $dx;
+            $covariance += $entry['w'] * $dx * $dy;
+        }
+
+        $theta = $varianceX > 0.0 ? $covariance / $varianceX : 0.0;
+
+        $adjustedSum = 0.0;
+        foreach ($weightedEntries as $entry) {
+            $adjusted = $entry['y'] - $theta * ($entry['x'] - $meanX);
+            $adjustedSum += $entry['w'] * $adjusted;
+        }
+
+        $adjustedMean = $adjustedSum / $totalWeight;
+
+        return round($adjustedMean * 100, 2);
     }
 }

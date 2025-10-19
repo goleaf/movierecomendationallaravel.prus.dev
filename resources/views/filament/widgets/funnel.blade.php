@@ -9,6 +9,7 @@
           <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.clicks') }}</th>
           <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.views') }}</th>
           <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.ctr') }}</th>
+          <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.cuped_ctr') }}</th>
           <th class="px-2 py-1">{{ __('analytics.widgets.funnel.columns.view_rate') }}</th>
         </tr>
       </thead>
@@ -20,6 +21,7 @@
             <td class="px-2 py-1">{{ number_format($row['clicks']) }}</td>
             <td class="px-2 py-1">{{ number_format($row['views']) }}</td>
             <td class="px-2 py-1">{{ number_format($row['ctr'], 2) }}</td>
+            <td class="px-2 py-1">{{ number_format($row['cuped_ctr'], 2) }}</td>
             <td class="px-2 py-1">{{ number_format($row['view_rate'], 2) }}</td>
           </tr>
         @endforeach

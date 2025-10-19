@@ -19,7 +19,7 @@ class CtrOverview extends Component
     /** @var array<string, int> */
     public array $clicksByPlacement = [];
 
-    /** @var array<string, array{imps: int, clks: int, views: int}> */
+    /** @var array<string, array{imps: int, clks: int, views: int, ctr: float, cuped_ctr: float, view_rate: float}> */
     public array $funnels = [];
 
     /** @var array{impressions: int, clicks: int, views: int} */

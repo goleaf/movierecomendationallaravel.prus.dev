@@ -66,12 +66,20 @@ class AnalyticsCtrTest extends TestCase
 
         $this->assertSame(3, $funnels['home']['imps']);
         $this->assertSame(1, $funnels['home']['clks']);
+        $this->assertEqualsWithDelta(33.33, $funnels['home']['ctr'], 0.01);
+        $this->assertEqualsWithDelta($funnels['home']['ctr'], $funnels['home']['cuped_ctr'], 0.01);
         $this->assertSame(5, $funnels['show']['imps']);
         $this->assertSame(2, $funnels['show']['clks']);
+        $this->assertEqualsWithDelta(40.0, $funnels['show']['ctr'], 0.01);
+        $this->assertEqualsWithDelta($funnels['show']['ctr'], $funnels['show']['cuped_ctr'], 0.01);
         $this->assertSame(2, $funnels['trends']['imps']);
         $this->assertSame(1, $funnels['trends']['clks']);
+        $this->assertEqualsWithDelta(50.0, $funnels['trends']['ctr'], 0.01);
+        $this->assertEqualsWithDelta($funnels['trends']['ctr'], $funnels['trends']['cuped_ctr'], 0.01);
         $this->assertSame(10, $funnels['Итого']['imps']);
         $this->assertSame(4, $funnels['Итого']['clks']);
+        $this->assertEqualsWithDelta(40.0, $funnels['Итого']['ctr'], 0.01);
+        $this->assertEqualsWithDelta($funnels['Итого']['ctr'], $funnels['Итого']['cuped_ctr'], 0.01);
     }
 
     public function test_funnel_widget_rows_use_placement_impressions(): void
@@ -131,18 +139,22 @@ class AnalyticsCtrTest extends TestCase
         $this->assertSame(3, $home['imps']);
         $this->assertSame(1, $home['clicks']);
         $this->assertEqualsWithDelta(33.33, $home['ctr'], 0.01);
+        $this->assertEqualsWithDelta($home['ctr'], $home['cuped_ctr'], 0.01);
 
         $this->assertSame(5, $show['imps']);
         $this->assertSame(2, $show['clicks']);
         $this->assertEqualsWithDelta(40.0, $show['ctr'], 0.01);
+        $this->assertEqualsWithDelta($show['ctr'], $show['cuped_ctr'], 0.01);
 
         $this->assertSame(2, $trends['imps']);
         $this->assertSame(1, $trends['clicks']);
         $this->assertEqualsWithDelta(50.0, $trends['ctr'], 0.01);
+        $this->assertEqualsWithDelta($trends['ctr'], $trends['cuped_ctr'], 0.01);
 
         $this->assertSame(10, $total['imps']);
         $this->assertSame(4, $total['clicks']);
         $this->assertEqualsWithDelta(40.0, $total['ctr'], 0.01);
+        $this->assertEqualsWithDelta($total['ctr'], $total['cuped_ctr'], 0.01);
     }
 
     /**

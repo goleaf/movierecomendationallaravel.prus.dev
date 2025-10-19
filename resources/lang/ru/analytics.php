@@ -23,6 +23,7 @@ return [
                 'clicks' => 'Клики',
                 'views' => 'Просмотры',
                 'ctr' => 'CTR %',
+                'cuped_ctr' => 'CTR (CUPED) %',
                 'view_rate' => 'View→Click %',
             ],
             'placements' => [
