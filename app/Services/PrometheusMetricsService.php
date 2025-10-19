@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Services\Analytics\SsrMetricsAggregator;
 use App\Support\MetricsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class PrometheusMetricsService
 {
@@ -22,6 +22,7 @@ class PrometheusMetricsService
     public function __construct(
         private readonly MetricsCache $cache,
         private readonly CtrAnalyticsService $ctrAnalytics,
+        private readonly SsrMetricsAggregator $ssrAggregator,
     ) {}
 
     public function render(): string
@@ -92,35 +93,13 @@ class PrometheusMetricsService
      */
     private function ssrMetrics(): array
     {
-        $from = CarbonImmutable::now()->subDay();
-        $avgScore = 0.0;
-        $avgFirstByte = 0.0;
-        $samples = 0;
+        $to = CarbonImmutable::now();
+        $from = $to->subDay();
+        $summary = $this->ssrAggregator->aggregate($from, $to)['summary'];
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $timestampColumn = $this->timestampColumn();
-
-            $row = DB::table('ssr_metrics')
-                ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
-                ->whereNotNull($timestampColumn)
-                ->where($timestampColumn, '>=', $from->toDateTimeString())
-                ->first();
-
-            if ($row !== null) {
-                $avgScore = (float) ($row->avg_score ?? 0.0);
-                $avgFirstByte = (float) ($row->avg_first_byte ?? 0.0);
-                $samples = (int) ($row->sample_size ?? 0);
-            }
-        }
-
-        if ($samples === 0) {
-            $fallback = $this->loadSsrFallback();
-            if ($fallback !== []) {
-                $samples = count($fallback);
-                $avgScore = $this->averageFromRecords($fallback, 'score');
-                $avgFirstByte = $this->averageFromRecords($fallback, 'first_byte_ms');
-            }
-        }
+        $avgScore = $summary['score'];
+        $avgFirstByte = $summary['first_byte_ms'];
+        $samples = $summary['samples'];
 
         return [
             $this->metric(
@@ -169,73 +148,6 @@ class PrometheusMetricsService
         ];
     }
 
-    /**
-     * @param  array<int, array<string, mixed>>  $records
-     */
-    private function averageFromRecords(array $records, string $key): float
-    {
-        $total = 0.0;
-        $count = 0;
-
-        foreach ($records as $record) {
-            if (! is_array($record)) {
-                continue;
-            }
-
-            $value = $record[$key] ?? null;
-            if ($value === null || ! is_numeric($value)) {
-                continue;
-            }
-
-            $total += (float) $value;
-            $count++;
-        }
-
-        if ($count === 0) {
-            return 0.0;
-        }
-
-        return $total / $count;
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function loadSsrFallback(): array
-    {
-        if (Storage::exists('metrics/ssr.jsonl')) {
-            $content = trim((string) Storage::get('metrics/ssr.jsonl'));
-            if ($content !== '') {
-                $lines = preg_split('/\r?\n/', $content) ?: [];
-                $records = [];
-
-                foreach ($lines as $line) {
-                    if ($line === '') {
-                        continue;
-                    }
-
-                    $decoded = json_decode($line, true);
-                    if (is_array($decoded)) {
-                        $records[] = $decoded;
-                    }
-                }
-
-                if ($records !== []) {
-                    return $records;
-                }
-            }
-        }
-
-        if (Storage::exists('metrics/last.json')) {
-            $decoded = json_decode((string) Storage::get('metrics/last.json'), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
-        }
-
-        return [];
-    }
-
     private function metric(string $name, string $type, string $help, int|float $value): array
     {
         return [
@@ -271,14 +183,5 @@ class PrometheusMetricsService
         $formatted = number_format($value, 4, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.');
-    }
-
-    private function timestampColumn(): string
-    {
-        if (! Schema::hasTable('ssr_metrics')) {
-            return 'created_at';
-        }
-
-        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 }

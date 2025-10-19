@@ -64,7 +64,27 @@ return [
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',
-            'description' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
+            'paths' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
+            'samples' => '{0}Нет замеров|{1}:count замер|[2,4]:count замера|[5,*]:count замеров',
+            'first_byte' => 'Первый байт: :value мс',
+            'delta' => [
+                'score' => 'Δ оценка: :value',
+                'first_byte' => 'Δ первый байт: :value мс',
+                'paths' => 'Δ пути: :value',
+                'samples' => 'Δ замеры: :value',
+            ],
+            'periods' => [
+                'today' => [
+                    'label' => 'Сегодня',
+                ],
+                'yesterday' => [
+                    'label' => 'Вчера',
+                ],
+                'seven_days' => [
+                    'label' => 'Последние 7 дней',
+                    'range' => ':from — :to',
+                ],
+            ],
         ],
         'ssr_drop' => [
             'heading' => 'Топ страниц по просадке SSR (день к дню)',
@@ -76,8 +96,11 @@ return [
             ],
         ],
         'ssr_score' => [
-            'heading' => 'Тренд SSR Score',
-            'dataset' => 'SSR score',
+            'heading' => 'Тренд SSR Score (дневной и 7-дневный)',
+            'datasets' => [
+                'daily' => 'Среднее за день',
+                'rolling' => 'Среднее за 7 дней',
+            ],
         ],
         'images' => [
             'ctr_line_alt' => 'График CTR (линии)',

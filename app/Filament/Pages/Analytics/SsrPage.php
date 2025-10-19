@@ -19,12 +19,15 @@ class SsrPage extends Page
 
     protected static ?string $slug = 'ssr';
 
-    /** @var array{label: string, score: int, paths: int, description: string} */
+    /**
+     * @var array{
+     *     label: string,
+     *     periods: array<string, array{score: float, first_byte_ms: float, samples: int, paths: int, delta?: array{score: float, first_byte_ms: float, samples: int, paths: int}, range?: array{from: string, to: string}}>
+     * }
+     */
     public array $headline = [
         'label' => '',
-        'score' => 0,
-        'paths' => 0,
-        'description' => '',
+        'periods' => [],
     ];
 
     /** @var array{datasets: array<int, array{label: string, data: array<int, float>}>, labels: array<int, string>} */

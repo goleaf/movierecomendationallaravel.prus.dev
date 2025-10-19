@@ -5,61 +5,57 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\SsrMetric;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class SsrAnalyticsService
 {
+    public function __construct(private readonly SsrMetricsAggregator $aggregator) {}
+
     /**
-     * @return array{label: string, score: int, paths: int, description: string}
+     * @return array{
+     *     label: string,
+     *     periods: array{
+     *         today: array{score: float, first_byte_ms: float, samples: int, paths: int, delta: array{score: float, first_byte_ms: float, samples: int, paths: int}},
+     *         yesterday: array{score: float, first_byte_ms: float, samples: int, paths: int},
+     *         seven_days: array{score: float, first_byte_ms: float, samples: int, paths: int, range: array{from: string, to: string}, delta: array{score: float, first_byte_ms: float, samples: int, paths: int}},
+     *     },
+     * }
      */
     public function headline(): array
     {
-        $score = 0;
-        $paths = 0;
+        $today = CarbonImmutable::now()->startOfDay();
+        $yesterday = $today->subDay();
+        $sevenStart = $today->subDays(6);
+        $previousSevenStart = $sevenStart->subDays(7);
+        $previousSevenEnd = $sevenStart->subDay();
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $timestampColumn = $this->timestampColumn();
+        $todaySummary = $this->aggregator->aggregate($today, $today->endOfDay())['summary'];
+        $yesterdaySummary = $this->aggregator->aggregate($yesterday, $yesterday->endOfDay())['summary'];
+        $sevenSummary = $this->aggregator->aggregate($sevenStart, $today->endOfDay())['summary'];
+        $previousSevenSummary = $this->aggregator->aggregate($previousSevenStart, $previousSevenEnd->endOfDay())['summary'];
 
-            $row = DB::table('ssr_metrics')
-                ->whereNotNull($timestampColumn)
-                ->orderByDesc($timestampColumn)
-                ->orderByDesc('id')
-                ->first();
-
-            if ($row) {
-                $score = (int) $row->score;
-                $paths = max(1, (int) DB::table('ssr_metrics')
-                    ->whereNotNull($timestampColumn)
-                    ->distinct()
-                    ->count('path'));
-            }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
-            $paths = count($json);
-
-            $total = 0;
-            foreach ($json as $entry) {
-                $total += (int) ($entry['score'] ?? 0);
-            }
-
-            if ($paths > 0) {
-                $score = (int) round($total / $paths);
-            }
-        }
+        $todayDelta = $this->buildDelta($todaySummary, $yesterdaySummary);
+        $sevenDayDelta = $this->buildDelta($sevenSummary, $previousSevenSummary);
 
         return [
             'label' => __('analytics.widgets.ssr_stats.label'),
-            'score' => $score,
-            'paths' => $paths,
-            'description' => trans_choice(
-                'analytics.widgets.ssr_stats.description',
-                $paths,
-                ['count' => number_format($paths)]
-            ),
+            'periods' => [
+                'today' => array_merge($todaySummary, [
+                    'delta' => $todayDelta,
+                ]),
+                'yesterday' => $yesterdaySummary,
+                'seven_days' => array_merge($sevenSummary, [
+                    'range' => [
+                        'from' => $sevenStart->toDateString(),
+                        'to' => $today->toDateString(),
+                    ],
+                    'delta' => $sevenDayDelta,
+                ]),
+            ],
         ];
     }
 
@@ -68,48 +64,50 @@ class SsrAnalyticsService
      */
     public function trend(int $limit = 30): array
     {
-        $labels = [];
-        $series = [];
+        $end = CarbonImmutable::now()->endOfDay();
+        $start = $end->subDays($limit - 1)->startOfDay();
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $timestampColumn = $this->timestampColumn();
-            $dateExpression = 'date('.$timestampColumn.')';
+        $aggregate = $this->aggregator->aggregate($start, $end);
+        $daily = $aggregate['daily'];
 
-            $rows = DB::table('ssr_metrics')
-                ->selectRaw($dateExpression.' as d, avg(score) as s')
-                ->whereNotNull($timestampColumn)
-                ->groupBy('d')
-                ->orderBy('d')
-                ->limit($limit)
-                ->get();
-
-            foreach ($rows as $row) {
-                $labels[] = $row->d;
-                $series[] = round((float) $row->s, 2);
-            }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
-
-            $labels[] = now()->toDateString();
-            $avg = 0;
-            $count = 0;
-
-            foreach ($json as $row) {
-                $avg += (int) ($row['score'] ?? 0);
-                $count++;
-            }
-
-            $series[] = $count > 0 ? round($avg / $count, 2) : 0;
+        if ($aggregate['summary']['samples'] === 0) {
+            return [
+                'datasets' => [],
+                'labels' => [],
+            ];
         }
+
+        $labels = array_column($daily, 'date');
+        $dailyScores = array_map(static fn (array $day): float => (float) $day['score'], $daily);
+        $rollingScores = array_map(static fn (array $day): float => (float) $day['rolling_score'], $daily);
 
         return [
             'datasets' => [
                 [
-                    'label' => __('analytics.widgets.ssr_score.dataset'),
-                    'data' => $series,
+                    'label' => __('analytics.widgets.ssr_score.datasets.daily'),
+                    'data' => $dailyScores,
+                ],
+                [
+                    'label' => __('analytics.widgets.ssr_score.datasets.rolling'),
+                    'data' => $rollingScores,
                 ],
             ],
             'labels' => $labels,
+        ];
+    }
+
+    /**
+     * @param  array{score: float, first_byte_ms: float, samples: int, paths: int}  $current
+     * @param  array{score: float, first_byte_ms: float, samples: int, paths: int}  $previous
+     * @return array{score: float, first_byte_ms: float, samples: int, paths: int}
+     */
+    private function buildDelta(array $current, array $previous): array
+    {
+        return [
+            'score' => round($current['score'] - $previous['score'], 2),
+            'first_byte_ms' => round($current['first_byte_ms'] - $previous['first_byte_ms'], 2),
+            'samples' => $current['samples'] - $previous['samples'],
+            'paths' => $current['paths'] - $previous['paths'],
         ];
     }
 

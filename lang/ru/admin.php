@@ -110,9 +110,34 @@ return [
         'title' => 'SSR аналитика',
         'headline' => [
             'heading' => 'Оценка SSR',
+            'periods' => [
+                'today' => [
+                    'label' => 'Сегодня',
+                ],
+                'yesterday' => [
+                    'label' => 'Вчера',
+                ],
+                'seven_days' => [
+                    'label' => 'Последние 7 дней',
+                    'range' => ':from — :to',
+                ],
+            ],
+            'metrics' => [
+                'first_byte' => 'Первый байт',
+                'paths' => 'Пути',
+                'samples' => 'Замеры',
+                'paths_count' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
+                'samples_count' => '{0}Нет замеров|{1}:count замер|[2,4]:count замера|[5,*]:count замеров',
+            ],
+            'deltas' => [
+                'score' => 'Δ оценка: :value',
+                'first_byte' => 'Δ первый байт: :value мс',
+                'paths' => 'Δ пути: :value',
+                'samples' => 'Δ замеры: :value',
+            ],
         ],
         'trend' => [
-            'heading' => 'Тренд SSR Score',
+            'heading' => 'Тренд SSR Score (дневной и 7-дневный)',
             'empty' => 'Нет данных по тренду SSR.',
             'aria_label' => 'Линейный график изменения SSR score.',
             'range' => '{0}Нет данных|{1}Последний :days день|[2,*]Последние :days дней',

@@ -64,7 +64,27 @@ return [
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',
-            'description' => '{0}No tracked paths|{1}:count path|[2,*]:count paths',
+            'paths' => '{0}No paths|{1}:count path|[2,*]:count paths',
+            'samples' => '{0}No samples|{1}:count sample|[2,*]:count samples',
+            'first_byte' => 'First byte: :value ms',
+            'delta' => [
+                'score' => 'Δ score: :value',
+                'first_byte' => 'Δ first byte: :value ms',
+                'paths' => 'Δ paths: :value',
+                'samples' => 'Δ samples: :value',
+            ],
+            'periods' => [
+                'today' => [
+                    'label' => 'Today',
+                ],
+                'yesterday' => [
+                    'label' => 'Yesterday',
+                ],
+                'seven_days' => [
+                    'label' => 'Last 7 days',
+                    'range' => ':from — :to',
+                ],
+            ],
         ],
         'ssr_drop' => [
             'heading' => 'Top pages by SSR score drop (day over day)',
@@ -76,8 +96,11 @@ return [
             ],
         ],
         'ssr_score' => [
-            'heading' => 'SSR Score (trend)',
-            'dataset' => 'SSR score',
+            'heading' => 'SSR score trend (daily vs 7-day average)',
+            'datasets' => [
+                'daily' => 'Daily average score',
+                'rolling' => '7-day rolling average',
+            ],
         ],
         'images' => [
             'ctr_line_alt' => 'CTR line chart',

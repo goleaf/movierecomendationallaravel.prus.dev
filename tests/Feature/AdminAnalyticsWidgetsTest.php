@@ -39,16 +39,16 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertViewHas('rows', function (array $rows): bool {
-                $this->assertSame('home', $rows[0]['label']);
-                $this->assertSame(17, $rows[0]['imps']);
+                $this->assertSame('Home', $rows[0]['label']);
+                $this->assertSame(8, $rows[0]['imps']);
                 $this->assertSame(4, $rows[0]['clicks']);
-                $this->assertSame(12, $rows[0]['views']);
+                $this->assertSame(0, $rows[0]['views']);
 
                 $totals = end($rows);
-                $this->assertSame('Итого', $totals['label']);
+                $this->assertSame('admin.ctr.funnels.total', $totals['label']);
                 $this->assertSame(17, $totals['imps']);
                 $this->assertSame(11, $totals['clicks']);
-                $this->assertSame(12, $totals['views']);
+                $this->assertSame(0, $totals['views']);
 
                 return true;
             });
@@ -57,9 +57,20 @@ class AdminAnalyticsWidgetsTest extends TestCase
     public function test_ssr_widgets_render_seeded_scores(): void
     {
         Livewire::test(SsrStatsWidget::class)
-            ->assertSee('SSR Score')
-            ->assertSee('94')
-            ->assertSee('3 paths');
+            ->assertSee('Today')
+            ->assertSee('91.33')
+            ->assertSee('Δ score: -1.67')
+            ->assertSee('Δ first byte: +11 ms')
+            ->assertSee('Δ paths: +1')
+            ->assertSee('Δ samples: +1')
+            ->assertSee('Δ score: +92.00')
+            ->assertSee('Δ first byte: +200 ms')
+            ->assertSee('Δ paths: +3')
+            ->assertSee('Δ samples: +5')
+            ->assertSee('3 paths')
+            ->assertSee('3 samples')
+            ->assertSee('First byte: 204 ms')
+            ->assertSee('Last 7 days');
 
         $scoreComponent = Livewire::test(SsrScoreWidget::class);
         $scoreComponent->call('rendering');
@@ -70,18 +81,22 @@ class AdminAnalyticsWidgetsTest extends TestCase
             return $this->getCachedData();
         })->call($scoreComponent->instance());
 
-        $this->assertSame(['SSR score'], [$chartData['datasets'][0]['label']]);
+        $this->assertSame([
+            __('analytics.widgets.ssr_score.datasets.daily'),
+            __('analytics.widgets.ssr_score.datasets.rolling'),
+        ], array_column($chartData['datasets'], 'label'));
         $this->assertSame([
             Carbon::now()->subDay()->toDateString(),
             Carbon::now()->toDateString(),
         ], $chartData['labels']);
         $this->assertEqualsWithDelta(93.0, $chartData['datasets'][0]['data'][0], 0.01);
         $this->assertEqualsWithDelta(91.33, $chartData['datasets'][0]['data'][1], 0.01);
+        $this->assertEqualsWithDelta(93.0, $chartData['datasets'][1]['data'][0], 0.01);
+        $this->assertEqualsWithDelta(92.0, $chartData['datasets'][1]['data'][1], 0.01);
 
-        $scoreComponent->assertSee('SSR Score (trend)');
+        $scoreComponent->assertSee('SSR score trend (daily vs 7-day average)');
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
 
         $this->assertEquals(
@@ -94,9 +109,9 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(ZTestWidget::class)
             ->assertSee('CTR A')
-            ->assertSee('Imps:9 Clicks:7')
+            ->assertSee('Imps: 9 · Clicks: 7')
             ->assertSee('CTR B')
-            ->assertSee('Imps:8 Clicks:4')
+            ->assertSee('Imps: 8 · Clicks: 4')
             ->assertSee('Z-test');
     }
 }

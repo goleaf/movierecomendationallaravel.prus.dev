@@ -110,9 +110,34 @@ return [
         'title' => 'SSR Analytics',
         'headline' => [
             'heading' => 'SSR Score',
+            'periods' => [
+                'today' => [
+                    'label' => 'Today',
+                ],
+                'yesterday' => [
+                    'label' => 'Yesterday',
+                ],
+                'seven_days' => [
+                    'label' => 'Last 7 days',
+                    'range' => ':from — :to',
+                ],
+            ],
+            'metrics' => [
+                'first_byte' => 'First byte',
+                'paths' => 'Paths',
+                'samples' => 'Samples',
+                'paths_count' => '{0}No paths|{1}:count path|[2,*]:count paths',
+                'samples_count' => '{0}No samples|{1}:count sample|[2,*]:count samples',
+            ],
+            'deltas' => [
+                'score' => 'Δ score: :value',
+                'first_byte' => 'Δ first byte: :value ms',
+                'paths' => 'Δ paths: :value',
+                'samples' => 'Δ samples: :value',
+            ],
         ],
         'trend' => [
-            'heading' => 'SSR score trend',
+            'heading' => 'SSR score trend (daily vs 7-day average)',
             'empty' => 'No SSR trend data available.',
             'aria_label' => 'Line chart showing how the SSR score changes over time.',
             'range' => '{0}No data|{1}Last :days day|[2,*]Last :days days',
