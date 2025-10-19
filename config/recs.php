@@ -13,6 +13,7 @@ return [
         'recent' => (float) env('REC_B_RECENT', 0.15),
         'pref' => (float) env('REC_B_PREF', 0.50),
     ],
+    'seed' => env('REC_EXPERIMENT_SEED'),
     'ab_split' => (static function (): array {
         $raw = (string) env('REC_AB_SPLIT', '50,50');
         $parts = array_map(static fn (string $value): string => trim($value), explode(',', $raw));
