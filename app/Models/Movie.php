@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -22,24 +23,60 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string,array{title?:string,plot?:string}>|null $translations
  * @property array|null $raw
  * @property-read float $weighted_score
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, RecAbLog> $recAbLogs
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, RecClick> $recClicks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeviceHistory> $deviceHistory
  */
 class Movie extends Model
 {
     use HasFactory;
+
     protected $guarded = [];
-    protected $casts = [
-        'release_date'=>'immutable_datetime:Y-m-d',
-        'imdb_rating'=>'float','imdb_votes'=>'integer','runtime_min'=>'integer',
-        'genres'=>'array','translations'=>'array','raw'=>'array',
-    ];
-    protected $appends=['weighted_score'];
+
+    protected $appends = ['weighted_score'];
+
+    protected function casts(): array
+    {
+        return [
+            'release_date' => 'immutable_datetime:Y-m-d',
+            'imdb_rating' => 'float',
+            'imdb_votes' => 'integer',
+            'runtime_min' => 'integer',
+            'genres' => 'array',
+            'translations' => 'array',
+            'raw' => 'array',
+        ];
+    }
 
     public function getWeightedScoreAttribute(): float
     {
-        $R=(float)($this->imdb_rating ?? 0.0);
-        $v=(int)($this->imdb_votes ?? 0);
-        $m=1000; $C=6.8;
-        if($v<=0) return 0.0;
-        return round((($v/($v+$m))*$R + ($m/($v+$m))*$C),4);
+        $averageRating = (float) ($this->imdb_rating ?? 0.0);
+        $voteCount = (int) ($this->imdb_votes ?? 0);
+        $minimumVotes = 1000;
+        $globalAverage = 6.8;
+
+        if ($voteCount <= 0) {
+            return 0.0;
+        }
+
+        $weighted = (($voteCount / ($voteCount + $minimumVotes)) * $averageRating)
+            + (($minimumVotes / ($voteCount + $minimumVotes)) * $globalAverage);
+
+        return round($weighted, 4);
+    }
+
+    public function recAbLogs(): HasMany
+    {
+        return $this->hasMany(RecAbLog::class);
+    }
+
+    public function recClicks(): HasMany
+    {
+        return $this->hasMany(RecClick::class);
+    }
+
+    public function deviceHistory(): HasMany
+    {
+        return $this->hasMany(DeviceHistory::class);
     }
 }

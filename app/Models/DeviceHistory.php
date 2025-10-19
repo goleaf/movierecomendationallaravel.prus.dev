@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property string $device_id
- * @property string $page
+ * @property string|null $placement
  * @property int|null $movie_id
  * @property \Carbon\CarbonImmutable $viewed_at
  * @property-read \Carbon\CarbonImmutable $created_at
@@ -24,11 +24,14 @@ class DeviceHistory extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'viewed_at' => 'immutable_datetime',
-        'created_at' => 'immutable_datetime',
-        'updated_at' => 'immutable_datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'viewed_at' => 'immutable_datetime',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
 
     public function movie(): BelongsTo
     {
@@ -46,5 +49,17 @@ class DeviceHistory extends Model
             $from instanceof DateTimeInterface ? $from->format('Y-m-d H:i:s') : $from,
             $to instanceof DateTimeInterface ? $to->format('Y-m-d H:i:s') : $to,
         ]);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeForPlacement(Builder $query, ?string $placement): Builder
+    {
+        if ($placement === null || $placement === '') {
+            return $query;
+        }
+
+        return $query->where('placement', $placement);
     }
 }

@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $device_id
  * @property string $placement
  * @property string $variant
- * @property \Carbon\CarbonImmutable $clicked_at
+ * @property string|null $source
  * @property-read \Carbon\CarbonImmutable $created_at
  * @property-read \Carbon\CarbonImmutable $updated_at
- * @property-read Movie $movie
+ * @property-read Movie|null $movie
  */
 class RecClick extends Model
 {
@@ -25,11 +25,13 @@ class RecClick extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'clicked_at' => 'immutable_datetime',
-        'created_at' => 'immutable_datetime',
-        'updated_at' => 'immutable_datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
 
     public function movie(): BelongsTo
     {
