@@ -8,8 +8,10 @@ use App\Models\Movie;
 use App\Services\RecAb;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cookie;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
@@ -30,23 +32,46 @@ class RecAbTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_for_device_chooses_variant_based_on_crc32_parity(): void
+    public function test_for_device_uses_cookie_variant_when_available(): void
     {
         Movie::factory()->count(3)->create();
 
         config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
         config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
 
-        $service = app(RecAb::class);
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
+        $serviceA = app(RecAb::class);
+        [$variantA, $listA] = $serviceA->forDevice('device-even-2', 2);
 
-        [$variantA, $listA] = $service->forDevice('device-even-2', 2);
-        [$variantB, $listB] = $service->forDevice('device-odd', 2);
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'B']));
+        $serviceB = app(RecAb::class);
+        [$variantB, $listB] = $serviceB->forDevice('device-odd', 2);
 
         $this->assertSame('A', $variantA);
         $this->assertSame('B', $variantB);
         $this->assertInstanceOf(Collection::class, $listA);
         $this->assertCount(2, $listA);
         $this->assertInstanceOf(Collection::class, $listB);
+    }
+
+    public function test_for_device_assigns_variant_and_sets_cookie_when_missing(): void
+    {
+        Movie::factory()->count(2)->create();
+
+        config()->set('recs.ab_split', ['A' => 100.0, 'B' => 0.0]);
+        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+
+        $this->app->instance('request', Request::create('/', 'GET'));
+
+        $service = app(RecAb::class);
+
+        [$variant] = $service->forDevice('device-xyz', 1);
+
+        $queued = Cookie::queued('ab_variant');
+
+        $this->assertSame('A', $variant);
+        $this->assertNotNull($queued);
+        $this->assertSame('A', $queued->getValue());
     }
 
     public function test_for_device_ranks_movies_using_weighted_popularity_and_recency(): void
@@ -79,6 +104,7 @@ class RecAbTest extends TestCase
         config()->set('recs.A', $weights);
         config()->set('recs.B', $weights);
 
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);
 
         [$variant, $list] = $service->forDevice('device-even-2', 3);

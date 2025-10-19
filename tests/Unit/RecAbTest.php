@@ -8,6 +8,7 @@ use App\Models\Movie;
 use App\Services\RecAb;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
@@ -45,10 +46,13 @@ class RecAbTest extends TestCase
             'imdb_votes' => 50000,
         ]);
 
-        $service = new RecAb;
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
+        $serviceA = app(RecAb::class);
+        [$variantA, $listA] = $serviceA->forDevice('dev4', 3);
 
-        [$variantA, $listA] = $service->forDevice('dev4', 3);
-        [$variantB, $listB] = $service->forDevice('dev1', 3);
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'B']));
+        $serviceB = app(RecAb::class);
+        [$variantB, $listB] = $serviceB->forDevice('dev1', 3);
 
         CarbonImmutable::setTestNow();
 

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Movie;
 use App\Services\RecAb;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -48,6 +49,7 @@ class RecAbTest extends TestCase
     {
         $this->createSampleMovies();
 
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);
 
         [$variant, $movies] = $service->forDevice('device-even-2', 2);
@@ -63,6 +65,7 @@ class RecAbTest extends TestCase
     {
         $this->createSampleMovies();
 
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'B']));
         $service = app(RecAb::class);
 
         [$variant, $movies] = $service->forDevice('device-odd', 2);
