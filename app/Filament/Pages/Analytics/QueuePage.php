@@ -9,7 +9,6 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Horizon\Horizon;
 
 class QueuePage extends Page
 {
@@ -24,6 +23,8 @@ class QueuePage extends Page
     protected static ?string $slug = 'queue';
 
     private const MANAGEMENT_GATE = 'manageHorizonQueues';
+
+    private const HORIZON_CLASS = 'Laravel\\Horizon\\Horizon';
 
     public int $jobs = 0;
 
@@ -88,7 +89,7 @@ class QueuePage extends Page
     {
         $this->handleHorizonAction(
             action: static function (): void {
-                Horizon::pause();
+                forward_static_call([self::HORIZON_CLASS, 'pause']);
             },
             successMessage: __('admin.metrics.horizon.actions.pause.success'),
         );
@@ -98,7 +99,7 @@ class QueuePage extends Page
     {
         $this->handleHorizonAction(
             action: static function (): void {
-                Horizon::continue();
+                forward_static_call([self::HORIZON_CLASS, 'continue']);
             },
             successMessage: __('admin.metrics.horizon.actions.resume.success'),
         );
@@ -149,7 +150,7 @@ class QueuePage extends Page
 
     private function horizonIsAvailable(): bool
     {
-        return class_exists(Horizon::class);
+        return class_exists(self::HORIZON_CLASS);
     }
 
     private function canManageHorizonQueues(): bool
