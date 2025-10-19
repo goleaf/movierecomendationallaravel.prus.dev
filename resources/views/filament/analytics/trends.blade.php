@@ -1,3 +1,8 @@
 <x-filament-panels::page>
-  <iframe src="{{ route('trends') }}" style="width:100%;height:1200px;border:0;"></iframe>
+    <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+        <iframe
+            src="{{ route('trends') }}"
+            class="h-[1200px] w-full rounded-xl border-0"
+        ></iframe>
+    </div>
 </x-filament-panels::page>

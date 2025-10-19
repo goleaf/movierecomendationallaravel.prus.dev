@@ -1,7 +1,7 @@
 <x-filament::card>
   <div class="text-sm text-gray-400">Период: {{ $from }} — {{ $to }}</div>
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left text-gray-200" style="margin-top:12px;">
+  <div class="mt-3 overflow-x-auto">
+    <table class="min-w-full text-left text-sm text-gray-200">
       <thead class="text-xs uppercase text-gray-400">
         <tr>
           <th class="px-2 py-1">Placement</th>
