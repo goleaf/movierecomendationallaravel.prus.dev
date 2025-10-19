@@ -85,9 +85,11 @@ class MovieSeeder extends Seeder
         foreach ($featured as $movieData) {
             Movie::query()->create(array_merge($movieData, [
                 'translations' => [
-                    'en' => [
-                        'title' => $movieData['title'],
-                        'plot' => $movieData['plot'],
+                    'title' => [
+                        'en' => $movieData['title'],
+                    ],
+                    'plot' => [
+                        'en' => $movieData['plot'],
                     ],
                 ],
                 'raw' => ['source' => 'seed'],
