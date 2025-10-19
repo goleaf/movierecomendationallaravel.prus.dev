@@ -129,15 +129,15 @@ class SsrMetricsMiddlewareTest extends TestCase
 
         config()->set('ssrmetrics.enabled', true);
         config()->set('ssrmetrics.paths', ['/test']);
-        config()->set('ssrmetrics.penalties.blocking_scripts.per_script', 7);
-        config()->set('ssrmetrics.penalties.blocking_scripts.max', 21);
-        config()->set('ssrmetrics.penalties.missing_ldjson.deduction', 3);
-        config()->set('ssrmetrics.penalties.low_og.minimum', 2);
-        config()->set('ssrmetrics.penalties.low_og.deduction', 5);
-        config()->set('ssrmetrics.penalties.oversized_html.threshold', 512);
-        config()->set('ssrmetrics.penalties.oversized_html.deduction', 8);
-        config()->set('ssrmetrics.penalties.excess_images.threshold', 1);
-        config()->set('ssrmetrics.penalties.excess_images.deduction', 4);
+        config()->set('ssrmetrics.weights.penalties.blocking_scripts.per_script', 7);
+        config()->set('ssrmetrics.weights.penalties.blocking_scripts.max', 21);
+        config()->set('ssrmetrics.weights.penalties.missing_ldjson.deduction', 3);
+        config()->set('ssrmetrics.weights.penalties.low_og.minimum', 2);
+        config()->set('ssrmetrics.weights.penalties.low_og.deduction', 5);
+        config()->set('ssrmetrics.weights.penalties.oversized_html.threshold', 512);
+        config()->set('ssrmetrics.weights.penalties.oversized_html.deduction', 8);
+        config()->set('ssrmetrics.weights.penalties.excess_images.threshold', 1);
+        config()->set('ssrmetrics.weights.penalties.excess_images.deduction', 4);
 
         $bodyContent = str_repeat('<p>content</p>', 60);
 

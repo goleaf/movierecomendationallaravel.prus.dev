@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -57,38 +58,16 @@ class SsrMetricsMiddleware
             'has_open_graph' => $og > 0,
         ];
 
-        $score = 100;
+        /** @var SsrMetricsService $metricsService */
+        $metricsService = app(SsrMetricsService::class);
 
-        if ($blocking > 0) {
-            $perScriptPenalty = (int) config('ssrmetrics.penalties.blocking_scripts.per_script', 5);
-            $maxPenalty = (int) config('ssrmetrics.penalties.blocking_scripts.max', 30);
-
-            $score -= min($maxPenalty, $perScriptPenalty * $blocking);
-        }
-
-        if ($ld === 0) {
-            $score -= (int) config('ssrmetrics.penalties.missing_ldjson.deduction', 10);
-        }
-
-        $minimumOgTags = (int) config('ssrmetrics.penalties.low_og.minimum', 3);
-
-        if ($og < $minimumOgTags) {
-            $score -= (int) config('ssrmetrics.penalties.low_og.deduction', 10);
-        }
-
-        $oversizedThreshold = (int) config('ssrmetrics.penalties.oversized_html.threshold', 900 * 1024);
-
-        if ($size > $oversizedThreshold) {
-            $score -= (int) config('ssrmetrics.penalties.oversized_html.deduction', 20);
-        }
-
-        $excessImageThreshold = (int) config('ssrmetrics.penalties.excess_images.threshold', 60);
-
-        if ($imgs > $excessImageThreshold) {
-            $score -= (int) config('ssrmetrics.penalties.excess_images.deduction', 10);
-        }
-
-        $score = max(0, $score);
+        $score = $metricsService->score([
+            'blocking_scripts' => $blocking,
+            'ldjson_count' => $ld,
+            'og_count' => $og,
+            'html_bytes' => $size,
+            'img_count' => $imgs,
+        ]);
 
         $payload = [
             'path' => $path,

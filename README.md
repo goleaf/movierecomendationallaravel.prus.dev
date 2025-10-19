@@ -155,6 +155,18 @@ TMDB_API_KEY=your_tmdb_api_key          # Required for localisation and poster m
 OMDB_API_KEY=your_omdb_api_key          # Used for fallback ratings and extended metadata
 CACHE_STORE=redis                       # Use "file" or "database" if Redis is unavailable
 SSR_METRICS=true                        # Enable server-side rendering performance metrics
+SSR_METRICS_WEIGHT_BASE=100             # Starting score before applying SSR penalties/bonuses
+SSR_METRICS_WEIGHT_MIN=0                # Lowest SSR score after penalties are applied
+SSR_METRICS_WEIGHT_MAX=100              # Highest SSR score that can be reported
+SSR_METRICS_WEIGHT_BLOCKING_PER_SCRIPT=5    # Deducted per blocking script tag (capped by MAX)
+SSR_METRICS_WEIGHT_BLOCKING_MAX=30          # Maximum deduction from blocking script tags
+SSR_METRICS_WEIGHT_MISSING_LDJSON=10        # Deduction when structured data is missing
+SSR_METRICS_WEIGHT_LOW_OG_MINIMUM=3         # Minimum Open Graph tags required to avoid a penalty
+SSR_METRICS_WEIGHT_LOW_OG=10                # Deduction when Open Graph tags are below the minimum
+SSR_METRICS_WEIGHT_OVERSIZED_THRESHOLD=921600 # HTML size threshold (bytes) before penalising oversized pages
+SSR_METRICS_WEIGHT_OVERSIZED=20             # Deduction applied when HTML exceeds the threshold
+SSR_METRICS_WEIGHT_EXCESS_IMAGES_THRESHOLD=60 # Image count threshold before penalising media-heavy pages
+SSR_METRICS_WEIGHT_EXCESS_IMAGES=10         # Deduction applied when the image threshold is exceeded
 
 # A/B recommendation strategy weights
 REC_A_POP=0.55
