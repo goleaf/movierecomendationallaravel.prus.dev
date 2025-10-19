@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -17,6 +18,9 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Catalog',
                 'Telemetry',
                 'Analytics',
+            ])
+            ->plugins([
+                FilamentTranslationsPlugin::make(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
