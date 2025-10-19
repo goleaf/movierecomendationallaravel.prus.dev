@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     App\Providers\AppServiceProvider::class,
-    App\Providers\HelpersServiceProvider::class,
+    Laravel\Boost\BoostServiceProvider::class,
+    Laravel\Mcp\Server\McpServiceProvider::class,
 ];
