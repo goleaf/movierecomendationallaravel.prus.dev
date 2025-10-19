@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "30ef29c61069cf65c50564f46404698f",
+    "content-hash": "fb383e62bbdb9c68499d80f0b08d7bc0",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1959,6 +1959,134 @@
                 }
             ],
             "time": "2025-08-22T14:27:06+00:00"
+        },
+        {
+            "name": "jeffersongoncalves/filament-cep-field",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jeffersongoncalves/filament-cep-field.git",
+                "reference": "191830774b01b5cc486307799d3cc6a7aeee64bb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jeffersongoncalves/filament-cep-field/zipball/191830774b01b5cc486307799d3cc6a7aeee64bb",
+                "reference": "191830774b01b5cc486307799d3cc6a7aeee64bb",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "jeffersongoncalves/laravel-cep": "^1.0",
+                "php": "^8.2|^8.3",
+                "spatie/laravel-package-tools": "^1.14.0"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.21",
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^3.7.4",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "JeffersonGoncalves\\Filament\\CepField\\CepFieldServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "JeffersonGoncalves\\Filament\\CepField\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jefferson Gonçalves",
+                    "email": "gerson.simao.92@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "The Filament CEP Field is a custom input component designed specifically for Brazilian postal codes (CEP - Código de Endereçamento Postal). This component extends Filament's form capabilities by providing a specialized input field that handles CEP formatting, validation, and automatic address lookup.",
+            "homepage": "https://github.com/jeffersongoncalves/filament-cep-field",
+            "keywords": [
+                "filament",
+                "filament-cep-field",
+                "jeffersongoncalves",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/jeffersongoncalves/filament-cep-field/issues",
+                "source": "https://github.com/jeffersongoncalves/filament-cep-field/tree/1.1.0"
+            },
+            "time": "2025-07-17T20:05:06+00:00"
+        },
+        {
+            "name": "jeffersongoncalves/laravel-cep",
+            "version": "1.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jeffersongoncalves/laravel-cep.git",
+                "reference": "88ed63e792007804a94997a044353ed1f015b7eb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jeffersongoncalves/laravel-cep/zipball/88ed63e792007804a94997a044353ed1f015b7eb",
+                "reference": "88ed63e792007804a94997a044353ed1f015b7eb",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^11.0|^12.0",
+                "php": "^8.2|^8.3",
+                "spatie/laravel-package-tools": "^1.14.0"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.24",
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^3.7.4",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "JeffersonGoncalves\\Cep\\CepServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "JeffersonGoncalves\\Cep\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jefferson Gonçalves",
+                    "email": "gerson.simao.92@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A simple and efficient PHP package for querying Brazilian postal codes (CEP). This package provides an easy way to retrieve address information from Brazilian ZIP codes through multiple providers.",
+            "homepage": "https://github.com/jeffersongoncalves/laravel-cep",
+            "keywords": [
+                "jeffersongoncalves",
+                "laravel",
+                "laravel-cep"
+            ],
+            "support": {
+                "issues": "https://github.com/jeffersongoncalves/laravel-cep/issues",
+                "source": "https://github.com/jeffersongoncalves/laravel-cep/tree/1.1.1"
+            },
+            "time": "2025-07-26T20:08:06+00:00"
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",
