@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MovieController;
@@ -25,6 +26,10 @@ Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
+
+Route::get('/proxy/artwork', ImageProxyController::class)
+    ->middleware('signed')
+    ->name('proxy.image');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemaps.index');
 Route::get('/sitemaps/{type}.xml', [SitemapController::class, 'type'])

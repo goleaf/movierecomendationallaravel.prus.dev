@@ -42,4 +42,8 @@ return [
         'cache_ttl' => (int) env('TMDB_CACHE_TTL', 3600),
     ],
 
+    'artwork_proxy' => [
+        'ttl' => (int) env('ARTWORK_PROXY_TTL', 3600),
+    ],
+
 ];
