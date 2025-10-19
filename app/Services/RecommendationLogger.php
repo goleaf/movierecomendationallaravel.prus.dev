@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
+use App\Support\AnalyticsCache;
 use Carbon\CarbonInterface;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Collection;
@@ -16,6 +17,7 @@ class RecommendationLogger
     public function __construct(
         protected ConnectionInterface $db,
         protected TrendsRollupService $trendsRollup,
+        protected AnalyticsCache $cache,
     ) {}
 
     /**
@@ -24,6 +26,8 @@ class RecommendationLogger
     public function recordRecommendation(string $deviceId, string $variant, string $placement, Collection $movies): void
     {
         $now = now();
+
+        $recordedImpressions = false;
 
         if ($movies->isNotEmpty() && Schema::hasTable('rec_ab_logs')) {
             $rows = $movies
@@ -47,15 +51,22 @@ class RecommendationLogger
 
             if ($rows !== []) {
                 $this->db->table('rec_ab_logs')->insert($rows);
+                $recordedImpressions = true;
             }
         }
 
         $this->recordPageView($deviceId, $placement, null, $now);
+
+        if ($recordedImpressions) {
+            $this->cache->flushCtr();
+        }
     }
 
     public function recordClick(string $deviceId, string $variant, string $placement, int $movieId): void
     {
         $now = now();
+
+        $recordedClick = false;
 
         if (Schema::hasTable('rec_clicks')) {
             $this->db->table('rec_clicks')->insert([
@@ -68,10 +79,17 @@ class RecommendationLogger
                 'updated_at' => $now,
             ]);
 
+            $recordedClick = true;
             $this->trendsRollup->increment($movieId, $now);
         }
 
         $this->recordPageView($deviceId, 'movie', $movieId, $now);
+
+        if ($recordedClick) {
+            $this->cache->flushCtr();
+            $this->cache->flushTrends();
+            $this->cache->flushTrending();
+        }
     }
 
     public function recordPageView(string $deviceId, string $page, ?int $movieId = null, ?CarbonInterface $timestamp = null): void

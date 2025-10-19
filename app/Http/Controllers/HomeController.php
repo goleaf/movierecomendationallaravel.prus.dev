@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
 use App\Services\Recommender;
+use App\Support\AnalyticsCache;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,11 @@ use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
 {
+    public function __construct(
+        private readonly TrendsRollupService $rollup,
+        private readonly AnalyticsCache $cache,
+    ) {}
+
     public function __invoke(Recommender $recommender): View
     {
         $did = device_id();
@@ -62,41 +68,64 @@ class HomeController extends Controller
 
         $from = now()->copy()->subDays(7)->startOfDay();
         $to = now()->endOfDay();
+        $limit = 8;
 
-        app(TrendsRollupService::class)->ensureBackfill($from, $to);
+        $aggregates = $this->cache->rememberTrending('snapshot', [
+            'from' => $from,
+            'to' => $to,
+            'limit' => $limit,
+        ], function () use ($from, $to, $limit): array {
+            $this->rollup->ensureBackfill($from, $to);
 
-        $top = collect();
+            if (Schema::hasTable('rec_trending_rollups')) {
+                $rollupTop = DB::table('rec_trending_rollups')
+                    ->selectRaw('movie_id, sum(clicks) as clicks')
+                    ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
+                    ->groupBy('movie_id')
+                    ->orderByDesc('clicks')
+                    ->limit($limit)
+                    ->pluck('clicks', 'movie_id')
+                    ->map(fn ($value) => (int) $value)
+                    ->all();
 
-        if (Schema::hasTable('rec_trending_rollups')) {
-            $top = DB::table('rec_trending_rollups')
-                ->selectRaw('movie_id, sum(clicks) as clicks')
-                ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
-                ->groupBy('movie_id')
-                ->orderByDesc('clicks')
-                ->limit(8)
-                ->pluck('clicks', 'movie_id');
-        }
+                if ($rollupTop !== []) {
+                    return $rollupTop;
+                }
+            }
 
-        if ($top->isEmpty() && Schema::hasTable('rec_clicks')) {
-            $top = DB::table('rec_clicks')
-                ->selectRaw('movie_id, count(*) as clicks')
-                ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
-                ->groupBy('movie_id')
-                ->orderByDesc('clicks')
-                ->limit(8)
-                ->pluck('clicks', 'movie_id');
-        }
+            if (Schema::hasTable('rec_clicks')) {
+                $clickTop = DB::table('rec_clicks')
+                    ->selectRaw('movie_id, count(*) as clicks')
+                    ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+                    ->groupBy('movie_id')
+                    ->orderByDesc('clicks')
+                    ->limit($limit)
+                    ->pluck('clicks', 'movie_id')
+                    ->map(fn ($value) => (int) $value)
+                    ->all();
 
-        if ($top->isEmpty()) {
+                if ($clickTop !== []) {
+                    return $clickTop;
+                }
+            }
+
+            return [];
+        });
+
+        $aggregates = collect($aggregates)
+            ->mapWithKeys(static fn (int $clicks, string $movieId): array => [(int) $movieId => $clicks])
+            ->all();
+
+        if ($aggregates === []) {
             return collect();
         }
 
         $movies = Movie::query()
-            ->whereIn('id', $top->keys()->all())
+            ->whereIn('id', array_keys($aggregates))
             ->get()
             ->keyBy('id');
 
-        return $top
+        return collect($aggregates)
             ->map(function (int $clicks, int $movieId) use ($movies) {
                 $movie = $movies->get($movieId);
                 if (! $movie) {
