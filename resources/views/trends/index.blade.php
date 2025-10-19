@@ -3,7 +3,7 @@
 @section('content')
 <div class="card" style="margin-bottom:16px;">
   <h2>{{ __('messages.trends.heading') }}</h2>
-  <p class="muted">{{ __('messages.trends.period', ['from' => $from, 'to' => $to, 'days' => $days, 'days_short' => __('messages.trends.days_short')]) }}</p>
+  <p class="muted">{{ __('messages.trends.period', ['from' => $period['from'], 'to' => $period['to'], 'days' => $period['days'], 'days_short' => __('messages.trends.days_short')]) }}</p>
 </div>
 @if(collect($items)->isEmpty())
   <div class="muted">{{ __('messages.trends.empty') }}</div>
