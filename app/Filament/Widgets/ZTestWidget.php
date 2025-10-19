@@ -2,8 +2,7 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\RecAbLog;
-use App\Models\RecClick;
+use Illuminate\Support\Facades\DB;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
