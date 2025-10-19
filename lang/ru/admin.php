@@ -105,6 +105,50 @@ return [
         'horizon_supervisors' => 'Супервайзеры Horizon',
         'horizon_empty' => 'Данные Horizon недоступны.',
     ],
+    'ssr' => [
+        'title' => 'SSR аналитика',
+        'heading' => 'Панель SSR',
+        'description' => 'Онлайн-телеметрия пайплайна server-side рендеринга.',
+        'summary' => [
+            'heading' => 'Последняя сводка',
+            'last_updated' => 'Последняя метрика: :timestamp',
+            'metrics' => [
+                'average_score' => 'Средний счёт',
+                'path_count' => 'Отслеживаемых путей',
+                'avg_html_size' => 'Средний размер HTML (КБ)',
+                'avg_meta_tags' => 'Среднее число meta-тегов',
+                'avg_og_tags' => 'Среднее число OG-тегов',
+                'avg_ldjson_blocks' => 'Среднее число JSON-LD блоков',
+                'avg_blocking_scripts' => 'Блокирующие скрипты',
+                'avg_first_byte_ms' => 'Первый байт (мс)',
+            ],
+        ],
+        'trend' => [
+            'heading' => 'Тренд счёта',
+            'description' => 'Средний SSR score по дням за последние :days дней.',
+            'empty' => 'Данные тренда пока недоступны.',
+            'columns' => [
+                'date' => 'Дата',
+                'score' => 'Счёт',
+            ],
+        ],
+        'drops' => [
+            'heading' => 'Наибольшие просадки',
+            'description' => 'Пути с максимальным падением показателя день к дню.',
+            'empty' => 'Сегодня просадок не обнаружено.',
+            'columns' => [
+                'path' => 'Путь',
+                'yesterday' => 'Вчера',
+                'today' => 'Сегодня',
+                'delta' => 'Δ',
+            ],
+        ],
+        'fallback' => [
+            'heading' => 'Режим fallback',
+            'description' => 'Метрики читаются из JSONL-файла, так как таблица базы данных недоступна.',
+        ],
+        'empty' => 'Метрики SSR ещё не записаны.',
+    ],
     'funnel' => [
         'period' => 'Период: :from — :to',
         'headers' => [

@@ -105,6 +105,50 @@ return [
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
     ],
+    'ssr' => [
+        'title' => 'SSR Analytics',
+        'heading' => 'SSR dashboard',
+        'description' => 'Live telemetry from the server-side rendering pipeline.',
+        'summary' => [
+            'heading' => 'Latest summary',
+            'last_updated' => 'Last metric captured: :timestamp',
+            'metrics' => [
+                'average_score' => 'Average score',
+                'path_count' => 'Tracked paths',
+                'avg_html_size' => 'Avg HTML size (KB)',
+                'avg_meta_tags' => 'Avg meta tags',
+                'avg_og_tags' => 'Avg Open Graph tags',
+                'avg_ldjson_blocks' => 'Avg JSON-LD blocks',
+                'avg_blocking_scripts' => 'Blocking scripts',
+                'avg_first_byte_ms' => 'First byte (ms)',
+            ],
+        ],
+        'trend' => [
+            'heading' => 'Score trend',
+            'description' => 'Daily average SSR score for the last :days days.',
+            'empty' => 'No trend data available yet.',
+            'columns' => [
+                'date' => 'Date',
+                'score' => 'Score',
+            ],
+        ],
+        'drops' => [
+            'heading' => 'Top score drops',
+            'description' => 'Paths with the largest day-over-day score decrease.',
+            'empty' => 'No negative drops detected today.',
+            'columns' => [
+                'path' => 'Path',
+                'yesterday' => 'Yesterday',
+                'today' => 'Today',
+                'delta' => 'Δ',
+            ],
+        ],
+        'fallback' => [
+            'heading' => 'Fallback data',
+            'description' => 'Metrics are being read from the JSONL fallback because the database table is unavailable.',
+        ],
+        'empty' => 'SSR metrics have not been recorded yet.',
+    ],
     'funnel' => [
         'period' => 'Period: :from — :to',
         'headers' => [
