@@ -36,24 +36,45 @@ return new class extends Migration
         Schema::create('rec_ab_logs', function (Blueprint $table): void {
             $table->id();
             $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
-            $table->string('device_id');
-            $table->string('variant', 1);
-            $table->string('placement', 32)->nullable();
+            $table->string('device_id', 64);
+            $table->string('placement', 32);
+            $table->string('variant', 8);
+            $table->json('payload')->nullable();
             $table->timestamps();
+
+            $table->unique([
+                'device_id',
+                'placement',
+                'variant',
+                'movie_id',
+                'created_at',
+            ], 'rec_ab_logs_unique_event');
         });
 
         Schema::create('rec_clicks', function (Blueprint $table): void {
             $table->id();
             $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
-            $table->string('variant', 1);
+            $table->string('device_id', 64);
             $table->string('placement', 32);
+            $table->string('variant', 8);
+            $table->unsignedTinyInteger('position')->nullable();
+            $table->timestamp('clicked_at')->nullable();
             $table->timestamps();
+
+            $table->unique([
+                'device_id',
+                'placement',
+                'variant',
+                'movie_id',
+                'created_at',
+            ], 'rec_clicks_unique_event');
         });
 
         Schema::create('device_history', function (Blueprint $table): void {
             $table->id();
             $table->string('device_id');
-            $table->string('path');
+            $table->string('page', 32);
+            $table->foreignIdFor(Movie::class)->nullable()->constrained()->cascadeOnDelete();
             $table->timestamp('viewed_at');
             $table->timestamps();
         });

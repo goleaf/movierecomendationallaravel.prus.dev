@@ -17,13 +17,19 @@ return new class extends Migration
             Schema::create('rec_ab_logs', function (Blueprint $table): void {
                 $table->id();
                 $table->foreignId('movie_id')->constrained()->cascadeOnDelete();
-                $table->string('device_id');
+                $table->string('device_id', 64);
                 $table->string('placement', 32);
-                $table->string('variant', 1);
-                $table->json('meta')->nullable();
+                $table->string('variant', 8);
+                $table->json('payload')->nullable();
                 $table->timestamps();
-                $table->index(['variant', 'created_at']);
-                $table->index(['placement', 'created_at']);
+
+                $table->unique([
+                    'device_id',
+                    'placement',
+                    'variant',
+                    'movie_id',
+                    'created_at',
+                ], 'rec_ab_logs_unique_event');
             });
         }
 
@@ -31,13 +37,20 @@ return new class extends Migration
             Schema::create('rec_clicks', function (Blueprint $table): void {
                 $table->id();
                 $table->foreignId('movie_id')->constrained()->cascadeOnDelete();
-                $table->string('device_id');
+                $table->string('device_id', 64);
                 $table->string('placement', 32);
-                $table->string('variant', 1);
-                $table->string('source')->nullable();
+                $table->string('variant', 8);
+                $table->unsignedTinyInteger('position')->nullable();
+                $table->timestamp('clicked_at')->nullable();
                 $table->timestamps();
-                $table->index(['variant', 'created_at']);
-                $table->index(['placement', 'created_at']);
+
+                $table->unique([
+                    'device_id',
+                    'placement',
+                    'variant',
+                    'movie_id',
+                    'created_at',
+                ], 'rec_clicks_unique_event');
             });
         }
 
@@ -46,7 +59,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('device_id');
                 $table->foreignId('movie_id')->nullable()->constrained()->cascadeOnDelete();
-                $table->string('placement', 32)->nullable();
+                $table->string('page', 32);
                 $table->timestamp('viewed_at');
                 $table->timestamps();
                 $table->index('viewed_at');
