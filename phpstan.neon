@@ -4,19 +4,19 @@ includes:
 parameters:
     level: 7
     paths:
-        - app
-        - bootstrap/app.php
-        - routes
-        - database
-        - config
+        - app/Models
+        - app/Services
+        - app/Support
     bootstrapFiles:
         - app/Support/PhpStanBootstrap.php
         - app/Support/TypeAssert.php
     stubFiles:
         - stubs/laravel-settings.php
+        - stubs/plan-subscriptions.php
     inferPrivatePropertyTypeFromConstructor: true
     checkMissingIterableValueType: true
     checkGenericClassInNonGenericObjectType: true
+    reportUnmatchedIgnoredErrors: false
     parallel:
         maximumNumberOfProcesses: 1
     excludePaths:

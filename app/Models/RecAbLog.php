@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class RecAbLog extends Model
 {
+    /** @use HasFactory<\Database\Factories\RecAbLogFactory> */
     use HasFactory;
 
     protected $guarded = [];

@@ -94,6 +94,9 @@ class Movie extends Model implements Commentable
         ];
     }
 
+    /**
+     * @param  array<int, string>|string|null  $value
+     */
     public function setGenresAttribute(array|string|null $value): void
     {
         if ($value === null) {
@@ -157,6 +160,7 @@ class Movie extends Model implements Commentable
     }
 
     /**
+     * @param  array<int, string>|string  $value
      * @return array<int, string>
      */
     private function normalizeGenres(array|string $value): array

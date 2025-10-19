@@ -16,7 +16,7 @@ class TrendingService
     public function __construct(private readonly TrendsRollupService $rollup) {}
 
     /**
-     * @return Collection<int,array{movie:Movie,clicks:int|null}>
+     * @return Collection<int, array{movie: Movie, clicks: int|null}>
      */
     public function snapshot(int $days, int $limit = 8): Collection
     {
@@ -61,10 +61,10 @@ class TrendingService
             ->get()
             ->keyBy('id');
 
-        return $top
-            ->map(function (int $clicks, int $movieId) use ($movies) {
+        $entries = $top
+            ->map(function (int $clicks, int $movieId) use ($movies): ?array {
                 $movie = $movies->get($movieId);
-                if (! $movie) {
+                if ($movie === null) {
                     return null;
                 }
 
@@ -73,12 +73,15 @@ class TrendingService
                     'clicks' => $clicks,
                 ];
             })
-            ->filter()
+            ->filter(static fn (?array $row): bool => $row !== null)
             ->values();
+
+        /** @var Collection<int, array{movie: Movie, clicks: int}> $entries */
+        return $entries;
     }
 
     /**
-     * @return Collection<int,array{movie:Movie,clicks:int|null}>
+     * @return Collection<int, array{movie: Movie, clicks: int|null}>
      */
     protected function fallbackSnapshot(int $limit): Collection
     {
@@ -91,7 +94,7 @@ class TrendingService
             ->orderByDesc('imdb_rating')
             ->limit($limit)
             ->get()
-            ->map(fn (Movie $movie) => [
+            ->map(static fn (Movie $movie) => [
                 'movie' => $movie,
                 'clicks' => null,
             ]);

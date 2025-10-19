@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Support\CepFormatter;
@@ -8,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cep extends Model
 {
+    /** @use HasFactory<\Database\Factories\CepFactory> */
     use HasFactory;
 
     protected $table = 'cep';

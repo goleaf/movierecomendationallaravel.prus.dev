@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class RecClick extends Model
 {
+    /** @use HasFactory<\Database\Factories\RecClickFactory> */
     use HasFactory;
 
     protected $guarded = [];

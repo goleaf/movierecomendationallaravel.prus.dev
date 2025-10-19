@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DeviceHistory extends Model
 {
+    /** @use HasFactory<\Database\Factories\DeviceHistoryFactory> */
     use HasFactory;
 
     protected $guarded = [];
