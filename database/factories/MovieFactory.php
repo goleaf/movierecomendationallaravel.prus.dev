@@ -13,41 +13,40 @@ class MovieFactory extends Factory
 {
     protected $model = Movie::class;
 
+    /**
+     * Define the model's default state.
+     */
     public function definition(): array
     {
-        $title = rtrim($this->faker->unique()->sentence(3), '.');
-        $releaseDate = $this->faker->dateTimeBetween('-10 years', 'now');
-        $genresPool = ['Drama', 'Comedy', 'Sci-Fi', 'Action', 'Thriller', 'Romance', 'Animation', 'Documentary'];
-        $genres = collect($genresPool)
-            ->shuffle()
-            ->take($this->faker->numberBetween(1, 3))
-            ->values()
-            ->all();
-        $imdbVotes = $this->faker->numberBetween(5_000, 250_000);
-        $posterSeed = Str::slug($title.'-'.$this->faker->unique()->numberBetween(1, 9999));
-
         return [
-            'imdb_tt' => $this->faker->unique()->regexify('tt\d{7}'),
-            'title' => $title,
+            'imdb_tt' => 'tt'.str_pad((string) $this->faker->numberBetween(1000000, 9999999), 7, '0', STR_PAD_LEFT),
+            'title' => $this->faker->sentence(3),
             'plot' => $this->faker->paragraph(),
-            'type' => $this->faker->randomElement(['movie', 'series', 'mini-series', 'documentary']),
-            'year' => (int) $releaseDate->format('Y'),
-            'release_date' => $releaseDate,
-            'imdb_rating' => $this->faker->randomFloat(1, 6.2, 9.8),
-            'imdb_votes' => $imdbVotes,
-            'runtime_min' => $this->faker->numberBetween(75, 160),
-            'genres' => $genres,
-            'poster_url' => 'https://picsum.photos/seed/'.$posterSeed.'/400/600',
-            'backdrop_url' => 'https://picsum.photos/seed/'.$posterSeed.'/1280/720',
+            'type' => 'movie',
+            'year' => $this->faker->numberBetween(1990, (int) now()->year),
+            'release_date' => $this->faker->date(),
+            'imdb_rating' => $this->faker->randomFloat(1, 5, 9.5),
+            'imdb_votes' => $this->faker->numberBetween(1_000, 250_000),
+            'runtime_min' => $this->faker->numberBetween(80, 160),
+            'genres' => $this->faker->randomElements([
+                'Action',
+                'Drama',
+                'Sci-Fi',
+                'Comedy',
+                'Thriller',
+                'Adventure',
+            ], 2),
+            'poster_url' => $this->faker->imageUrl(500, 750, 'movie', true),
+            'backdrop_url' => $this->faker->imageUrl(1280, 720, 'movie', true),
             'translations' => [
                 'ru' => [
-                    'title' => $title,
-                    'plot' => $this->faker->sentence(12),
+                    'title' => $this->faker->sentence(3),
+                    'plot' => $this->faker->paragraph(),
                 ],
             ],
             'raw' => [
                 'source' => 'factory',
-                'popularity' => $this->faker->randomFloat(2, 1, 100),
+                'uid' => (string) Str::uuid(),
             ],
         ];
     }

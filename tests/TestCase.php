@@ -4,6 +4,9 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
+use function base64_encode;
+use function str_repeat;
+
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
@@ -12,10 +15,6 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        config(['app.key' => 'base64:'.base64_encode(str_repeat('A', 32))]);
-
-        if (! function_exists('device_id')) {
-            require_once app_path('Support/helpers.php');
-        }
+        config()->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
     }
 }

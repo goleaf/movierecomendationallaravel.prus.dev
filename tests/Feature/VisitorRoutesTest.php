@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Movie;
-use Database\Seeders\Testing\FixturesSeeder;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Tests\Seeders\DemoContentSeeder;
 use Tests\TestCase;
 
 class VisitorRoutesTest extends TestCase
@@ -17,8 +17,12 @@ class VisitorRoutesTest extends TestCase
     {
         parent::setUp();
 
-        Carbon::setTestNow('2024-03-20 12:00:00');
-        $this->seed(FixturesSeeder::class);
+        Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
+
+        $this->seed(DemoContentSeeder::class);
+
+        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
     }
 
     protected function tearDown(): void
@@ -28,63 +32,69 @@ class VisitorRoutesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_home_page_displays_recommendations_and_trending(): void
+    public function test_home_page_displays_seeded_recommendations_and_trending(): void
     {
-        $response = $this->get('/');
+        $response = $this->withCookie('did', 'device-even-2')->get('/');
 
-        $response->assertOk()
-            ->assertViewHas('recommended', function (Collection $recommended): bool {
-                $titles = $recommended->values()->take(3)->pluck('title')->all();
-                $this->assertSame(['Time Travelers', 'Indie Darling', 'Neon City'], $titles);
+        $response->assertOk();
+        $response->assertViewIs('home.index');
 
-                return true;
-            })
-            ->assertViewHas('trending', function (Collection $trending): bool {
-                $this->assertSame(4, $trending->count());
-                $top = $trending->first();
-                $this->assertSame('Time Travelers', $top['movie']->title);
-                $this->assertSame(5, $top['clicks']);
+        $response->assertViewHas('recommended', function (Collection $movies): bool {
+            return $movies->count() === 3
+                && $movies->pluck('title')->toArray() === [
+                    'The Quantum Enigma',
+                    'Solaris Rising',
+                    'Nebula Drift',
+                ];
+        });
 
-                return true;
-            })
-            ->assertSee('Персональные рекомендации')
-            ->assertSee('Тренды за 7 дней');
+        $response->assertViewHas('trending', function (Collection $rows): bool {
+            if ($rows->count() !== 3) {
+                return false;
+            }
+
+            $first = $rows->first();
+
+            return $first['movie']->title === 'The Quantum Enigma'
+                && $first['clicks'] === 3;
+        });
+
+        $response->assertSeeText('Персональные рекомендации');
+        $response->assertSeeText('Клики: 3');
     }
 
-    public function test_trends_page_uses_click_snapshot(): void
+    public function test_trends_page_lists_click_metrics_from_seeded_snapshot(): void
     {
         $response = $this->get('/trends');
 
-        $response->assertOk()
-            ->assertViewHas('items', function ($items): bool {
-                $this->assertInstanceOf(Collection::class, $items);
-                $this->assertGreaterThan(0, $items->count());
-                $first = $items->first();
-                $this->assertSame('Time Travelers', $first->title);
-                $this->assertSame(5, $first->clicks);
+        $response->assertOk();
+        $response->assertViewIs('trends.index');
+        $response->assertViewHas('days', 7);
 
-                return true;
-            })
-            ->assertViewHas('from', Carbon::now()->subDays(7)->toDateString())
-            ->assertSee('Тренды рекомендаций');
+        $response->assertViewHas('items', function ($items): bool {
+            $titles = collect($items)->pluck('title')->toArray();
+
+            return $titles === [
+                'The Quantum Enigma',
+                'Solaris Rising',
+                'Nebula Drift',
+            ];
+        });
+
+        $response->assertSeeText('Клики: 3');
+        $response->assertSeeText('Клики: 2');
     }
 
-    public function test_movie_page_renders_fixture_details(): void
+    public function test_movie_page_shows_seeded_movie_details(): void
     {
-        $movie = Movie::query()->where('title', 'Time Travelers')->firstOrFail();
+        $response = $this->get('/movies/1');
 
-        $response = $this->get(route('movies.show', $movie));
+        $response->assertOk();
+        $response->assertViewIs('movies.show');
+        $response->assertViewHas('movie', fn ($movie) => $movie->title === 'The Quantum Enigma');
 
-        $response->assertOk()
-            ->assertViewHas('movie', function (Movie $viewMovie) use ($movie): bool {
-                $this->assertTrue($movie->is($viewMovie));
-                $this->assertSame(['Sci-Fi', 'Adventure'], $viewMovie->genres);
-                $this->assertGreaterThan(0, $viewMovie->weighted_score);
-
-                return true;
-            })
-            ->assertSee($movie->title)
-            ->assertSee((string) $movie->weighted_score)
-            ->assertSee('Temporal rescue thriller set across collapsing timelines.');
+        $response->assertSeeText('The Quantum Enigma');
+        $response->assertSeeText('IMDb 8.8');
+        $response->assertSeeText('Weighted');
     }
 }

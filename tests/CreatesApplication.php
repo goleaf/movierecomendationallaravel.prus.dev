@@ -8,12 +8,9 @@ trait CreatesApplication
 {
     public function createApplication()
     {
-        $env = __DIR__.'/../.env';
-        if (! file_exists($env)) {
-            file_put_contents($env, "APP_KEY=\n");
-        }
-
         $app = require __DIR__.'/../bootstrap/app.php';
+
+        require_once __DIR__.'/../app/Support/helpers.php';
 
         $app->make(Kernel::class)->bootstrap();
 
