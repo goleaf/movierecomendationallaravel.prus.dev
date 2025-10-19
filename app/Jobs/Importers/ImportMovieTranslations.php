@@ -31,6 +31,7 @@ class ImportMovieTranslations implements ShouldQueue
     public function __construct(
         public int $movieId,
         public array $locales,
+        public bool $force = false,
     ) {
         $this->onQueue('importers');
     }
@@ -91,7 +92,7 @@ class ImportMovieTranslations implements ShouldQueue
             return;
         }
 
-        $translations = $tmdb->translationsByImdb($movie->imdb_tt, $locales);
+        $translations = $tmdb->translationsByImdb($movie->imdb_tt, $locales, $this->force);
 
         if ($translations === null) {
             Log::channel('importers')->info('TMDB returned no translations for requested locales.', [
