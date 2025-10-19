@@ -3,7 +3,9 @@
 @section('content')
 <div class="card">
   <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;">
-    @if($movie->poster_url)<img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}"/><br>@endif
+    @if($movie->poster_url)
+      <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}"/>
+    @endif
     <div>
       <h2>{{ $movie->title }} ({{ $movie->year ?? __('messages.common.dash') }})</h2>
       <div class="muted">{{ __('messages.movies.imdb_caption', [
@@ -12,7 +14,25 @@
         'score' => $movie->weighted_score,
       ]) }}</div>
       <p>{{ $movie->plot }}</p>
-      @if($movie->genres)<div class="muted">{{ __('messages.movies.genres', ['genres' => implode(', ', $movie->genres)]) }}</div>@endif
+      @if($movie->genres)
+        <div class="muted">{{ __('messages.movies.genres', ['genres' => implode(', ', $movie->genres)]) }}</div>
+      @endif
     </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h3 style="margin:0;">Discussion</h3>
+      <div class="muted">{{ number_format($movie->comments_count ?? 0) }} {{ \Illuminate\Support\Str::plural('comment', $movie->comments_count ?? 0) }}</div>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    @livewire('commentions::comments', [
+      'record' => $movie,
+      'mentionables' => $commentMentionables,
+    ], key('movie-comments-' . $movie->getKey()))
+  </div>
 </div>
 @endsection

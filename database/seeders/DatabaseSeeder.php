@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Cep;
+use App\Models\Movie;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -26,63 +26,19 @@ class DatabaseSeeder extends Seeder
             DeviceHistorySeeder::class,
         ]);
 
-        $address = $this->generateBrazilianAddress();
-
-        Cep::upsertFromAddress(
-            cep: $address['cep'],
-            state: $address['state'],
-            city: $address['city'],
-            neighborhood: $address['neighborhood'],
-            street: $address['street'],
-        );
-
-        User::query()->updateOrCreate(
+        $admin = User::query()->firstOrCreate(
             ['email' => 'admin@example.com'],
-            array_merge(
-                [
-                    'name' => 'Demo Admin',
-                    'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
-                ],
-                $address,
-            ),
+            [
+                'name' => 'Demo Admin',
+                'password' => Hash::make('password'),
+            ],
         );
 
-        User::factory()->count(5)->create();
-    }
+        $featuredMovie = Movie::query()->orderByDesc('imdb_votes')->first();
 
-    /**
-     * @return array{
-     *     cep: ?string,
-     *     street: string,
-     *     neighborhood: string,
-     *     city: string,
-     *     state: string
-     * }
-     */
-    private function generateBrazilianAddress(): array
-    {
-        $faker = fake('pt_BR');
-
-        $cepDigits = preg_replace('/\D/', '', $faker->postcode()) ?? '';
-        $cep = substr($cepDigits, 0, 8);
-
-        if ($cep === '') {
-            $cep = null;
+        if ($featuredMovie !== null && ! $featuredMovie->comments()->exists()) {
+            $featuredMovie->comment('Thanks for checking out MovieRec! What did you think of this recommendation?', $admin);
+            $featuredMovie->subscribe($admin);
         }
-
-        $neighborhood = trim($faker->citySuffix());
-
-        if ($neighborhood === '') {
-            $neighborhood = $faker->words(2, true);
-        }
-
-        return [
-            'cep' => $cep,
-            'street' => $faker->streetName(),
-            'neighborhood' => $neighborhood,
-            'city' => $faker->city(),
-            'state' => mb_strtoupper($faker->stateAbbr()),
-        ];
     }
 }

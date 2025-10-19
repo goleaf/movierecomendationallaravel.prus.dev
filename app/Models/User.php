@@ -5,28 +5,16 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\HasAvatar;
+use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Kirschbaum\Commentions\Contracts\Commenter;
 
-/**
- * @property int $id
- * @property string $name
- * @property string $email
- * @property Carbon|null $email_verified_at
- * @property string $password
- * @property string|null $remember_token
- * @property string|null $cep
- * @property string|null $street
- * @property string|null $neighborhood
- * @property string|null $city
- * @property string|null $state
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- */
-class User extends Authenticatable implements Commenter
+class User extends Authenticatable implements Commenter, HasAvatar, HasName
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
@@ -71,5 +59,40 @@ class User extends Authenticatable implements Commenter
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return Collection<int, static>
+     */
+    public static function mentionableForComments(): Collection
+    {
+        return static::query()
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function getFilamentName(): string
+    {
+        if ($this->name !== null && $this->name !== '') {
+            return $this->name;
+        }
+
+        return $this->email;
+    }
+
+    public function getCommenterName(): string
+    {
+        return $this->getFilamentName();
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if ($this->email === null || $this->email === '') {
+            return null;
+        }
+
+        $hash = md5(Str::lower(trim($this->email)));
+
+        return sprintf('https://www.gravatar.com/avatar/%s?s=200&d=identicon', $hash);
     }
 }

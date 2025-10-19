@@ -19,7 +19,10 @@ class EditMovie extends EditRecord
     {
         return [
             CommentsAction::make()
-                ->mentionables(fn () => MovieResource::getCommentMentionables()),
+                ->mentionables(fn () => MovieResource::getCommentMentionables())
+                ->perPage(10)
+                ->loadMoreIncrementsBy(10)
+                ->loadMoreLabel('Show older comments'),
             SubscriptionAction::make(),
             Actions\DeleteAction::make(),
         ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\User;
 use App\Services\RecommendationLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -17,6 +18,11 @@ class MovieController extends Controller
         $variant = (string) $request->query('variant', 'unknown');
         $logger->recordClick(device_id(), $variant, $placement, (int) $movie->id);
 
-        return view('movies.show', compact('movie'));
+        $movie->loadCount('comments');
+
+        return view('movies.show', [
+            'movie' => $movie,
+            'commentMentionables' => User::mentionableForComments(),
+        ]);
     }
 }
