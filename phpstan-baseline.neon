@@ -1100,25 +1100,6 @@ parameters:
 			count: 1
 			path: config/filament-users.php
 
-		-
-			message: "#^Class Laravelcm\\\\Subscriptions\\\\Models\\\\Feature not found\\.$#"
-			count: 1
-			path: config/laravel-subscriptions.php
-
-		-
-			message: "#^Class Laravelcm\\\\Subscriptions\\\\Models\\\\Plan not found\\.$#"
-			count: 1
-			path: config/laravel-subscriptions.php
-
-		-
-			message: "#^Class Laravelcm\\\\Subscriptions\\\\Models\\\\Subscription not found\\.$#"
-			count: 1
-			path: config/laravel-subscriptions.php
-
-		-
-			message: "#^Class Laravelcm\\\\Subscriptions\\\\Models\\\\SubscriptionUsage not found\\.$#"
-			count: 1
-			path: config/laravel-subscriptions.php
 
 		-
 			message: "#^Class Spatie\\\\LaravelData\\\\Data not found\\.$#"
@@ -1190,15 +1171,6 @@ parameters:
 			count: 18
 			path: database/migrations/2024_10_07_190637_seo_settings.php
 
-		-
-			message: "#^Access to constant DAY on an unknown class Laravelcm\\\\Subscriptions\\\\Interval\\.$#"
-			count: 2
-			path: database/migrations/2025_10_19_175905_create_plans_table.php
-
-		-
-			message: "#^Access to constant MONTH on an unknown class Laravelcm\\\\Subscriptions\\\\Interval\\.$#"
-			count: 1
-			path: database/migrations/2025_10_19_175905_create_plans_table.php
 
 		-
 			message: "#^Call to an undefined method object\\:\\:comment\\(\\)\\.$#"

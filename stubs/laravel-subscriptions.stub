@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Laravelcm\Subscriptions {
+    enum Interval: string
+    {
+        case DAY = 'day';
+        case WEEK = 'week';
+        case MONTH = 'month';
+        case YEAR = 'year';
+    }
+}
+
+namespace Laravelcm\Subscriptions\Models {
+    class Plan
+    {
+        /**
+         * @return list<Feature>
+         */
+        public function features(): array {}
+
+        /**
+         * @return list<Subscription>
+         */
+        public function subscriptions(): array {}
+    }
+
+    class Feature
+    {
+        public function plan(): ?Plan {}
+    }
+
+    class Subscription
+    {
+        public function plan(): ?Plan {}
+
+        /**
+         * @return list<SubscriptionUsage>
+         */
+        public function usage(): array {}
+    }
+
+    class SubscriptionUsage
+    {
+        public function subscription(): ?Subscription {}
+    }
+}
+
+namespace {
+
+    use Laravelcm\Subscriptions\Models\Plan;
+
+    /**
+     * @param mixed $plan
+     */
+    function plan(mixed $plan = null): Plan
+    {
+        return new Plan();
+    }
+}
