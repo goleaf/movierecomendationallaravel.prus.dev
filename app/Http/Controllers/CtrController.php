@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CtrRangeRequest;
 use App\Services\Analytics\CtrAnalyticsService;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
 
 class CtrController extends Controller
 {
     public function __construct(private readonly CtrAnalyticsService $analytics) {}
 
-    public function index(Request $request): View
+    public function index(CtrRangeRequest $request): View
     {
-        $fromDate = $this->parseDate($request->query('from'), now()->subDays(7)->format('Y-m-d'));
-        $toDate = $this->parseDate($request->query('to'), now()->format('Y-m-d'));
-        $placement = $request->query('p');
-        $variant = $request->query('v');
+        $fromDate = $request->fromDate(now()->subDays(7)->toImmutable());
+        $toDate = $request->toDate(now()->toImmutable());
+        $placement = $request->placement();
+        $variant = $request->variant();
 
         $summary = $this->analytics->variantSummary($fromDate, $toDate, $placement, $variant);
         $funnels = $this->analytics->funnels($fromDate, $toDate);
@@ -46,14 +45,5 @@ class CtrController extends Controller
             'impVariant' => $summary['impressions'],
             'clkVariant' => $summary['clicks'],
         ])->with('funnelGenres', [])->with('funnelYears', []);
-    }
-
-    private function parseDate(?string $value, string $fallback): CarbonImmutable
-    {
-        try {
-            return CarbonImmutable::parse($value ?? $fallback);
-        } catch (\Throwable) {
-            return CarbonImmutable::parse($fallback);
-        }
     }
 }
