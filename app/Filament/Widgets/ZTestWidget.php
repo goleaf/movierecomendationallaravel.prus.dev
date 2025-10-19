@@ -2,9 +2,9 @@
 
 namespace App\Filament\Widgets;
 
-use Illuminate\Support\Facades\DB;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 
 class ZTestWidget extends BaseWidget
 {

@@ -16,6 +16,7 @@ return [
             'variant' => 'Вариант',
             'variant_all' => 'Все варианты',
             'placement_all' => 'Все площадки',
+            'apply' => 'Обновить аналитику',
             'placements' => [
                 'all' => 'Все площадки',
                 'home' => 'Главная',
@@ -27,8 +28,6 @@ return [
                 'a' => 'Вариант A',
                 'b' => 'Вариант B',
             ],
-            'apply' => 'Применить фильтры',
-            'refresh' => 'Обновить аналитику',
         ],
         'charts' => [
             'daily_heading' => 'CTR по дням (A vs B)',
@@ -53,9 +52,6 @@ return [
         'queue_label' => 'Заданий в очереди',
         'failed_label' => 'Ошибок',
         'processed_label' => 'Обработано пакетов',
-        'horizon_workload' => 'Нагрузка',
-        'horizon_supervisors' => 'Супервайзеры',
-        'horizon_empty' => 'Данные Horizon недоступны.',
         'labels' => [
             'jobs' => 'Заданий в очереди',
             'failed' => 'Ошибок',
@@ -67,6 +63,9 @@ return [
             'supervisors' => 'Супервайзеры',
             'empty' => 'Данные Horizon недоступны.',
         ],
+        'horizon_workload' => 'Нагрузка Horizon',
+        'horizon_supervisors' => 'Супервайзеры Horizon',
+        'horizon_empty' => 'Данные Horizon недоступны.',
     ],
     'funnel' => [
         'period' => 'Период: :from — :to',
@@ -80,12 +79,7 @@ return [
         ],
     ],
     'trends' => [
-        'period' => 'Период: :from — :to (:days дней)',
-        'empty' => 'Нет данных, соответствующих выбранным фильтрам.',
         'days_label' => 'Дней',
-        'clicks' => 'Клики: :count',
-        'imdb' => 'Рейтинг IMDb: :rating',
-        'votes' => 'Голосов: :count',
         'filters' => [
             'days' => 'Дней',
             'type' => 'Тип',
@@ -104,10 +98,10 @@ return [
         'year_from_placeholder' => 'Год от',
         'year_to_placeholder' => 'Год до',
         'apply' => 'Показать',
-        'period' => 'Топ за :days дн. (:from — :to)',
-        'empty' => 'Нет данных по выбранным фильтрам.',
+        'period' => 'Период: :from — :to (:days дн.)',
+        'empty' => 'Нет трендовых тайтлов по выбранным фильтрам.',
         'clicks' => 'Клики: :count',
         'imdb' => 'IMDb: :rating',
-        'votes' => 'Голосов: :count',
+        'votes' => 'Голоса: :count',
     ],
 ];

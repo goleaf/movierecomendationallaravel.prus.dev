@@ -16,6 +16,7 @@ return [
             'variant' => 'Variant',
             'variant_all' => 'All variants',
             'placement_all' => 'All placements',
+            'apply' => 'Update analytics',
             'placements' => [
                 'all' => 'All placements',
                 'home' => 'Home page',
@@ -27,8 +28,6 @@ return [
                 'a' => 'Variant A',
                 'b' => 'Variant B',
             ],
-            'apply' => 'Apply filters',
-            'refresh' => 'Update analytics',
         ],
         'charts' => [
             'daily_heading' => 'Daily CTR (A vs B)',
@@ -43,7 +42,7 @@ return [
             'heading' => 'Funnels',
             'total' => 'Total',
         ],
-        'empty_summary' => 'No data available for the selected filters.',
+        'empty_summary' => 'No summary data for the selected filters.',
     ],
     'metrics' => [
         'title' => 'Queues / Horizon',
@@ -53,9 +52,6 @@ return [
         'queue_label' => 'Jobs queued',
         'failed_label' => 'Failed jobs',
         'processed_label' => 'Processed batches',
-        'horizon_workload' => 'Workload',
-        'horizon_supervisors' => 'Supervisors',
-        'horizon_empty' => 'No Horizon metrics available.',
         'labels' => [
             'jobs' => 'Jobs queued',
             'failed' => 'Failed jobs',
@@ -67,6 +63,9 @@ return [
             'supervisors' => 'Supervisors',
             'empty' => 'No Horizon metrics available.',
         ],
+        'horizon_workload' => 'Horizon workload',
+        'horizon_supervisors' => 'Horizon supervisors',
+        'horizon_empty' => 'No Horizon metrics available.',
     ],
     'funnel' => [
         'period' => 'Period: :from — :to',
@@ -80,12 +79,7 @@ return [
         ],
     ],
     'trends' => [
-        'period' => 'Period: :from — :to (:days days)',
-        'empty' => 'No results match the selected filters.',
         'days_label' => 'Days',
-        'clicks' => 'Clicks: :count',
-        'imdb' => 'IMDb rating: :rating',
-        'votes' => 'Votes: :count',
         'filters' => [
             'days' => 'Days',
             'type' => 'Type',
@@ -104,8 +98,8 @@ return [
         'year_from_placeholder' => 'Year from',
         'year_to_placeholder' => 'Year to',
         'apply' => 'Show',
-        'period' => 'Top for :days days (:from — :to)',
-        'empty' => 'No items match the selected filters.',
+        'period' => 'Period: :from — :to (:days days)',
+        'empty' => 'No trending titles found for the selected filters.',
         'clicks' => 'Clicks: :count',
         'imdb' => 'IMDb: :rating',
         'votes' => 'Votes: :count',
