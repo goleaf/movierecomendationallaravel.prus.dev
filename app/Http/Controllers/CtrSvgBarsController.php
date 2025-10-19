@@ -14,15 +14,15 @@ class CtrSvgBarsController extends Controller
         $from = $r->query('from', now()->subDays(7)->format('Y-m-d'));
         $to = $r->query('to', now()->format('Y-m-d'));
 
-        $clicks = RecClick::query()
+        $clicks = DB::table('rec_clicks')
             ->selectRaw('placement, variant, count(*) as c')
-            ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
+            ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
             ->groupBy('placement', 'variant')
             ->get();
 
-        $impsVar = RecAbLog::query()
+        $impsVar = DB::table('rec_ab_logs')
             ->selectRaw('variant, count(*) as c')
-            ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
+            ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
             ->groupBy('variant')->pluck('c', 'variant')->all();
 
         $placements = ['home', 'show', 'trends'];
@@ -34,7 +34,8 @@ class CtrSvgBarsController extends Controller
                 $clks = (int) ($row->c ?? 0);
                 $imps = (int) ($impsVar[$v] ?? 0);
                 $ctr = $imps > 0 ? 100.0 * $clks / $imps : 0.0;
-                $bars[] = ['label' => "$p-$v", 'ctr' => $ctr];
+                $placementLabel = __('analytics.widgets.funnel.placements.'.$p);
+                $bars[] = ['label' => $placementLabel.'-'.$v, 'ctr' => $ctr];
             }
         }
 
@@ -65,10 +66,11 @@ class CtrSvgBarsController extends Controller
             $y1 = $h - $pad - $hbar;
             $color = (str_contains($b['label'], '-A')) ? '#5aa0ff' : '#8ee38b';
             $svg .= '<rect x="'.$x1.'" y="'.$y1.'" width="'.$barw.'" height="'.$hbar.'" fill="'.$color.'"/>';
-            $svg .= '<text x="'.($x1).'" y="'.($h - $pad + 12).'" fill="#aaa" font-size="10" transform="rotate(45 '.($x1).','.($h - $pad + 12).')">'.$b['label'].'</text>';
+            $svg .= '<text x="'.($x1).'" y="'.($h - $pad + 12).'" fill="#aaa" font-size="10" transform="rotate(45 '.($x1).','.($h - $pad + 12).')">'.e($b['label']).'</text>';
         }
 
-        $svg .= '<text x="10" y="16" fill="#ddd">CTR по площадкам (A — синий, B — зелёный)</text></svg>';
+        $title = __('analytics.svg.ctr_bars_title');
+        $svg .= '<text x="10" y="16" fill="#ddd">'.e($title).'</text></svg>';
 
         return response($svg)->header('Content-Type', 'image/svg+xml');
     }

@@ -11,14 +11,17 @@ use Illuminate\Support\Facades\Schema;
 
 class SsrDropWidget extends BaseWidget
 {
-    protected static ?string $heading = 'Top SSR Score Drops (день к дню)';
-
     protected int|string|array $columnSpan = 'full';
 
-    protected function getTableQuery(): Builder|Relation|null
+    public function getHeading(): ?string
+    {
+        return __('analytics.widgets.ssr_drop.heading');
+    }
+
+    protected function getTableQuery()
     {
         if (! Schema::hasTable('ssr_metrics')) {
-            return SsrMetric::query()->whereRaw('1=0');
+            return DB::table(DB::raw('(select 1) as empty'))->whereRaw('1=0');
         }
 
         $yesterday = now()->subDay()->toDateString();
@@ -54,15 +57,17 @@ class SsrDropWidget extends BaseWidget
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('path')->label('Path')->wrap(),
+            Tables\Columns\TextColumn::make('path')
+                ->label(__('analytics.widgets.ssr_drop.columns.path'))
+                ->wrap(),
             Tables\Columns\TextColumn::make('score_yesterday')
-                ->label('Вчера')
+                ->label(__('analytics.widgets.ssr_drop.columns.yesterday'))
                 ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
             Tables\Columns\TextColumn::make('score_today')
-                ->label('Сегодня')
+                ->label(__('analytics.widgets.ssr_drop.columns.today'))
                 ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
             Tables\Columns\TextColumn::make('delta')
-                ->label('Δ')
+                ->label(__('analytics.widgets.ssr_drop.columns.delta'))
                 ->formatStateUsing(fn ($state) => number_format((float) $state, 2))
                 ->color(fn ($state) => $state >= 0 ? 'success' : 'danger'),
         ];

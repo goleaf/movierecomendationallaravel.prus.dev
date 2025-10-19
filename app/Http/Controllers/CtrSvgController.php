@@ -14,15 +14,15 @@ class CtrSvgController extends Controller
         $from = $r->query('from', now()->subDays(14)->format('Y-m-d'));
         $to = $r->query('to', now()->format('Y-m-d'));
 
-        $logs = RecAbLog::query()
+        $logs = DB::table('rec_ab_logs')
             ->selectRaw('date(created_at) as d, variant, count(*) as imps')
-            ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
+            ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
             ->groupBy('d', 'variant')
             ->get();
 
-        $clicks = RecClick::query()
+        $clicks = DB::table('rec_clicks')
             ->selectRaw('date(created_at) as d, variant, count(*) as clks')
-            ->betweenCreatedAt("{$from} 00:00:00", "{$to} 23:59:59")
+            ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
             ->groupBy('d', 'variant')
             ->get();
 
@@ -75,12 +75,14 @@ class CtrSvgController extends Controller
             $grid .= '<text x="5" y="'.($y + 4).'" fill="#889" font-size="10">'.$val.'%</text>';
         }
 
+        $title = __('analytics.svg.ctr_line_title');
+
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$w.'" height="'.$h.'">'
             .'<rect x="0" y="0" width="'.$w.'" height="'.$h.'" fill="#0b0c0f"/>'
             .$grid
             .'<polyline fill="none" stroke="#5aa0ff" stroke-width="2" points="'.$map($series['A']).'"/>'
             .'<polyline fill="none" stroke="#8ee38b" stroke-width="2" points="'.$map($series['B']).'"/>'
-            .'<text x="10" y="16" fill="#ddd">CTR по дням: A (синяя) vs B (зелёная)</text>'
+            .'<text x="10" y="16" fill="#ddd">'.e($title).'</text>'
             .'</svg>';
 
         return response($svg)->header('Content-Type','image/svg+xml');

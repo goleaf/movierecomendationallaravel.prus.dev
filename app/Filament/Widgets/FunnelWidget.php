@@ -12,7 +12,10 @@ class FunnelWidget extends Widget
 {
     protected static string $view = 'filament.widgets.funnel';
 
-    protected static ?string $heading = 'Funnels (7 дней)';
+    public function getHeading(): ?string
+    {
+        return __('analytics.widgets.funnel.heading');
+    }
 
     protected function getViewData(): array
     {
@@ -53,7 +56,7 @@ class FunnelWidget extends Widget
                 : 0;
 
             $rows[] = [
-                'label' => $placement,
+                'label' => __('analytics.widgets.funnel.placements.'.$placement),
                 'imps' => $totalImps,
                 'clicks' => $clicks,
                 'views' => $totalViews,
@@ -63,7 +66,7 @@ class FunnelWidget extends Widget
         }
 
         $rows[] = [
-            'label' => 'Итого',
+            'label' => __('analytics.widgets.funnel.total'),
             'imps' => $totalImps,
             'clicks' => $totalClicks,
             'views' => $totalViews,
@@ -72,7 +75,7 @@ class FunnelWidget extends Widget
         ];
 
         return [
-            'heading' => static::$heading,
+            'heading' => $this->getHeading(),
             'rows' => $rows,
             'from' => $from,
             'to' => $to,
