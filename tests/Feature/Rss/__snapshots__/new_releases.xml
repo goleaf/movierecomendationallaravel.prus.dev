@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Новые релизы</title>
+        <link>http://localhost/rss/new</link>
+        <atom:link href="http://localhost/rss/new" rel="self" type="application/rss+xml" />
+        <description>Свежие фильмы и сериалы, недавно вышедшие в прокат.</description>
+        <language>ru-RU</language>
+                    <lastBuildDate>Fri, 28 Feb 2025 10:00:00 +0000</lastBuildDate>
+                            <item>
+                <title>Квантовый вихрь RU</title>
+                <link>http://localhost/movies/1</link>
+                <guid isPermaLink="false">movie:tt8100001</guid>
+                                    <description><![CDATA[Переведённый сюжет]]></description>
+                                                    <pubDate>Fri, 28 Feb 2025 00:00:00 +0000</pubDate>
+                                                                            <category>science fiction</category>
+                                            <category>thriller</category>
+                                                                </item>
+                    <item>
+                <title>Рубиновые небеса RU</title>
+                <link>http://localhost/movies/2</link>
+                <guid isPermaLink="false">movie:tt8100002</guid>
+                                    <description><![CDATA[Переведённый сюжет]]></description>
+                                                    <pubDate>Wed, 26 Feb 2025 00:00:00 +0000</pubDate>
+                                                                            <category>science fiction</category>
+                                            <category>thriller</category>
+                                                                </item>
+            </channel>
+</rss>

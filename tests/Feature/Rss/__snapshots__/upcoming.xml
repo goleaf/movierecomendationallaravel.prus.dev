@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Скоро выйдут</title>
+        <link>http://localhost/rss/upcoming</link>
+        <atom:link href="http://localhost/rss/upcoming" rel="self" type="application/rss+xml" />
+        <description>Предстоящие премьеры и анонсы, которые скоро появятся на экранах.</description>
+        <language>ru-RU</language>
+                    <lastBuildDate>Thu, 06 Mar 2025 10:00:00 +0000</lastBuildDate>
+                            <item>
+                <title>Неоновый рассвет</title>
+                <link>http://localhost/movies/1</link>
+                <guid isPermaLink="false">movie:tt8200001</guid>
+                                    <description><![CDATA[Команда исследователей готовится к новой миссии.]]></description>
+                                                    <pubDate>Thu, 06 Mar 2025 00:00:00 +0000</pubDate>
+                                                                            <category>adventure</category>
+                                                                </item>
+                    <item>
+                <title>Утро Марса</title>
+                <link>http://localhost/movies/2</link>
+                <guid isPermaLink="false">movie:tt8200002</guid>
+                                    <description><![CDATA[Команда исследователей готовится к новой миссии.]]></description>
+                                                    <pubDate>Thu, 13 Mar 2025 00:00:00 +0000</pubDate>
+                                                                            <category>adventure</category>
+                                                                </item>
+            </channel>
+</rss>

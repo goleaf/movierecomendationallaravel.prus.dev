@@ -41,7 +41,7 @@ class MovieFactory extends Factory
             'imdb_tt' => 'tt'.fake()->unique()->numerify('########'),
             'title' => $title,
             'plot' => fake()->paragraph(),
-            'type' => fake()->randomElement(['movie', 'series']),
+            'type' => fake()->randomElement(['movie', 'series', 'animation']),
             'year' => (int) $releaseDate->format('Y'),
             'release_date' => $releaseDate->format('Y-m-d'),
             'imdb_rating' => fake()->randomFloat(1, 5.0, 9.8),
@@ -62,5 +62,48 @@ class MovieFactory extends Factory
                 'popularity' => fake()->randomFloat(2, 1, 100),
             ],
         ];
+    }
+
+    public function movie(): static
+    {
+        return $this->state(function (): array {
+            $releaseDate = fake()->dateTimeBetween('-5 years', 'now');
+
+            return [
+                'type' => 'movie',
+                'year' => (int) $releaseDate->format('Y'),
+                'release_date' => $releaseDate->format('Y-m-d'),
+                'genres' => ['drama', 'thriller'],
+            ];
+        });
+    }
+
+    public function series(): static
+    {
+        return $this->state(function (): array {
+            $releaseDate = fake()->dateTimeBetween('-8 years', 'now');
+
+            return [
+                'type' => 'series',
+                'year' => (int) $releaseDate->format('Y'),
+                'release_date' => $releaseDate->format('Y-m-d'),
+                'genres' => ['science fiction', 'mystery'],
+            ];
+        });
+    }
+
+    public function animation(): static
+    {
+        return $this->state(function (): array {
+            $releaseDate = fake()->dateTimeBetween('-12 years', '-1 years');
+
+            return [
+                'type' => 'animation',
+                'year' => (int) $releaseDate->format('Y'),
+                'release_date' => $releaseDate->format('Y-m-d'),
+                'genres' => ['animation', 'family'],
+                'runtime_min' => fake()->numberBetween(70, 110),
+            ];
+        });
     }
 }
