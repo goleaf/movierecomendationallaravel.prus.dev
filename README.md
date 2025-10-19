@@ -46,6 +46,18 @@ Review the consolidated delivery log in [WORKS.md](WORKS.md) or visit `/works` w
 
 ---
 
+## Linux setup
+
+Use the automated bootstrap script to provision the required runtimes (PHP 8.3 with extensions, Composer, Node.js 20, SQLite, and Redis) on Debian/Ubuntu hosts:
+
+```bash
+bash scripts/dev/setup-linux.sh
+```
+
+The script adds the official PHP repository, enables SQLite and Redis extensions, configures a reusable Composer cache, installs Node.js 20.x via NodeSource, and ensures the Redis service is running so that Horizon and cache-backed features are ready immediately.
+
+---
+
 ## Quick start (fresh Laravel 11 project)
 
 ```bash
