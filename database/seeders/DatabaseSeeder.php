@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             RecAbLogSeeder::class,
             RecClickSeeder::class,
             DeviceHistorySeeder::class,
+            IngestionRunSeeder::class,
         ]);
 
         $admin = User::query()->firstOrCreate(
