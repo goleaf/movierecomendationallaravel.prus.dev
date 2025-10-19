@@ -18,10 +18,10 @@ class SsrDropWidget extends BaseWidget
         return __('analytics.widgets.ssr_drop.heading');
     }
 
-    protected function getTableQuery()
+    protected function getTableQuery(): Builder|Relation|null
     {
         if (! Schema::hasTable('ssr_metrics')) {
-            return DB::table(DB::raw('(select 1) as empty'))->whereRaw('1=0');
+            return null;
         }
 
         $yesterday = now()->subDay()->toDateString();
