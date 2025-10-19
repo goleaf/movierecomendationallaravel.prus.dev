@@ -57,28 +57,42 @@ class SsrMetricsMiddleware
         ];
 
         $score = 100;
+        $scoringConfig = config('ssrmetrics.scoring', []);
+        $weights = $scoringConfig['weights'] ?? [];
+        $thresholds = $scoringConfig['thresholds'] ?? [];
 
-        if ($blocking > 0) {
-            $score -= min(30, 5 * $blocking);
+        $blockingWeight = max(0, (int) ($weights['blocking_scripts'] ?? 5));
+        $blockingCap = max(0, (int) ($weights['blocking_cap'] ?? 30));
+        $ldjsonPenalty = max(0, (int) ($weights['ldjson_missing'] ?? 10));
+        $opengraphPenalty = max(0, (int) ($weights['opengraph_insufficient'] ?? 10));
+        $htmlPenalty = max(0, (int) ($weights['oversized_html'] ?? 20));
+        $imagesPenalty = max(0, (int) ($weights['image_overflow'] ?? 10));
+
+        $opengraphMinimum = max(0, (int) ($thresholds['opengraph_minimum'] ?? 3));
+        $maxHtmlBytes = max(0, (int) ($thresholds['max_html_bytes'] ?? (900 * 1024)));
+        $maxImages = max(0, (int) ($thresholds['max_images'] ?? 60));
+
+        if ($blocking > 0 && $blockingWeight > 0) {
+            $score -= min($blockingCap, $blockingWeight * $blocking);
         }
 
         if ($ld === 0) {
-            $score -= 10;
+            $score -= $ldjsonPenalty;
         }
 
-        if ($og < 3) {
-            $score -= 10;
+        if ($og < $opengraphMinimum) {
+            $score -= $opengraphPenalty;
         }
 
-        if ($size > 900 * 1024) {
-            $score -= 20;
+        if ($maxHtmlBytes > 0 && $size > $maxHtmlBytes) {
+            $score -= $htmlPenalty;
         }
 
-        if ($imgs > 60) {
-            $score -= 10;
+        if ($maxImages > 0 && $imgs > $maxImages) {
+            $score -= $imagesPenalty;
         }
 
-        $score = max(0, $score);
+        $score = max(0, min(100, $score));
 
         $payload = [
             'path' => $path,
