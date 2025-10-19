@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<int,string>|null $genres
  * @property string|null $poster_url
  * @property string|null $backdrop_url
- * @property array<string,array{title?:string,plot?:string}>|null $translations
+ * @property array{title?: array<string, string>, plot?: array<string, string>}|null $translations
  * @property array|null $raw
  * @property-read float $weighted_score
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecAbLog> $recAbLogs
