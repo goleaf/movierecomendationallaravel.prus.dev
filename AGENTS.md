@@ -40,6 +40,17 @@ This application is a Laravel application and its main Laravel ecosystems packag
 ## Documentation Files
 - You must only create documentation files if explicitly requested by the user.
 
+## Repository Practices
+- Keep the repository tidy by removing stray temporary files from editors before committing changes.
+- Prefer incremental commits that isolate logical units of work, even if the user only requested a single change.
+- When altering configuration, check for environment-specific overrides (for example in `.env.example`, `config/`, and `resources/js/`).
+- When a change impacts both backend and frontend behaviour, document the relationship in the pull request summary so reviewers understand the full scope.
+
+## Testing Discipline
+- Update or create feature and unit tests when behaviour changes; avoid leaving modified code without appropriate test coverage.
+- Run the narrowest relevant subset of tests before finalizing work (for example, a specific PHPUnit file or an npm script targeting the affected area).
+- Capture command output for any manual QA steps that cannot be automated so reviewers can follow the verification.
+
 
 === boost rules ===
 
