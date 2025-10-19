@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Queries;
 
+use App\Filters\RangeFilter;
 use App\Models\Movie;
 use App\Search\QueryBuilderExtensions;
 use App\Support\MovieSearchFilters;
@@ -44,6 +45,8 @@ final class MovieSearchQuery
         $this->applyType($filters->type);
         $this->applyGenre($filters->genre);
         $this->applyYearBounds($filters->yearFrom, $filters->yearTo);
+        $this->applyRuntime($filters->runtime);
+        $this->applyRating($filters->rating);
 
         return $this->builder;
     }
@@ -98,23 +101,31 @@ final class MovieSearchQuery
 
     private function applyYearBounds(?int $from, ?int $to): void
     {
-        $clauses = [];
+        RangeFilter::for($this->builder)->forColumn('year', $from, $to);
+    }
 
-        if ($from !== null) {
-            $clauses[] = function (Builder|BaseQueryBuilder $query) use ($from): void {
-                $query->where('year', '>=', $from);
-            };
+    /**
+     * @param  array{min:int|null,max:int|null}|null  $range
+     */
+    private function applyRuntime(?array $range): void
+    {
+        if ($range === null) {
+            return;
         }
 
-        if ($to !== null) {
-            $clauses[] = function (Builder|BaseQueryBuilder $query) use ($to): void {
-                $query->where('year', '<=', $to);
-            };
+        RangeFilter::for($this->builder)->forColumn('runtime_min', $range['min'] ?? null, $range['max'] ?? null);
+    }
+
+    /**
+     * @param  array{min:float|null,max:float|null}|null  $range
+     */
+    private function applyRating(?array $range): void
+    {
+        if ($range === null) {
+            return;
         }
 
-        if ($clauses !== []) {
-            $this->builder->whereAll($clauses);
-        }
+        RangeFilter::for($this->builder)->forColumn('imdb_rating', $range['min'] ?? null, $range['max'] ?? null);
     }
 
     /**
