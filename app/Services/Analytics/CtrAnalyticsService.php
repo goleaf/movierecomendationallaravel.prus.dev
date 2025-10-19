@@ -187,68 +187,79 @@ class CtrAnalyticsService
 
         [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
-        /** @var array<string, int> $impressionsByPlacement */
-        $impressionsByPlacement = DB::table('rec_ab_logs')
-            ->selectRaw('coalesce(placement, ?) as placement, count(*) as imps', ['unknown'])
-            ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-            ->groupByRaw('coalesce(placement, ?)', ['unknown'])
+        $impressionsQuery = DB::table('rec_ab_logs')
+            ->select('placement', DB::raw('count(*) as imps'))
+            ->whereBetween('created_at', [$fromDateTime, $toDateTime]);
+
+        if ($placements !== []) {
+            $impressionsQuery->whereIn('placement', $placements);
+        }
+
+        /** @var array<string, int> $impressions */
+        $impressions = $impressionsQuery
+            ->groupBy('placement')
             ->pluck('imps', 'placement')
             ->map(fn ($value) => (int) $value)
             ->all();
 
-        /** @var array<string, int> $clicksByPlacement */
-        $clicksByPlacement = Schema::hasTable('rec_clicks')
-            ? DB::table('rec_clicks')
-                ->selectRaw('coalesce(placement, ?) as placement, count(*) as clicks', ['unknown'])
-                ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-                ->groupByRaw('coalesce(placement, ?)', ['unknown'])
-                ->pluck('clicks', 'placement')
+        /** @var array<string, int> $clicks */
+        $clicks = [];
+        if (Schema::hasTable('rec_clicks')) {
+            $clicksQuery = DB::table('rec_clicks')
+                ->select('placement', DB::raw('count(*) as clks'))
+                ->whereBetween('created_at', [$fromDateTime, $toDateTime]);
+
+            if ($placements !== []) {
+                $clicksQuery->whereIn('placement', $placements);
+            }
+
+            $clicks = $clicksQuery
+                ->groupBy('placement')
+                ->pluck('clks', 'placement')
                 ->map(fn ($value) => (int) $value)
-                ->all()
-            : [];
+                ->all();
+        }
 
-        /** @var array<string, int> $viewsByPlacement */
-        $viewsByPlacement = Schema::hasTable('device_history')
-            ? DB::table('device_history')
-                ->selectRaw('coalesce(placement, ?) as placement, count(*) as views', ['unknown'])
-                ->whereBetween('viewed_at', [$fromDateTime, $toDateTime])
-                ->groupByRaw('coalesce(placement, ?)', ['unknown'])
-                ->pluck('views', 'placement')
+        /** @var array<string, int> $views */
+        $views = [];
+        if (Schema::hasTable('device_history')) {
+            $viewsQuery = DB::table('device_history')
+                ->select('page', DB::raw('count(*) as views'))
+                ->whereBetween('viewed_at', [$fromDateTime, $toDateTime]);
+
+            if ($placements !== []) {
+                $viewsQuery->whereIn('page', $placements);
+            }
+
+            $views = $viewsQuery
+                ->groupBy('page')
+                ->pluck('views', 'page')
                 ->map(fn ($value) => (int) $value)
-                ->all()
-            : [];
-
-        $allPlacements = collect($placements)
-            ->merge(array_keys($impressionsByPlacement))
-            ->merge(array_keys($clicksByPlacement))
-            ->merge(array_keys($viewsByPlacement))
-            ->filter(static fn ($value) => $value !== null && $value !== '')
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($allPlacements === []) {
-            $allPlacements = $placements;
+                ->all();
         }
 
         $rows = [];
-        foreach ($allPlacements as $placement) {
-            $imps = (int) ($impressionsByPlacement[$placement] ?? 0);
-            $clicks = (int) ($clicksByPlacement[$placement] ?? 0);
-            $views = (int) ($viewsByPlacement[$placement] ?? 0);
+        $totalImps = 0;
+        $totalClicks = 0;
+        $totalViews = 0;
+
+        foreach ($placements as $placement) {
+            $placementImps = (int) ($impressions[$placement] ?? 0);
+            $placementClicks = (int) ($clicks[$placement] ?? 0);
+            $placementViews = (int) ($views[$placement] ?? 0);
 
             $rows[] = [
                 'label' => $this->translatePlacement($placement),
-                'imps' => $imps,
-                'clicks' => $clicks,
-                'views' => $views,
-                'ctr' => $imps > 0 ? round(100 * $clicks / $imps, 2) : 0.0,
-                'view_rate' => $views > 0 ? round(100 * $clicks / $views, 2) : 0.0,
+                'imps' => $placementImps,
+                'clicks' => $placementClicks,
+                'views' => $placementViews,
+                'ctr' => $placementImps > 0 ? round(100 * $placementClicks / $placementImps, 2) : 0.0,
+                'view_rate' => $placementViews > 0 ? round(100 * $placementClicks / $placementViews, 2) : 0.0,
             ];
 
-            $totalImps += $imps;
-            $totalClicks += $clicks;
-            $totalViews += $views;
+            $totalImps += $placementImps;
+            $totalClicks += $placementClicks;
+            $totalViews += $placementViews;
         }
 
         $totalImps = array_sum($impressionsByPlacement);
@@ -448,21 +459,14 @@ class CtrAnalyticsService
             ->groupBy('placement', 'variant')
             ->get();
 
-        $placements = $impressions
-            ->pluck('placement')
+        $placements = $impressions->pluck('placement')
             ->merge($clicks->pluck('placement'))
-            ->filter(static fn ($placement) => $placement !== null && $placement !== '')
             ->unique()
-            ->values()
-            ->all();
-
-        if ($placements === []) {
-            $placements = ['home', 'show', 'trends'];
-        }
+            ->values();
 
         $variants = ['A', 'B'];
 
-        return collect($placements)->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
+        return $placements->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
             return collect($variants)->map(function (string $variant) use ($placement, $clicks, $impressions) {
                 $clickRow = $clicks->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
                 $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
@@ -475,7 +479,7 @@ class CtrAnalyticsService
                     'ctr' => $imps > 0 ? round(100 * $clickCount / $imps, 2) : 0.0,
                 ];
             });
-        });
+        })->values();
     }
 
     /**
