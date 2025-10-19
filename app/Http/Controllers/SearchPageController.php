@@ -8,6 +8,7 @@ use App\Http\Resources\SearchResultCollection;
 use App\Models\Movie;
 use App\Support\MovieSearchFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,10 +16,40 @@ class SearchPageController extends Controller
 {
     public function __invoke(Request $request): View|SearchResultCollection|JsonResponse
     {
-        $filters = MovieSearchFilters::fromRequest($request);
+        $queryString = trim((string) $request->query('q', ''));
+        $type = $request->query('type');
+        $genre = $request->query('genre');
+        $yearFrom = (int) $request->query('yf', 0);
+        $yearTo = (int) $request->query('yt', 0);
 
-        $items = $filters
-            ->apply(Movie::query())
+        /** @var Builder<Movie> $query */
+        $query = Movie::query();
+
+        if ($queryString !== '') {
+            $query->where(function (Builder $builder) use ($queryString): void {
+                $builder
+                    ->where('title', 'like', '%' . $queryString . '%')
+                    ->orWhere('imdb_tt', $queryString);
+            });
+        }
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        if ($genre) {
+            $query->whereJsonContains('genres', $genre);
+        }
+
+        if ($yearFrom) {
+            $query->where('year', '>=', $yearFrom);
+        }
+
+        if ($yearTo) {
+            $query->where('year', '<=', $yearTo);
+        }
+
+        $items = $query
             ->orderByDesc('imdb_votes')
             ->orderByDesc('imdb_rating')
             ->limit(40)
@@ -28,9 +59,13 @@ class SearchPageController extends Controller
             return new SearchResultCollection($items);
         }
 
-        return view('search.index', array_merge(
-            ['items' => $items],
-            $filters->toViewData(),
-        ));
+        return view('search.index', [
+            'q' => $queryString,
+            'items' => $items,
+            'type' => $type,
+            'genre' => $genre,
+            'yf' => $yearFrom,
+            'yt' => $yearTo,
+        ]);
     }
 }
