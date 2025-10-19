@@ -6,6 +6,8 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ## Feature overview
 
+- [Project TODO](TODO.md) — live backlog of outstanding implementation work.
+
 - **Data ingestion & enrichment** – ready-to-run import jobs for TMDB/OMDb metadata with translation support and background queues.
 - **Recommendation engines** – dual strategy A/B tests combining popularity, recency, and personal preference weights (`REC_A_*` / `REC_B_*` env flags).
 - **Analytics & reporting** – SVG click-through-rate graphs (lines & bars), funnels by genre/year, z-test comparison tooling, and RSS trend feeds.
