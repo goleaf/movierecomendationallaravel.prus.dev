@@ -14,6 +14,7 @@
         "laravel/tinker": "^2.10.1",
         "predis/predis": "^3.2",
         "ralphjsmit/laravel-filament-seo": "*",
+        "spatie/laravel-csp": "*",
         "symfony/uid": "^7.3",
         "tomatophp/filament-language-switcher": "*",
         "tomatophp/filament-payments": "*",
