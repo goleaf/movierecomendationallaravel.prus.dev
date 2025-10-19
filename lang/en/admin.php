@@ -106,6 +106,36 @@ return [
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
     ],
+    'queue_dashboard' => [
+        'title' => 'Queue status',
+        'heading' => 'Queue pipeline status',
+        'description' => 'Monitor ingestion and recommendation queues at a glance.',
+        'labels' => [
+            'jobs' => 'Jobs in-flight',
+            'failed' => 'Failed jobs',
+        ],
+        'pipelines' => [
+            'ingestion' => [
+                'label' => 'Ingestion',
+                'queues' => 'Aliases: :queues',
+            ],
+            'recommendations' => [
+                'label' => 'Recommendations',
+                'queues' => 'Aliases: :queues',
+            ],
+            'other' => [
+                'label' => 'Other queues',
+                'queues' => 'Detected: :queues',
+                'empty' => 'No uncategorized queues detected.',
+            ],
+        ],
+        'totals' => 'Totals — Jobs: :jobs, Failed: :failed',
+        'details' => [
+            'heading' => 'Additional queues',
+            'queue' => 'Queue',
+            'empty' => 'No additional queues detected.',
+        ],
+    ],
     'ssr' => [
         'title' => 'SSR Analytics',
         'headline' => [

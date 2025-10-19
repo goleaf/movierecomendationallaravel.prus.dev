@@ -25,6 +25,14 @@ class QueueMetricsService
     ];
 
     /**
+     * @var array<string, list<string>>
+     */
+    private const CATEGORY_ALIAS_MAP = [
+        'ingestion' => ['importers', 'ingestion', 'ingestion-high', 'ingestion-low'],
+        'recommendations' => ['recommendations', 'recommender', 'recommendation', 'recommendation-high'],
+    ];
+
+    /**
      * @return array{
      *     jobs: int,
      *     failed: int,
@@ -94,5 +102,88 @@ class QueueMetricsService
         $metrics['horizon'] = $snapshot['horizon'];
 
         return $metrics;
+    }
+
+    /**
+     * @return array{
+     *     pipelines: array<string, array{jobs: int, failed: int, queues: list<string>}>,
+     *     uncategorized: array<string, array{jobs: int, failed: int}>,
+     *     totals: array{jobs: int, failed: int},
+     * }
+     */
+    public function queueBreakdown(): array
+    {
+        $jobsByQueue = $this->getQueueCounts('jobs');
+        $failedByQueue = $this->getQueueCounts('failed_jobs');
+
+        $pipelines = [];
+        $categorizedQueues = [];
+
+        foreach (self::CATEGORY_ALIAS_MAP as $pipeline => $aliases) {
+            $jobs = 0;
+            $failed = 0;
+
+            foreach ($aliases as $alias) {
+                $jobs += $jobsByQueue[$alias] ?? 0;
+                $failed += $failedByQueue[$alias] ?? 0;
+
+                if (array_key_exists($alias, $jobsByQueue) || array_key_exists($alias, $failedByQueue)) {
+                    $categorizedQueues[] = $alias;
+                }
+            }
+
+            $pipelines[$pipeline] = [
+                'jobs' => $jobs,
+                'failed' => $failed,
+                'queues' => $aliases,
+            ];
+        }
+
+        $uncategorized = [];
+        $allQueues = array_unique(array_merge(array_keys($jobsByQueue), array_keys($failedByQueue)));
+
+        foreach ($allQueues as $queueName) {
+            if (in_array($queueName, $categorizedQueues, true)) {
+                continue;
+            }
+
+            $uncategorized[$queueName] = [
+                'jobs' => $jobsByQueue[$queueName] ?? 0,
+                'failed' => $failedByQueue[$queueName] ?? 0,
+            ];
+        }
+
+        $otherQueues = array_keys($uncategorized);
+        $pipelines['other'] = [
+            'jobs' => array_sum(array_map(static fn (array $queue): int => $queue['jobs'], $uncategorized)),
+            'failed' => array_sum(array_map(static fn (array $queue): int => $queue['failed'], $uncategorized)),
+            'queues' => $otherQueues,
+        ];
+
+        return [
+            'pipelines' => $pipelines,
+            'uncategorized' => $uncategorized,
+            'totals' => [
+                'jobs' => array_sum($jobsByQueue),
+                'failed' => array_sum($failedByQueue),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function getQueueCounts(string $table): array
+    {
+        if (! Schema::hasTable($table)) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->select('queue', DB::raw('count(*) as aggregate'))
+            ->groupBy('queue')
+            ->pluck('aggregate', 'queue')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->toArray();
     }
 }
