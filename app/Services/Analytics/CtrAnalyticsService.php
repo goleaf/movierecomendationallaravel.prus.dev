@@ -17,13 +17,13 @@ class CtrAnalyticsService
 
     /**
      * @return array{
-     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     summary: list<array{variant: string, impressions: int, clicks: int, ctr: float}>,
      *     clicksByPlacement: array<string, int>,
      *     funnels: array<string, array{imps: int, clks: int, views: int, ctr: float, cuped_ctr: float, view_rate: float}>,
      *     totals: array{impressions: int, clicks: int, views: int},
      *     period: array{from: string, to: string},
-     *     variants: array<int, string>,
-     *     placements: array<int, string>
+     *     variants: list<string>,
+     *     placements: list<string>
      * }
      */
     public function getMetrics(
@@ -39,7 +39,7 @@ class CtrAnalyticsService
 
         $placementCtrData = $this->placementCtrs($fromDate, $toDate);
         $placements = $placementCtrData
-            ->map(static fn (array $row) => explode('-', $row['label'])[0])
+            ->map(static fn (array $row): string => explode('-', $row['label'])[0])
             ->unique()
             ->values()
             ->all();
@@ -48,6 +48,7 @@ class CtrAnalyticsService
             $placements = ['home', 'show', 'trends'];
         }
 
+        /** @var list<string> $placements */
         $clicksByPlacement = collect($placements)
             ->mapWithKeys(static fn (string $key): array => [
                 $key => (int) ($summaryData['placementClicks'][$key] ?? 0),
@@ -71,6 +72,7 @@ class CtrAnalyticsService
             ->all();
 
         $totalLabel = __('admin.ctr.funnels.total');
+        $totalLabel = is_string($totalLabel) && $totalLabel !== '' ? $totalLabel : 'total';
         $totalViews = $funnels[$totalLabel]['views'] ?? 0;
 
         $summary = $summaryData['summary'];
@@ -86,10 +88,10 @@ class CtrAnalyticsService
             'views' => (int) $totalViews,
         ];
 
-        $variants = array_values(array_unique(array_merge(
+        $variants = array_keys(array_flip(array_merge(
             ['A', 'B'],
             array_map(
-                static fn (array $row): string => $row['variant'],
+                static fn (array $row): string => (string) $row['variant'],
                 $summary
             )
         )));
@@ -104,12 +106,17 @@ class CtrAnalyticsService
                 'to' => $toDate->toDateString(),
             ],
             'variants' => $variants,
-            'placements' => array_values($placements),
+            'placements' => $placements,
         ];
     }
 
     /**
-     * @return array{summary: array<int, array<string, mixed>>, impressions: array<string, int>, clicks: array<string, int>, placementClicks: array<string, int>}
+     * @return array{
+     *     summary: list<array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     impressions: array<string, int>,
+     *     clicks: array<string, int>,
+     *     placementClicks: array<string, int>
+     * }
      */
     public function variantSummary(CarbonImmutable $from, CarbonImmutable $to, ?string $placement = null, ?string $variant = null): array
     {
@@ -122,6 +129,9 @@ class CtrAnalyticsService
             ];
         }
 
+        $placement = $placement !== null && $placement !== '' ? $placement : null;
+        $variant = $variant !== null && $variant !== '' ? $variant : null;
+
         return $this->cache->rememberCtr('variant_summary', [
             'from' => $from,
             'to' => $to,
@@ -133,12 +143,12 @@ class CtrAnalyticsService
             $logs = DB::table('rec_ab_logs')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
             $clicks = DB::table('rec_clicks')->whereBetween('created_at', [$fromDateTime, $toDateTime]);
 
-            if ($placement !== null && $placement !== '') {
+            if ($placement !== null) {
                 $logs->where('placement', $placement);
                 $clicks->where('placement', $placement);
             }
 
-            if ($variant !== null && $variant !== '') {
+            if ($variant !== null) {
                 $logs->where('variant', $variant);
                 $clicks->where('variant', $variant);
             }
@@ -148,7 +158,7 @@ class CtrAnalyticsService
                 ->select('variant', DB::raw('count(*) as imps'))
                 ->groupBy('variant')
                 ->pluck('imps', 'variant')
-                ->map(fn ($value) => (int) $value)
+                ->map(fn ($value): int => (int) $value)
                 ->all();
 
             /** @var array<string, int> $clkVariant */
@@ -156,10 +166,11 @@ class CtrAnalyticsService
                 ->select('variant', DB::raw('count(*) as clks'))
                 ->groupBy('variant')
                 ->pluck('clks', 'variant')
-                ->map(fn ($value) => (int) $value)
+                ->map(fn ($value): int => (int) $value)
                 ->all();
 
-            $variants = $variant && $variant !== '' ? [$variant] : ['A', 'B'];
+            $variants = $variant !== null ? [$variant] : ['A', 'B'];
+            /** @var list<array{variant: string, impressions: int, clicks: int, ctr: float}> $summary */
             $summary = [];
             foreach ($variants as $code) {
                 $imps = (int) ($impVariant[$code] ?? 0);
@@ -175,12 +186,12 @@ class CtrAnalyticsService
             /** @var array<string, int> $placementClicks */
             $placementClicks = DB::table('rec_clicks')
                 ->whereBetween('created_at', [$fromDateTime, $toDateTime])
-                ->when($variant !== null && $variant !== '', fn ($query) => $query->where('variant', $variant))
-                ->when($placement !== null && $placement !== '', fn ($query) => $query->where('placement', $placement))
+                ->when($variant !== null, fn ($query) => $query->where('variant', $variant))
+                ->when($placement !== null, fn ($query) => $query->where('placement', $placement))
                 ->select('placement', DB::raw('count(*) as clks'))
                 ->groupBy('placement')
                 ->pluck('clks', 'placement')
-                ->map(fn ($value) => (int) $value)
+                ->map(fn ($value): int => (int) $value)
                 ->all();
 
             return [
@@ -193,7 +204,8 @@ class CtrAnalyticsService
     }
 
     /**
-     * @return array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}>
+     * @param  list<string>  $placements
+     * @return list<array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}>
      */
     public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
     {
@@ -225,7 +237,7 @@ class CtrAnalyticsService
             $impressions = $impressionsQuery
                 ->groupBy('placement')
                 ->pluck('imps', 'placement')
-                ->map(fn ($value) => (int) $value)
+                ->map(fn ($value): int => (int) $value)
                 ->all();
 
             /** @var array<string, int> $clicks */
@@ -242,7 +254,7 @@ class CtrAnalyticsService
                 $clicks = $clicksQuery
                     ->groupBy('placement')
                     ->pluck('clks', 'placement')
-                    ->map(fn ($value) => (int) $value)
+                    ->map(fn ($value): int => (int) $value)
                     ->all();
             }
 
@@ -260,7 +272,7 @@ class CtrAnalyticsService
                 $views = $viewsQuery
                     ->groupBy('page')
                     ->pluck('views', 'page')
-                    ->map(fn ($value) => (int) $value)
+                    ->map(fn ($value): int => (int) $value)
                     ->all();
             }
 
@@ -360,6 +372,7 @@ class CtrAnalyticsService
                 'cuped_ctr' => $totalCuped,
             ];
 
+            /** @var list<array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}> $rows */
             return $rows;
         });
     }
@@ -388,11 +401,17 @@ class CtrAnalyticsService
 
         $snapshotMap = [];
         if (Schema::hasTable('ctr_daily_snapshots')) {
-            $snapshotMap = CtrDailySnapshot::query()
+            /** @var Collection<int, CtrDailySnapshot> $snapshots */
+            $snapshots = CtrDailySnapshot::query()
                 ->whereBetween('snapshot_date', [$from->toDateString(), $to->toDateString()])
-                ->get()
-                ->groupBy(fn (CtrDailySnapshot $snapshot) => $snapshot->snapshot_date->format('Y-m-d'))
-                ->map(fn (Collection $rows): array => $rows->keyBy(fn (CtrDailySnapshot $row) => (string) $row->variant)->all())
+                ->get();
+
+            $snapshotMap = $snapshots
+                ->groupBy(static fn (CtrDailySnapshot $snapshot, int $index): string => $snapshot->snapshot_date->format('Y-m-d'))
+                ->map(static function (Collection $rows): array {
+                    /** @var Collection<int, CtrDailySnapshot> $rows */
+                    return $rows->keyBy(static fn (CtrDailySnapshot $row, int $index): string => (string) $row->variant)->all();
+                })
                 ->all();
         }
 
@@ -488,14 +507,14 @@ class CtrAnalyticsService
         $width = 720;
         $height = 260;
         $pad = 40;
-        $chartMax = (float) ($data['max'] ?? 0.0);
+        $chartMax = (float) $data['max'];
         if (! is_finite($chartMax) || $chartMax <= 0.0) {
             $chartMax = 5.0;
         }
 
-        $mapPoints = function (array $values) use ($chartMax, $width, $height, $pad): string {
+        $mapPoints = /** @param list<float|int> $values */ function (array $values) use ($chartMax, $width, $height, $pad): string {
             $values = array_values(array_map(
-                static fn ($value): float => is_numeric($value) ? (float) $value : 0.0,
+                static fn (float|int $value): float => (float) $value,
                 $values
             ));
 
@@ -574,7 +593,7 @@ class CtrAnalyticsService
         $xOffset = $pad + 10;
         $index = 0;
         foreach ($data as $row) {
-            $ctr = is_numeric($row['ctr']) ? (float) $row['ctr'] : 0.0;
+            $ctr = (float) $row['ctr'];
             $heightValue = ($height - 2 * $pad) * ($ctr / max(1.0, $max));
             $x = $xOffset + $index * ($barWidth + $gap);
             $y = $height - $pad - $heightValue;
@@ -669,7 +688,11 @@ class CtrAnalyticsService
         $key = "admin.ctr.filters.placements.$placement";
         $translated = __($key);
 
-        return $translated === $key ? ucfirst($placement) : $translated;
+        if (is_string($translated) && $translated !== $key) {
+            return $translated;
+        }
+
+        return ucfirst($placement);
     }
 
     /**
@@ -736,7 +759,7 @@ class CtrAnalyticsService
             }
 
             $clickCount = (int) ($clicks[$deviceId] ?? 0);
-            $baselines[$deviceId] = $imps > 0 ? max(0.0, min(1.0, $clickCount / $imps)) : 0.0;
+            $baselines[$deviceId] = max(0.0, min(1.0, $clickCount / $imps));
 
             $totalImps += $imps;
             $totalClicks += $clickCount;

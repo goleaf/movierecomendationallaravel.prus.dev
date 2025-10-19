@@ -19,16 +19,37 @@ class AnalyticsCache
 
     public function __construct(private readonly MetricsCache $cache) {}
 
+    /**
+     * @template TReturn
+     *
+     * @param  array<string, mixed>  $parameters
+     * @param  Closure(): TReturn  $resolver
+     * @return TReturn
+     */
     public function rememberCtr(string $segment, array $parameters, Closure $resolver): mixed
     {
         return $this->remember(self::TAG_CTR, $segment, $parameters, $resolver);
     }
 
+    /**
+     * @template TReturn
+     *
+     * @param  array<string, mixed>  $parameters
+     * @param  Closure(): TReturn  $resolver
+     * @return TReturn
+     */
     public function rememberTrends(string $segment, array $parameters, Closure $resolver): mixed
     {
         return $this->remember(self::TAG_TRENDS, $segment, $parameters, $resolver);
     }
 
+    /**
+     * @template TReturn
+     *
+     * @param  array<string, mixed>  $parameters
+     * @param  Closure(): TReturn  $resolver
+     * @return TReturn
+     */
     public function rememberTrending(string $segment, array $parameters, Closure $resolver): mixed
     {
         return $this->remember(self::TAG_TRENDING, $segment, $parameters, $resolver);
@@ -49,6 +70,13 @@ class AnalyticsCache
         $this->cache->flush(self::TAG_TRENDING);
     }
 
+    /**
+     * @template TReturn
+     *
+     * @param  array<string, mixed>  $parameters
+     * @param  Closure(): TReturn  $resolver
+     * @return TReturn
+     */
     private function remember(string $tag, string $segment, array $parameters, Closure $resolver): mixed
     {
         $key = $this->buildKey($segment, $parameters);
@@ -56,6 +84,9 @@ class AnalyticsCache
         return $this->cache->remember($tag, $key, self::TTL_SECONDS, $resolver);
     }
 
+    /**
+     * @param  array<string, mixed>  $parameters
+     */
     private function buildKey(string $segment, array $parameters): string
     {
         $normalized = $this->normalizeParameters($parameters);
@@ -63,6 +94,10 @@ class AnalyticsCache
         return 'analytics:'.$segment.':'.md5((string) json_encode($normalized, JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, mixed>
+     */
     private function normalizeParameters(array $parameters): array
     {
         return array_map(function ($value) {
@@ -71,11 +106,15 @@ class AnalyticsCache
             }
 
             if (is_array($value)) {
+                /** @var array<string, mixed> $value */
                 return $this->normalizeParameters($value);
             }
 
             if (is_object($value)) {
-                return $this->normalizeParameters((array) $value);
+                /** @var array<string, mixed> $cast */
+                $cast = (array) $value;
+
+                return $this->normalizeParameters($cast);
             }
 
             return $value;
