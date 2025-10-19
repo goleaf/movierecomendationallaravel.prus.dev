@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.10.1",
         "inertiajs/inertia-laravel": "^2.0",
         "predis/predis": "^3.2",
+        "solution-forest/tab-layout-plugin": "^2.2",
         "symfony/uid": "^7.3",
         "tomatophp/filament-helpers": "*",
         "tomatophp/filament-subscriptions": "^1.0"

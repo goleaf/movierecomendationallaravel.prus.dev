@@ -1,6 +1,24 @@
 <?php
 
 return [
+    'analytics_tabs' => [
+        'heading' => 'Analytics overview',
+        'queue' => [
+            'label' => 'Queues',
+        ],
+        'ctr' => [
+            'label' => 'CTR trends',
+        ],
+        'funnels' => [
+            'label' => 'Funnels',
+        ],
+        'ssr' => [
+            'label' => 'SSR metrics',
+        ],
+        'experiments' => [
+            'label' => 'Experiments',
+        ],
+    ],
     'ctr' => [
         'title' => 'CTR Analytics',
         'period' => 'Period: :from — :to',

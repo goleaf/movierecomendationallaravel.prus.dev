@@ -1,6 +1,24 @@
 <?php
 
 return [
+    'analytics_tabs' => [
+        'heading' => 'Обзор аналитики',
+        'queue' => [
+            'label' => 'Очереди',
+        ],
+        'ctr' => [
+            'label' => 'Динамика CTR',
+        ],
+        'funnels' => [
+            'label' => 'Воронки',
+        ],
+        'ssr' => [
+            'label' => 'SSR метрики',
+        ],
+        'experiments' => [
+            'label' => 'Эксперименты',
+        ],
+    ],
     'ctr' => [
         'title' => 'CTR аналитика',
         'period' => 'Период: :from — :to',

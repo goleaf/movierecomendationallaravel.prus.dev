@@ -34,14 +34,7 @@ class AnalyticsPanelProvider extends PanelProvider
                 FilamentSeoPlugin::make(),
             )
             ->widgets([
-                \App\Filament\Widgets\QueueStatsWidget::class,
-                \App\Filament\Widgets\FunnelWidget::class,
-                \App\Filament\Widgets\CtrLineWidget::class,
-                \App\Filament\Widgets\CtrBarsWidget::class,
-                \App\Filament\Widgets\ZTestWidget::class,
-                \App\Filament\Widgets\SsrStatsWidget::class,
-                \App\Filament\Widgets\SsrScoreWidget::class,
-                \App\Filament\Widgets\SsrDropWidget::class,
+                \App\Filament\Widgets\AnalyticsTabsWidget::class,
             ])
             ->plugin(FilamentPaymentsPlugin::make())
             ->pages([
