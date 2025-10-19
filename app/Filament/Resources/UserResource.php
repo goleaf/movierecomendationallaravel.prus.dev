@@ -20,6 +20,9 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use JeffersonGoncalves\Filament\CepField\Forms\Components\CepInput;
 
+/**
+ * @extends Resource<User>
+ */
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;

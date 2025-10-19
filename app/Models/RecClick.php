@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $movie_id
+ * @property int|null $movie_id
  * @property string $device_id
  * @property string $placement
  * @property string $variant
@@ -20,6 +20,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \Carbon\CarbonImmutable $created_at
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
+ *
+ * @method static Builder<static>|self betweenCreatedAt(DateTimeInterface|string $from, DateTimeInterface|string $to)
+ * @method static Builder<static>|self forPlacement(?string $placement)
+ * @method static Builder<static>|self forVariant(?string $variant)
  */
 class RecClick extends Model
 {

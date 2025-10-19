@@ -16,10 +16,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $placement
  * @property string $variant
  * @property int|null $movie_id
- * @property array|null $meta
+ * @property array<string, mixed>|null $meta
  * @property-read \Carbon\CarbonImmutable $created_at
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
+ *
+ * @method static Builder<static>|self betweenCreatedAt(DateTimeInterface|string $from, DateTimeInterface|string $to)
+ * @method static Builder<static>|self forPlacement(?string $placement)
+ * @method static Builder<static>|self forVariant(?string $variant)
  */
 class RecAbLog extends Model
 {

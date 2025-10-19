@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \Carbon\CarbonImmutable $created_at
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
+ *
+ * @method static Builder<static>|self betweenViewedAt(DateTimeInterface|string $from, DateTimeInterface|string $to)
+ * @method static Builder<static>|self forPlacement(?string $placement)
  */
 class DeviceHistory extends Model
 {

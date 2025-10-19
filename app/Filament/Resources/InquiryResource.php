@@ -22,6 +22,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
+/**
+ * @extends Resource<Inquiry>
+ */
 class InquiryResource extends Resource
 {
     protected static ?string $model = Inquiry::class;
