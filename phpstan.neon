@@ -15,8 +15,6 @@ parameters:
     stubFiles:
         - stubs/laravel-settings.php
     inferPrivatePropertyTypeFromConstructor: true
-    checkMissingIterableValueType: true
-    checkGenericClassInNonGenericObjectType: true
     parallel:
         maximumNumberOfProcesses: 1
     excludePaths:
