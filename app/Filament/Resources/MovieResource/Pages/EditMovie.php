@@ -5,6 +5,7 @@ namespace App\Filament\Resources\MovieResource\Pages;
 use App\Filament\Resources\MovieResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use TomatoPHP\FilamentBookmarksMenu\Filament\Actions\BookmarkAction;
 
 class EditMovie extends EditRecord
 {
@@ -13,6 +14,7 @@ class EditMovie extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            BookmarkAction::make(),
             Actions\DeleteAction::make(),
         ];
     }
