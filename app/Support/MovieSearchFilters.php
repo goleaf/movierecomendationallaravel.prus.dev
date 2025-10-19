@@ -3,8 +3,12 @@
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
+/**
+ * @template TModel of Model
+ */
 final class MovieSearchFilters
 {
     private const ALLOWED_TYPES = ['movie', 'series', 'animation'];
@@ -15,12 +19,15 @@ final class MovieSearchFilters
         public readonly ?string $genre,
         public readonly ?int $yearFrom,
         public readonly ?int $yearTo,
-    ) {
-    }
+    ) {}
 
+    /**
+     * @return self<Model>
+     */
     public static function fromRequest(Request $request): self
     {
-        $query = trim((string) $request->query('q', ''));
+        $rawQuery = $request->query('q');
+        $query = self::normalizeString($rawQuery) ?? '';
         $type = self::normalizeType($request->query('type'));
         $genre = self::normalizeString($request->query('genre'));
         $yearFrom = self::normalizeYear($request->query('yf'));
@@ -33,6 +40,10 @@ final class MovieSearchFilters
         return new self($query, $type, $genre, $yearFrom, $yearTo);
     }
 
+    /**
+     * @param  Builder<TModel>  $builder
+     * @return Builder<TModel>
+     */
     public function apply(Builder $builder): Builder
     {
         if ($this->query !== '') {
@@ -63,6 +74,9 @@ final class MovieSearchFilters
         return $builder;
     }
 
+    /**
+     * @return array{q: string, type: ?string, genre: ?string, yf: ?int, yt: ?int}
+     */
     public function toViewData(): array
     {
         return [
@@ -87,18 +101,38 @@ final class MovieSearchFilters
 
     private static function normalizeString(mixed $value): ?string
     {
+        if (is_array($value)) {
+            $value = array_values($value)[0] ?? null;
+        }
+
         if ($value === null) {
             return null;
         }
 
-        $string = trim((string) $value);
+        if (is_object($value) && method_exists($value, '__toString')) {
+            $value = (string) $value;
+        } elseif (is_scalar($value)) {
+            $value = (string) $value;
+        } else {
+            return null;
+        }
+
+        $string = trim($value);
 
         return $string === '' ? null : $string;
     }
 
     private static function normalizeYear(mixed $value): ?int
     {
+        if (is_array($value)) {
+            $value = array_values($value)[0] ?? null;
+        }
+
         if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
             return null;
         }
 

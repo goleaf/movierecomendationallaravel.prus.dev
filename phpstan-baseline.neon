@@ -901,56 +901,6 @@ parameters:
 			path: app/Services/RecAb.php
 
 		-
-			message: "#^Cannot cast array\\|string\\|null to string\\.$#"
-			count: 1
-			path: app/Support/MovieSearchFilters.php
-
-		-
-			message: "#^Method App\\\\Support\\\\MovieSearchFilters\\:\\:apply\\(\\) has parameter \\$builder with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
-			count: 1
-			path: app/Support/MovieSearchFilters.php
-
-		-
-			message: "#^Method App\\\\Support\\\\MovieSearchFilters\\:\\:apply\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
-			count: 1
-			path: app/Support/MovieSearchFilters.php
-
-		-
-			message: "#^Method App\\\\Support\\\\MovieSearchFilters\\:\\:toViewData\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Support/MovieSearchFilters.php
-
-		-
-			message: "#^Method App\\\\Support\\\\TrendingService\\:\\:filtered\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int, title\\: string, poster_url\\: string\\|null, year\\: int\\|null, type\\: string\\|null, imdb_rating\\: float\\|null, imdb_votes\\: int\\|null, clicks\\: int\\|null\\}\\> but returns Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Movie\\>\\|Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int, title\\: string, poster_url\\: string\\|null, year\\: int\\|null, type\\: string, imdb_rating\\: float\\|null, imdb_votes\\: int\\|null, clicks\\: null\\}\\>\\|Illuminate\\\\Support\\\\Collection\\<int, stdClass\\>\\.$#"
-			count: 1
-			path: app/Support/TrendingService.php
-
-		-
-			message: "#^Method App\\\\Support\\\\TrendingService\\:\\:filtered\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int, title\\: string, poster_url\\: string\\|null, year\\: int\\|null, type\\: string\\|null, imdb_rating\\: float\\|null, imdb_votes\\: int\\|null, clicks\\: int\\|null\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int, title\\: string, poster_url\\: mixed, year\\: int\\|null, type\\: mixed, imdb_rating\\: float\\|null, imdb_votes\\: int\\|null, clicks\\: int\\|null\\}\\>\\.$#"
-			count: 1
-			path: app/Support/TrendingService.php
-
-		-
-			message: "#^Method App\\\\Support\\\\TrendingService\\:\\:snapshot\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{movie\\: App\\\\Models\\\\Movie, clicks\\: int\\|null\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<int, array\\{movie\\: stdClass, clicks\\: int\\}\\|null\\>\\.$#"
-			count: 1
-			path: app/Support/TrendingService.php
-
-		-
-			message: "#^Parameter \\#1 \\$callback of method Illuminate\\\\Support\\\\Collection\\<int,stdClass\\>\\:\\:map\\(\\) expects callable\\(stdClass, int\\)\\: array\\{movie\\: App\\\\Models\\\\Movie, clicks\\: null\\}, Closure\\(App\\\\Models\\\\Movie\\)\\: array\\{movie\\: App\\\\Models\\\\Movie, clicks\\: null\\} given\\.$#"
-			count: 1
-			path: app/Support/TrendingService.php
-
-		-
-			message: "#^Function App\\\\Support\\\\assert_array\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Support/TypeAssert.php
-
-		-
-			message: "#^Function device_id\\(\\) should return string but returns array\\|string\\.$#"
-			count: 1
-			path: app/Support/helpers.php
-
-		-
 			message: "#^Class TomatoPHP\\\\FilamentAccounts\\\\Filament\\\\Resources\\\\AccountResource\\\\Actions\\\\CreatePageActions not found\\.$#"
 			count: 1
 			path: config/filament-accounts.php

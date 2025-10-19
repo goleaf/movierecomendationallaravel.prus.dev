@@ -26,7 +26,18 @@ function assert_non_empty_string(mixed $value, ?string $message = null): string
     return $string;
 }
 
-function assert_array(mixed $value, ?string $message = null): array
+/**
+ * @template TValue
+ *
+ * @param  mixed  $value  Value being asserted
+ * @param  string|null  $message  Custom error message
+ * @param  TValue  ...$template
+ *
+ * @phpstan-assert array<array-key, TValue> $value
+ *
+ * @return array<array-key, TValue>
+ */
+function assert_array(mixed $value, ?string $message = null, mixed ...$template): array
 {
     if (! is_array($value)) {
         throw new InvalidArgumentException($message ?? sprintf('Expected array, %s given.', get_debug_type($value)));
@@ -38,9 +49,7 @@ function assert_array(mixed $value, ?string $message = null): array
 /**
  * @template T of object
  *
- * @param mixed $value
- * @param class-string<T> $className
- * @param string|null $message
+ * @param  class-string<T>  $className
  * @return T
  */
 function assert_instanceof(mixed $value, string $className, ?string $message = null): object

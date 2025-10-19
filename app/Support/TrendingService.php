@@ -10,18 +10,22 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use stdClass;
 
 class TrendingService
 {
     public function __construct(private readonly TrendsRollupService $rollup) {}
 
     /**
-     * @return Collection<int,array{movie:Movie,clicks:int|null}>
+     * @return Collection<int, array{movie: Movie, clicks: int|null}>
      */
     public function snapshot(int $days, int $limit = 8): Collection
     {
         if (! Schema::hasTable('movies')) {
-            return collect();
+            /** @var Collection<int, array{movie: Movie, clicks: int|null}> $empty */
+            $empty = collect();
+
+            return $empty;
         }
 
         [$from, $to] = $this->timeframe($days);
@@ -30,6 +34,7 @@ class TrendingService
 
         $this->rollup->ensureBackfill($fromDate, $toDate);
 
+        /** @var Collection<int, int> $top */
         $top = collect();
 
         if (Schema::hasTable('rec_trending_rollups')) {
@@ -56,15 +61,18 @@ class TrendingService
             return $this->fallbackSnapshot($limit);
         }
 
+        /** @var Collection<int, Movie> $movies */
         $movies = Movie::query()
             ->whereIn('id', $top->keys()->all())
             ->get()
             ->keyBy('id');
 
-        return $top
-            ->map(function (int $clicks, int $movieId) use ($movies) {
+        /** @var Collection<int, array{movie: Movie, clicks: int|null}> $rows */
+        $rows = $top
+            ->map(function (int $clicks, int $movieId) use ($movies): ?array {
                 $movie = $movies->get($movieId);
-                if (! $movie) {
+
+                if ($movie === null) {
                     return null;
                 }
 
@@ -73,37 +81,47 @@ class TrendingService
                     'clicks' => $clicks,
                 ];
             })
-            ->filter()
+            ->filter(static fn (?array $row): bool => $row !== null)
             ->values();
+
+        return $rows;
     }
 
     /**
-     * @return Collection<int,array{movie:Movie,clicks:int|null}>
+     * @return Collection<int, array{movie: Movie, clicks: int|null}>
      */
     protected function fallbackSnapshot(int $limit): Collection
     {
         if (! Schema::hasTable('movies')) {
-            return collect();
+            /** @var Collection<int, array{movie: Movie, clicks: int|null}> $empty */
+            $empty = collect();
+
+            return $empty;
         }
 
-        return Movie::query()
+        /** @var Collection<int, Movie> $movies */
+        $movies = Movie::query()
             ->orderByDesc('imdb_votes')
             ->orderByDesc('imdb_rating')
             ->limit($limit)
-            ->get()
-            ->map(fn (Movie $movie) => [
-                'movie' => $movie,
-                'clicks' => null,
-            ]);
+            ->get();
+
+        return $movies->map(static fn (Movie $movie): array => [
+            'movie' => $movie,
+            'clicks' => null,
+        ]);
     }
 
     /**
-     * @return Collection<int,array{id:int,title:string,poster_url:?string,year:?int,type:?string,imdb_rating:?float,imdb_votes:?int,clicks:?int}>
+     * @return Collection<int, array{id: int, title: string, poster_url: ?string, year: ?int, type: ?string, imdb_rating: ?float, imdb_votes: ?int, clicks: ?int}>
      */
     public function filtered(int $days, string $type = '', string $genre = '', ?int $yearFrom = null, ?int $yearTo = null, int $limit = 40): Collection
     {
         if (! Schema::hasTable('movies')) {
-            return collect();
+            /** @var Collection<int, array{id: int, title: string, poster_url: ?string, year: ?int, type: ?string, imdb_rating: ?float, imdb_votes: ?int, clicks: ?int}> $empty */
+            $empty = collect();
+
+            return $empty;
         }
 
         [$from, $to] = $this->timeframe($days);
@@ -112,7 +130,21 @@ class TrendingService
 
         $this->rollup->ensureBackfill($fromDate, $toDate);
 
+        /** @var Collection<int, array{id: int, title: string, poster_url: ?string, year: ?int, type: ?string, imdb_rating: ?float, imdb_votes: ?int, clicks: ?int}> $items */
         $items = collect();
+
+        $mapResult = static function (stdClass $item): array {
+            return [
+                'id' => (int) $item->id,
+                'title' => (string) $item->title,
+                'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                'year' => $item->year !== null ? (int) $item->year : null,
+                'type' => $item->type !== null ? (string) $item->type : null,
+                'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+            ];
+        };
 
         if (Schema::hasTable('rec_trending_rollups')) {
             $query = DB::table('rec_trending_rollups')
@@ -138,7 +170,10 @@ class TrendingService
                 $query->where('movies.year', '<=', $yearTo);
             }
 
-            $items = $query->limit($limit)->get();
+            /** @var Collection<int, stdClass> $rollupRows */
+            $rollupRows = $query->limit($limit)->get();
+
+            $items = $rollupRows->map($mapResult);
         }
 
         if ($items->isEmpty() && Schema::hasTable('rec_clicks')) {
@@ -165,23 +200,18 @@ class TrendingService
                 $query->where('movies.year', '<=', $yearTo);
             }
 
-            $items = $query->limit($limit)->get();
+            /** @var Collection<int, stdClass> $clickRows */
+            $clickRows = $query->limit($limit)->get();
+
+            $items = $clickRows->map($mapResult);
         }
 
         if ($items->isNotEmpty()) {
-            return $items->map(fn (object $item) => [
-                'id' => (int) $item->id,
-                'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
-                'year' => $item->year !== null ? (int) $item->year : null,
-                'type' => $item->type,
-                'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
-                'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
-                'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
-            ]);
+            return $items;
         }
 
-        $fallback = Movie::query()
+        /** @var Collection<int, Movie> $fallbackMovies */
+        $fallbackMovies = Movie::query()
             ->when($type !== '', fn ($query) => $query->where('type', $type))
             ->when($genre !== '', fn ($query) => $query->whereJsonContains('genres', $genre))
             ->when(! is_null($yearFrom), fn ($query) => $query->where('year', '>=', $yearFrom))
@@ -191,7 +221,8 @@ class TrendingService
             ->limit($limit)
             ->get();
 
-        return $fallback->map(fn (Movie $movie) => [
+        /** @var Collection<int, array{id: int, title: string, poster_url: ?string, year: ?int, type: ?string, imdb_rating: ?float, imdb_votes: ?int, clicks: ?int}> $fallback */
+        $fallback = $fallbackMovies->map(static fn (Movie $movie): array => [
             'id' => $movie->id,
             'title' => $movie->title,
             'poster_url' => $movie->poster_url,
@@ -201,6 +232,8 @@ class TrendingService
             'imdb_votes' => $movie->imdb_votes,
             'clicks' => null,
         ]);
+
+        return $fallback;
     }
 
     /**
