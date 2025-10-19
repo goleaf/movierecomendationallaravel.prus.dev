@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -13,7 +15,6 @@ class User extends Authenticatable implements Commenter
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
 
-    use HasPlanSubscriptions;
     use Notifiable;
 
     /**

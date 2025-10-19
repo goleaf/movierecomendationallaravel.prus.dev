@@ -1,21 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\TrendsAnalyticsService;
-use BackedEnum;
 use Filament\Pages\Page;
-use UnitEnum;
 
 class TrendsPage extends Page
 {
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-line-square';
+    protected static ?string $navigationIcon = 'heroicon-o-chart-line-square';
 
-    protected string $view = 'filament.analytics.trends';
+    protected static string $view = 'filament.analytics.trends';
 
     protected static ?string $navigationLabel = 'Trends';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = 'Analytics';
 
     protected static ?string $slug = 'trends';
 

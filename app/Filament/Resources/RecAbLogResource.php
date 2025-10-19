@@ -1,35 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RecAbLogResource\Pages;
 use App\Models\RecAbLog;
-use BackedEnum;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Form;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
-class RecAbLogResource extends Resource
+final class RecAbLogResource extends Resource
 {
     protected static ?string $model = RecAbLog::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-bolt';
+    protected static ?string $navigationIcon = 'heroicon-o-bolt';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Telemetry';
+    protected static ?string $navigationGroup = 'Telemetry';
 
     protected static ?string $modelLabel = 'A/B Impression';
 
-    public static function form(Schema $schema): Schema
+    public static function form(Form $form): Form
     {
-        return $schema;
+        return $form;
     }
 
     public static function table(Table $table): Table
@@ -40,32 +41,19 @@ class RecAbLogResource extends Resource
                     ->label('Logged at')
                     ->dateTime()
                     ->sortable(),
-                TextColumn::make('movie.title')
-                    ->label('Movie')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('variant')
-                    ->badge()
-                    ->sortable(),
                 TextColumn::make('placement')
+                    ->badge()
+                    ->searchable(),
+                TextColumn::make('variant')
                     ->badge()
                     ->sortable(),
                 TextColumn::make('device_id')
                     ->label('Device')
                     ->searchable()
-                    ->copyable()
-                    ->limit(24),
-                TextColumn::make('meta')
-                    ->label('Meta')
-                    ->formatStateUsing(function (?array $state): ?string {
-                        if (empty($state)) {
-                            return null;
-                        }
-
-                        return json_encode($state, JSON_UNESCAPED_UNICODE);
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->wrap(),
+                    ->copyable(),
+                TextColumn::make('movie.title')
+                    ->label('Movie')
+                    ->searchable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -76,16 +64,9 @@ class RecAbLogResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['from'] ?? null, fn (Builder $q, $date): Builder => $q->whereDate('created_at', '>=', $date))
-                            ->when($data['until'] ?? null, fn (Builder $q, $date): Builder => $q->whereDate('created_at', '<=', $date));
+                            ->when($data['from'] ?? null, static fn (Builder $q, $date): Builder => $q->whereDate('created_at', '>=', $date))
+                            ->when($data['until'] ?? null, static fn (Builder $q, $date): Builder => $q->whereDate('created_at', '<=', $date));
                     }),
-                SelectFilter::make('variant')
-                    ->options(fn () => RecAbLog::query()
-                        ->select('variant')
-                        ->distinct()
-                        ->orderBy('variant')
-                        ->pluck('variant', 'variant')
-                        ->all()),
                 SelectFilter::make('placement')
                     ->options(fn () => RecAbLog::query()
                         ->select('placement')
@@ -93,46 +74,38 @@ class RecAbLogResource extends Resource
                         ->orderBy('placement')
                         ->pluck('placement', 'placement')
                         ->all()),
-                SelectFilter::make('movie_id')
-                    ->relationship('movie', 'title')
-                    ->label('Movie'),
+                SelectFilter::make('variant')
+                    ->options(fn () => RecAbLog::query()
+                        ->select('variant')
+                        ->distinct()
+                        ->orderBy('variant')
+                        ->pluck('variant', 'variant')
+                        ->all()),
             ])
             ->actions([
-                BookmarkTableAction::make()->page('view'),
                 Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    BookmarkBulkAction::make()->page('view'),
-                    BookmarkBulkClearAction::make()->page('view'),
+                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
 
-    public static function infolist(Schema $schema): Schema
+    public static function infolist(Infolist $infolist): Infolist
     {
-        return $schema
+        return $infolist
             ->schema([
                 TextEntry::make('id')->label('ID'),
                 TextEntry::make('created_at')
                     ->label('Logged at')
                     ->dateTime(),
-                TextEntry::make('movie.title')
-                    ->label('Movie'),
-                TextEntry::make('variant')->badge(),
                 TextEntry::make('placement')->badge(),
+                TextEntry::make('variant')->badge(),
                 TextEntry::make('device_id')
                     ->label('Device'),
-                TextEntry::make('meta')
-                    ->label('Meta')
-                    ->formatStateUsing(function (?array $state): ?string {
-                        if (empty($state)) {
-                            return null;
-                        }
-
-                        return json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                    })
-                    ->columnSpanFull(),
+                TextEntry::make('movie.title')
+                    ->label('Movie'),
             ]);
     }
 
@@ -146,6 +119,6 @@ class RecAbLogResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['device_id', 'variant', 'placement'];
+        return ['device_id', 'placement', 'variant'];
     }
 }

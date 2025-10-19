@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\MovieResource\Pages;
@@ -9,6 +11,7 @@ use App\Filament\Resources\MovieResource\RelationManagers\RecClicksRelationManag
 use App\Models\Movie;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -18,7 +21,6 @@ use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -34,15 +36,15 @@ class MovieResource extends Resource
 {
     protected static ?string $model = Movie::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-film';
+    protected static ?string $navigationIcon = 'heroicon-o-film';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Catalog';
+    protected static ?string $navigationGroup = 'Catalog';
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    public static function form(Schema $schema): Schema
+    public static function form(Form $form): Form
     {
-        return $schema
+        return $form
             ->schema([
                 Section::make('Details')
                     ->schema([
@@ -98,14 +100,16 @@ class MovieResource extends Resource
                     ->columns(2),
                 Section::make('Translations')
                     ->schema([
-                        Translation::make('translations.title')
+                        KeyValue::make('translations.title')
                             ->label('Title Translations')
-                            ->default([])
-                            ->columnSpanFull(),
-                        Translation::make('translations.plot')
+                            ->columnSpanFull()
+                            ->keyLabel('Locale')
+                            ->valueLabel('Title'),
+                        KeyValue::make('translations.plot')
                             ->label('Plot Translations')
-                            ->default([])
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->keyLabel('Locale')
+                            ->valueLabel('Plot'),
                     ])
                     ->columns(1),
                 Section::make('Raw Payload')
@@ -204,7 +208,6 @@ class MovieResource extends Resource
                     }),
             ])
             ->actions([
-                BookmarkTableAction::make()->page('view'),
                 Tables\Actions\ViewAction::make(),
                 CommentsTableAction::make()
                     ->mentionables(fn (): Collection => static::getCommentMentionables()),
@@ -213,8 +216,6 @@ class MovieResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    BookmarkBulkAction::make()->page('view'),
-                    BookmarkBulkClearAction::make()->page('view'),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

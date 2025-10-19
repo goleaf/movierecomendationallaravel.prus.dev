@@ -1,21 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\QueueMetricsService;
-use BackedEnum;
 use Filament\Pages\Page;
-use UnitEnum;
 
 class QueuePage extends Page
 {
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-queue-list';
+    protected static ?string $navigationIcon = 'heroicon-o-queue-list';
 
-    protected string $view = 'filament.analytics.queue';
+    protected static string $view = 'filament.analytics.queue';
 
     protected static ?string $navigationLabel = 'Queue / Horizon';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = 'Analytics';
 
     protected static ?string $slug = 'queue';
 

@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 
 Route::get('/', HomePage::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
-Route::get('/trends', TrendsLivewirePage::class)->name('trends');
+Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
 
 Route::get('/works', function () {

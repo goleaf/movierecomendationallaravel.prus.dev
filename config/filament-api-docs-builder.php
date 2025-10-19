@@ -1,18 +1,25 @@
 <?php
 
-return [
-    // Array of custom code builders that can be used for generating API code examples
-    'code_builders' => [],
+use InfinityXTech\FilamentApiDocsBuilder\Enums\PredefinedCodeBuilders;
+use InfinityXTech\FilamentApiDocsBuilder\Filament\Resources\ApiDocsResource;
+use InfinityXTech\FilamentApiDocsBuilder\Models\ApiDocs;
 
-    // Predefined parameters that will be included in API requests by default
+$resourceClass = class_exists(ApiDocsResource::class) ? ApiDocsResource::class : null;
+$modelClass = class_exists(ApiDocs::class) ? ApiDocs::class : null;
+$predefinedCodes = class_exists(PredefinedCodeBuilders::class)
+    ? [PredefinedCodeBuilders::cURL]
+    : [];
+
+return [
+    'code_builders' => [],
     'predefined_params' => [
         [
-            'location' => 'header',         // Parameter location (e.g., header, query, body)
-            'type' => 'string',            // Data type of the parameter
-            'name' => 'Authorization',     // Name of the parameter
-            'value' => 'Bearer $TOKEN',    // Default value of the parameter
-            'description' => '',           // Optional description of the parameter
-            'required' => true,             // Indicates whether the parameter is required
+            'location' => 'header',
+            'type' => 'string',
+            'name' => 'Authorization',
+            'value' => 'Bearer $TOKEN',
+            'description' => '',
+            'required' => true,
         ],
         [
             'location' => 'header',
@@ -31,23 +38,11 @@ return [
             'required' => true,
         ],
     ],
-
-    // Resource class used for managing API documentation within Filament
-    'resource' => \InfinityXTech\FilamentApiDocsBuilder\Filament\Resources\ApiDocsResource::class,
-
-    // Model class representing API documentation
-    'model' => \InfinityXTech\FilamentApiDocsBuilder\Models\ApiDocs::class,
-
-    // Configuration for the importer, including predefined code builders
+    'resource' => $resourceClass,
+    'model' => $modelClass,
     'importer' => [
-        'predefined_codes' => [
-            \InfinityXTech\FilamentApiDocsBuilder\Enums\PredefinedCodeBuilders::cURL, // Default predefined code builder
-        ],
+        'predefined_codes' => $predefinedCodes,
     ],
-
-    // Flag to indicate whether the current user should be saved during operations
     'save_current_user' => false,
-
-    // Tenant model (if applicable), set to null by default
     'tenant' => null,
 ];

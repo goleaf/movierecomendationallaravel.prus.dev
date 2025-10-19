@@ -1,6 +1,16 @@
 <?php
 
+use Illuminate\Database\Migrations\Migration;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
+
+if (! class_exists(SettingsMigration::class)) {
+    return new class extends Migration
+    {
+        public function up(): void {}
+
+        public function down(): void {}
+    };
+}
 
 return new class extends SettingsMigration
 {
