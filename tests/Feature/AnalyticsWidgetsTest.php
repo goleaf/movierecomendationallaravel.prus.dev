@@ -37,6 +37,7 @@ class AnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertSee('Placement')
+            ->assertSee('CTR (CUPED) %')
             ->assertSeeTextInOrder(['home', 'show', 'trends', 'Итого'])
             ->assertSeeText('6') // total impressions
             ->assertSeeText('4') // total views

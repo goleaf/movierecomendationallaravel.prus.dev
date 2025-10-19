@@ -16,5 +16,13 @@
       ]) }}</li>
     @endforeach
   </ul>
+  <h3>{{ __('admin.ctr.funnels.heading') }}</h3>
+  <ul>
+    @foreach($funnels as $label => $row)
+      <li>
+        {{ $label }} — CTR: {{ number_format($row['ctr'], 2) }}%, CUPED: {{ number_format($row['cuped_ctr'], 2) }}%, {{ __('admin.funnel.headers.imps') }}: {{ number_format($row['imps']) }}, {{ __('admin.funnel.headers.clicks') }}: {{ number_format($row['clks']) }}
+      </li>
+    @endforeach
+  </ul>
 </div>
 @endsection

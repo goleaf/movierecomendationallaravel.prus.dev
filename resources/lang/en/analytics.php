@@ -22,6 +22,7 @@ return [
                 'clicks' => 'Clicks',
                 'views' => 'Views',
                 'ctr' => 'CTR %',
+                'cuped_ctr' => 'CTR (CUPED) %',
                 'view_rate' => 'View→Click %',
             ],
             'placements' => [

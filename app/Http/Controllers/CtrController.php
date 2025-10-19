@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class CtrController extends Controller
 {
-    public function __construct(private readonly CtrAnalyticsService $analytics)
-    {
-    }
+    public function __construct(private readonly CtrAnalyticsService $analytics) {}
 
     public function index(Request $request): View
     {
@@ -41,6 +39,9 @@ class CtrController extends Controller
                 'imps' => $row['imps'],
                 'clks' => $row['clicks'],
                 'views' => $row['views'],
+                'ctr' => $row['ctr'],
+                'cuped_ctr' => $row['cuped_ctr'],
+                'view_rate' => $row['view_rate'],
             ]])->all(),
             'impVariant' => $summary['impressions'],
             'clkVariant' => $summary['clicks'],

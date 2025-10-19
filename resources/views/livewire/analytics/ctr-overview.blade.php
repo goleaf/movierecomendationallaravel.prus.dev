@@ -76,6 +76,7 @@
                         <th class="px-3 py-2 text-left font-medium text-gray-600">{{ __('admin.funnel.headers.clicks') }}</th>
                         <th class="px-3 py-2 text-left font-medium text-gray-600">{{ __('admin.funnel.headers.views') }}</th>
                         <th class="px-3 py-2 text-left font-medium text-gray-600">{{ __('admin.funnel.headers.ctr') }}</th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-600">{{ __('admin.funnel.headers.cuped_ctr') }}</th>
                         <th class="px-3 py-2 text-left font-medium text-gray-600">{{ __('admin.funnel.headers.view_rate') }}</th>
                     </tr>
                 </thead>
@@ -86,14 +87,9 @@
                             <td class="px-3 py-2 text-gray-700">{{ number_format($data['imps']) }}</td>
                             <td class="px-3 py-2 text-gray-700">{{ number_format($data['clks']) }}</td>
                             <td class="px-3 py-2 text-gray-700">{{ number_format($data['views']) }}</td>
-                            <td class="px-3 py-2 text-gray-700">
-                                @php($ctrValue = $data['imps'] > 0 ? round(100 * $data['clks'] / $data['imps'], 2) : 0)
-                                {{ number_format($ctrValue, 2) }}%
-                            </td>
-                            <td class="px-3 py-2 text-gray-700">
-                                @php($viewRate = $data['views'] > 0 ? round(100 * $data['clks'] / $data['views'], 2) : 0)
-                                {{ number_format($viewRate, 2) }}%
-                            </td>
+                            <td class="px-3 py-2 text-gray-700">{{ number_format($data['ctr'], 2) }}%</td>
+                            <td class="px-3 py-2 text-gray-700">{{ number_format($data['cuped_ctr'], 2) }}%</td>
+                            <td class="px-3 py-2 text-gray-700">{{ number_format($data['view_rate'], 2) }}%</td>
                         </tr>
                     @endforeach
                 </tbody>
