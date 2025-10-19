@@ -5,137 +5,30 @@ declare(strict_types=1);
 namespace Tests\Seeders;
 
 use App\Models\Movie;
-use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class DemoContentSeeder extends Seeder
+class DemoContentSeeder
 {
-    public function run(): void
+    public function __invoke(): void
     {
-        $now = Carbon::now()->toImmutable();
+        $now = Carbon::now();
 
-        $movies = [
-            [
-                'id' => 1,
-                'imdb_tt' => 'tt8000001',
-                'title' => 'The Quantum Enigma',
-                'plot' => 'A physicist discovers an anomaly that rewrites the laws of time.',
-                'type' => 'movie',
-                'year' => 2024,
-                'release_date' => $now->subMonths(2)->format('Y-m-d'),
-                'imdb_rating' => 8.8,
-                'imdb_votes' => 120_000,
-                'runtime_min' => 142,
-                'genres' => ['Sci-Fi', 'Thriller'],
-                'poster_url' => 'https://example.com/posters/quantum.jpg',
-                'backdrop_url' => 'https://example.com/backdrops/quantum.jpg',
-                'translations' => [
-                    'title' => [
-                        'ru' => 'Квантовая Загадка',
-                    ],
-                    'plot' => [
-                        'ru' => 'Учёная обнаруживает аномалию, меняющую ход времени.',
-                    ],
-                ],
-                'raw' => ['source' => 'seed'],
-                'created_at' => $now->subMonths(2),
-                'updated_at' => $now->subMonths(2),
-            ],
-            [
-                'id' => 2,
-                'imdb_tt' => 'tt8000002',
-                'title' => 'Solaris Rising',
-                'plot' => 'A rescue crew uncovers a sentient storm orbiting a dying star.',
-                'type' => 'movie',
-                'year' => 2023,
-                'release_date' => $now->subMonths(8)->format('Y-m-d'),
-                'imdb_rating' => 8.1,
-                'imdb_votes' => 95_000,
-                'runtime_min' => 128,
-                'genres' => ['Adventure', 'Drama'],
-                'poster_url' => 'https://example.com/posters/solaris.jpg',
-                'backdrop_url' => 'https://example.com/backdrops/solaris.jpg',
-                'translations' => [
-                    'title' => [
-                        'ru' => 'Восход Соляриса',
-                    ],
-                    'plot' => [
-                        'ru' => 'Команда спасателей сталкивается с разумной бурей.',
-                    ],
-                ],
-                'raw' => ['source' => 'seed'],
-                'created_at' => $now->subMonths(8),
-                'updated_at' => $now->subMonths(8),
-            ],
-            [
-                'id' => 3,
-                'imdb_tt' => 'tt8000003',
-                'title' => 'Nebula Drift',
-                'plot' => 'Pilots navigate an expanding nebula threatening to swallow trade routes.',
-                'type' => 'movie',
-                'year' => 2022,
-                'release_date' => $now->subYears(1)->format('Y-m-d'),
-                'imdb_rating' => 7.6,
-                'imdb_votes' => 180_000,
-                'runtime_min' => 116,
-                'genres' => ['Action', 'Sci-Fi'],
-                'poster_url' => 'https://example.com/posters/nebula.jpg',
-                'backdrop_url' => 'https://example.com/backdrops/nebula.jpg',
-                'translations' => [
-                    'title' => [
-                        'ru' => 'Туманность в Дрейфе',
-                    ],
-                    'plot' => [
-                        'ru' => 'Пилоты пытаются обойти расширяющуюся туманность.',
-                    ],
-                ],
-                'raw' => ['source' => 'seed'],
-                'created_at' => $now->subYears(1),
-                'updated_at' => $now->subYears(1),
-            ],
-        ];
-
-        foreach ($movies as $movie) {
-            Movie::query()->create($movie);
-        }
-
-        $impressionLogs = collect([
-            ['device_id' => 'device-even-2', 'variant' => 'A'],
-            ['device_id' => 'device-odd', 'variant' => 'B'],
-            ['device_id' => 'device-alt-1', 'variant' => 'A'],
-            ['device_id' => 'device-alt-2', 'variant' => 'B'],
-            ['device_id' => 'device-alt-3', 'variant' => 'A'],
-            ['device_id' => 'device-alt-4', 'variant' => 'A'],
-        ])->map(function (array $row) use ($now): array {
-            return [
-                'device_id' => $row['device_id'],
-                'variant' => $row['variant'],
-                'placement' => 'home',
-                'created_at' => $now->subDays(2),
-                'updated_at' => $now->subDays(2),
-            ];
-        });
-
-        DB::table('rec_ab_logs')->insert($impressionLogs->all());
+        Movie::factory()->count(10)->create();
 
         $clicks = [
-            ['movie_id' => 1, 'variant' => 'A', 'placement' => 'home', 'offset' => 1],
-            ['movie_id' => 1, 'variant' => 'A', 'placement' => 'show', 'offset' => 2],
-            ['movie_id' => 2, 'variant' => 'B', 'placement' => 'home', 'offset' => 3],
-            ['movie_id' => 3, 'variant' => 'A', 'placement' => 'trends', 'offset' => 1],
-            ['movie_id' => 2, 'variant' => 'B', 'placement' => 'trends', 'offset' => 2],
-            ['movie_id' => 1, 'variant' => 'A', 'placement' => 'home', 'offset' => 5],
+            ['movie_id' => 1, 'variant' => 'A', 'placement' => 'home'],
+            ['movie_id' => 1, 'variant' => 'B', 'placement' => 'home'],
+            ['movie_id' => 2, 'variant' => 'A', 'placement' => 'home'],
         ];
 
         DB::table('rec_clicks')->insert(array_map(function (array $row) use ($now): array {
             return [
                 'movie_id' => $row['movie_id'],
-                'device_id' => 'device-seed',
                 'variant' => $row['variant'],
                 'placement' => $row['placement'],
-                'created_at' => $now->subDays($row['offset']),
-                'updated_at' => $now->subDays($row['offset']),
+                'created_at' => $now->copy()->subDays(1),
+                'updated_at' => $now->copy()->subDays(1),
             ];
         }, $clicks));
 
@@ -157,19 +50,30 @@ class DemoContentSeeder extends Seeder
         }, $views));
 
         $ssrMetrics = [
-            ['path' => '/', 'score' => 85, 'delta' => 1],
-            ['path' => '/trends', 'score' => 78, 'delta' => 1],
-            ['path' => '/', 'score' => 90, 'delta' => 0],
-            ['path' => '/trends', 'score' => 72, 'delta' => 0],
+            ['path' => '/', 'score' => 85, 'delta' => 1, 'html_size' => 420_000, 'meta' => 26, 'og' => 4, 'ld' => 2, 'img' => 16, 'blocking' => 1, 'first_byte_ms' => 200],
+            ['path' => '/trends', 'score' => 78, 'delta' => 1, 'html_size' => 380_000, 'meta' => 24, 'og' => 3, 'ld' => 1, 'img' => 12, 'blocking' => 1, 'first_byte_ms' => 210],
+            ['path' => '/', 'score' => 90, 'delta' => 0, 'html_size' => 430_000, 'meta' => 28, 'og' => 4, 'ld' => 2, 'img' => 18, 'blocking' => 0, 'first_byte_ms' => 190],
+            ['path' => '/trends', 'score' => 72, 'delta' => 0, 'html_size' => 360_000, 'meta' => 22, 'og' => 3, 'ld' => 1, 'img' => 10, 'blocking' => 2, 'first_byte_ms' => 205],
         ];
 
         DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
+            $timestamp = $now->copy()->subDays($row['delta']);
+
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
-                'created_at' => $now->subDays($row['delta']),
-                'updated_at' => $now->subDays($row['delta']),
+                'html_size' => $row['html_size'],
+                'meta_count' => $row['meta'],
+                'og_count' => $row['og'],
+                'ldjson_count' => $row['ld'],
+                'img_count' => $row['img'],
+                'blocking_scripts' => $row['blocking'],
+                'first_byte_ms' => $row['first_byte_ms'],
+                'has_json_ld' => $row['ld'] > 0,
+                'has_open_graph' => $row['og'] >= 3,
+                'recorded_at' => $timestamp,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
             ];
         }, $ssrMetrics));
     }

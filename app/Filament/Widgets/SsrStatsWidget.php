@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class SsrStatsWidget extends BaseWidget
@@ -17,12 +16,15 @@ class SsrStatsWidget extends BaseWidget
         $score = 0;
         $paths = 0;
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')->orderByDesc('id')->first();
+        /** @var SsrMetricsService $metrics */
+        $metrics = app(SsrMetricsService::class);
 
-            if ($row) {
-                $score = (int) $row->score;
-                $paths = 1;
+        if ($metrics->hasMetrics()) {
+            $summary = $metrics->latestSummary();
+
+            if ($summary !== null) {
+                $score = (int) round($summary['average_score']);
+                $paths = $summary['path_count'];
             }
         } elseif (Storage::exists('metrics/last.json')) {
             $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];

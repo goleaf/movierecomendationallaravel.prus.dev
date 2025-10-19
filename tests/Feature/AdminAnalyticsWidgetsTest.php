@@ -57,8 +57,8 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(SsrStatsWidget::class)
             ->assertSee('SSR Score')
-            ->assertSee('94')
-            ->assertSee('1 path');
+            ->assertSee('91')
+            ->assertSee('3 paths');
 
         $scoreComponent = Livewire::test(SsrScoreWidget::class);
         $scoreComponent->call('rendering');

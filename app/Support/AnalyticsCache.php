@@ -8,6 +8,7 @@ use Closure;
 use DateTimeInterface;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Support\Facades\Cache;
+use RuntimeException;
 
 class AnalyticsCache
 {
@@ -62,7 +63,31 @@ class AnalyticsCache
 
     private function tags(string $tag): TaggedCache
     {
-        return Cache::store('redis')->tags([$tag]);
+        $stores = ['redis', config('cache.default'), 'array'];
+
+        if (! class_exists('Redis')) {
+            $stores = array_filter($stores, static fn ($store) => $store !== 'redis');
+        }
+
+        foreach ($stores as $store) {
+            try {
+                $repository = Cache::store($store);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (! $repository->supportsTags()) {
+                continue;
+            }
+
+            try {
+                return $repository->tags([$tag]);
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        throw new RuntimeException('No cache store supporting tags is configured.');
     }
 
     private function buildKey(string $segment, array $parameters): string

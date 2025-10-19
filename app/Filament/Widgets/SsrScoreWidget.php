@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class SsrScoreWidget extends ChartWidget
@@ -26,17 +25,15 @@ class SsrScoreWidget extends ChartWidget
         $labels = [];
         $series = [];
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $rows = DB::table('ssr_metrics')
-                ->selectRaw('date(created_at) d, avg(score) s')
-                ->groupBy('d')
-                ->orderBy('d')
-                ->limit(30)
-                ->get();
+        /** @var SsrMetricsService $metrics */
+        $metrics = app(SsrMetricsService::class);
 
-            foreach ($rows as $r) {
-                $labels[] = $r->d;
-                $series[] = round((float) $r->s, 2);
+        if ($metrics->hasMetrics()) {
+            $trend = $metrics->scoreTrend();
+
+            foreach ($trend as $row) {
+                $labels[] = $row['recorded_date'];
+                $series[] = $row['average_score'];
             }
         } elseif (Storage::exists('metrics/last.json')) {
             $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
