@@ -86,6 +86,15 @@ return [
         'horizon_workload' => 'Нагрузка Horizon',
         'horizon_supervisors' => 'Супервайзеры Horizon',
         'horizon_empty' => 'Данные Horizon недоступны.',
+        'actions' => [
+            'pause' => 'Поставить очередь на паузу',
+            'resume' => 'Возобновить очередь',
+            'confirm_pause' => 'Приостановить всех воркеров Horizon?',
+            'confirm_resume' => 'Возобновить работу воркеров Horizon?',
+            'paused' => 'Обработка очереди приостановлена.',
+            'resumed' => 'Обработка очереди возобновлена.',
+            'unavailable' => 'Horizon не установлен или не настроен.',
+        ],
     ],
     'funnel' => [
         'period' => 'Период: :from — :to',

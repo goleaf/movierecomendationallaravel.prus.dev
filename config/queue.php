@@ -125,4 +125,14 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'horizon' => [
+        'admin_emails' => array_values(array_filter(
+            array_map(
+                static fn (string $email): string => strtolower(trim($email)),
+                explode(',', (string) env('HORIZON_ADMIN_EMAILS', 'admin@example.com')),
+            ),
+            static fn (string $email): bool => $email !== '',
+        )),
+    ],
+
 ];

@@ -86,6 +86,15 @@ return [
         'horizon_workload' => 'Horizon workload',
         'horizon_supervisors' => 'Horizon supervisors',
         'horizon_empty' => 'No Horizon metrics available.',
+        'actions' => [
+            'pause' => 'Pause queue',
+            'resume' => 'Resume queue',
+            'confirm_pause' => 'Pause all Horizon workers?',
+            'confirm_resume' => 'Resume Horizon workers?',
+            'paused' => 'Queue processing paused.',
+            'resumed' => 'Queue processing resumed.',
+            'unavailable' => 'Horizon is not installed or configured.',
+        ],
     ],
     'funnel' => [
         'period' => 'Period: :from — :to',
