@@ -7,9 +7,11 @@ namespace App\Services\Analytics;
 use App\Models\SsrMetric;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class SsrAnalyticsService
 {
@@ -37,17 +39,30 @@ class SsrAnalyticsService
                     ->distinct()
                     ->count('path'));
             }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
-            $paths = count($json);
+        } else {
+            $fallback = $this->loadSsrFallback();
 
-            $total = 0;
-            foreach ($json as $entry) {
-                $total += (int) ($entry['score'] ?? 0);
-            }
+            if ($fallback !== []) {
+                $uniquePaths = [];
+                $totalScore = 0;
+                $count = 0;
 
-            if ($paths > 0) {
-                $score = (int) round($total / $paths);
+                foreach ($fallback as $record) {
+                    if (isset($record['path'])) {
+                        $uniquePaths[(string) $record['path']] = true;
+                    }
+
+                    if (isset($record['score'])) {
+                        $totalScore += (int) $record['score'];
+                        $count++;
+                    }
+                }
+
+                $paths = count($uniquePaths);
+
+                if ($count > 0) {
+                    $score = (int) round($totalScore / $count);
+                }
             }
         }
 
@@ -89,19 +104,47 @@ class SsrAnalyticsService
                 $labels[] = $row->d;
                 $series[] = round((float) $row->s, 2);
             }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
+        } else {
+            $fallback = $this->loadSsrFallback();
 
-            $labels[] = now()->toDateString();
-            $avg = 0;
-            $count = 0;
+            if ($fallback !== []) {
+                $grouped = [];
 
-            foreach ($json as $row) {
-                $avg += (int) ($row['score'] ?? 0);
-                $count++;
+                foreach ($fallback as $record) {
+                    if (! isset($record['score'])) {
+                        continue;
+                    }
+
+                    $date = $this->resolveFallbackDate($record);
+
+                    if ($date === null) {
+                        continue;
+                    }
+
+                    if (! isset($grouped[$date])) {
+                        $grouped[$date] = ['sum' => 0.0, 'count' => 0];
+                    }
+
+                    $grouped[$date]['sum'] += (float) $record['score'];
+                    $grouped[$date]['count']++;
+                }
+
+                if ($grouped !== []) {
+                    ksort($grouped);
+
+                    $processed = 0;
+
+                    foreach ($grouped as $date => $values) {
+                        if ($processed >= $limit) {
+                            break;
+                        }
+
+                        $labels[] = $date;
+                        $series[] = round($values['sum'] / max(1, $values['count']), 2);
+                        $processed++;
+                    }
+                }
             }
-
-            $series[] = $count > 0 ? round($avg / $count, 2) : 0;
         }
 
         return [
@@ -188,5 +231,61 @@ class SsrAnalyticsService
         }
 
         return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadSsrFallback(): array
+    {
+        if (! Storage::exists('metrics/ssr.jsonl')) {
+            return [];
+        }
+
+        $content = trim((string) Storage::get('metrics/ssr.jsonl'));
+
+        if ($content === '') {
+            return [];
+        }
+
+        $records = [];
+        $lines = preg_split("/\r?\n/", $content) ?: [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if ($line === '') {
+                continue;
+            }
+
+            $decoded = json_decode($line, true);
+
+            if (is_array($decoded)) {
+                $records[] = $decoded;
+            }
+        }
+
+        return $records;
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function resolveFallbackDate(array $record): ?string
+    {
+        $timestamp = $record['ts']
+            ?? $record['timestamp']
+            ?? $record['collected_at']
+            ?? null;
+
+        if ($timestamp === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse((string) $timestamp)->toDateString();
+        } catch (Throwable) {
+            return null;
+        }
     }
 }
