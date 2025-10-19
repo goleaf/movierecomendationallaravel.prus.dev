@@ -7,8 +7,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "filament/filament": "^4.0",
-        "jacobtims/inline-date-time-picker": "^2.0",
+        "filament/filament": "^3.0",
+        "kirschbaum-development/commentions": "^0.7.4",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "inertiajs/inertia-laravel": "^2.0",

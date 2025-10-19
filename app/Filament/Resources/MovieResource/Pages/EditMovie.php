@@ -6,7 +6,8 @@ use App\Filament\Resources\MovieResource;
 use App\Support\TranslationPayload;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use TomatoPHP\FilamentBookmarksMenu\Filament\Actions\BookmarkAction;
+use Kirschbaum\Commentions\Filament\Actions\CommentsAction;
+use Kirschbaum\Commentions\Filament\Actions\SubscriptionAction;
 
 class EditMovie extends EditRecord
 {
@@ -15,7 +16,9 @@ class EditMovie extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            BookmarkAction::make(),
+            CommentsAction::make()
+                ->mentionables(fn () => MovieResource::getCommentMentionables()),
+            SubscriptionAction::make(),
             Actions\DeleteAction::make(),
         ];
     }
