@@ -7,7 +7,9 @@ use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SearchPageController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Livewire\HomePage;
 use App\Livewire\TrendsPage;
@@ -19,6 +21,9 @@ Route::get('/', HomePage::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
 Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+Route::get('/sitemaps/{section}.xml', [SitemapController::class, 'section'])->name('sitemap.section');
+Route::get('/robots.txt', RobotsController::class)->name('robots');
 
 Route::get('/works', function () {
     $path = base_path('WORKS.md');
