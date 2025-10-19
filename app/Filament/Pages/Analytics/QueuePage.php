@@ -3,20 +3,26 @@
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\QueueMetricsService;
+use BackedEnum;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
+use UnitEnum;
 
 class QueuePage extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-queue-list';
-    protected static string $view = 'filament.analytics.queue';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-queue-list';
+
+    protected string $view = 'filament.analytics.queue';
+
     protected static ?string $navigationLabel = 'Queue / Horizon';
-    protected static ?string $navigationGroup = 'Analytics';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+
     protected static ?string $slug = 'queue';
 
     public int $jobs = 0;
+
     public int $failed = 0;
+
     public int $batches = 0;
 
     /** @var array{workload: array<string, string>|null, supervisors: array<int, string>|null} */

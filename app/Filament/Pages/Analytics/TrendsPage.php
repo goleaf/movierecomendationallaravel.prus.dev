@@ -3,23 +3,32 @@
 namespace App\Filament\Pages\Analytics;
 
 use App\Services\Analytics\TrendsAnalyticsService;
+use BackedEnum;
 use Filament\Pages\Page;
-use Illuminate\Support\Collection;
-use Livewire\Attributes\Url;
+use UnitEnum;
 
 class TrendsPage extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-chart-line-square';
-    protected static string $view = 'filament.analytics.trends';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-line-square';
+
+    protected string $view = 'filament.analytics.trends';
+
     protected static ?string $navigationLabel = 'Trends';
-    protected static ?string $navigationGroup = 'Analytics';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Analytics';
+
     protected static ?string $slug = 'trends';
 
     public int $days = 7;
+
     public string $type = '';
+
     public string $genre = '';
+
     public ?int $yearFrom = null;
+
     public ?int $yearTo = null;
+
     public bool $showAdvancedFilters = false;
 
     /** @var array<int, array<string, mixed>> */
@@ -31,6 +40,7 @@ class TrendsPage extends Page
     public array $typeOptions = [];
 
     public string $fromDate;
+
     public string $toDate;
 
     public function mount(): void
