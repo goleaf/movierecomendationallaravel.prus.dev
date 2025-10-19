@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\MovieFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,6 +32,8 @@ use Kirschbaum\Commentions\HasComments;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecAbLog> $recAbLogs
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecClick> $recClicks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeviceHistory> $deviceHistory
+ *
+ * @method static MovieFactory factory($count = null, $state = [])
  */
 class Movie extends Model implements Commentable
 {
@@ -126,16 +129,25 @@ class Movie extends Model implements Commentable
         return round($weighted, 4);
     }
 
+    /**
+     * @return HasMany<RecAbLog>
+     */
     public function recAbLogs(): HasMany
     {
         return $this->hasMany(RecAbLog::class);
     }
 
+    /**
+     * @return HasMany<RecClick>
+     */
     public function recClicks(): HasMany
     {
         return $this->hasMany(RecClick::class);
     }
 
+    /**
+     * @return HasMany<DeviceHistory>
+     */
     public function deviceHistory(): HasMany
     {
         return $this->hasMany(DeviceHistory::class);
