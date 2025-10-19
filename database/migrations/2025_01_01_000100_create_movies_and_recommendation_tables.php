@@ -37,6 +37,7 @@ return new class extends Migration
         if (! Schema::hasTable('rec_ab_logs')) {
             Schema::create('rec_ab_logs', function (Blueprint $table): void {
                 $table->id();
+                $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
                 $table->string('device_id');
                 $table->string('variant', 1);
                 $table->string('placement')->nullable();

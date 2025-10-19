@@ -35,6 +35,7 @@ return new class extends Migration
 
         Schema::create('rec_ab_logs', function (Blueprint $table): void {
             $table->id();
+            $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
             $table->string('device_id');
             $table->string('variant', 1);
             $table->string('placement', 32)->nullable();
