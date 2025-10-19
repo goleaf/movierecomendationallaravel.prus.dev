@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('device_id', 64);
             $table->string('placement', 32);
             $table->string('variant', 8);
-            $table->foreignId('movie_id')->nullable()->constrained('movies')->cascadeOnDelete();
+            $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
             $table->json('payload')->nullable();
             $table->timestamps();
 
