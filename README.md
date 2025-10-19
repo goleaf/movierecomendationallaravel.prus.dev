@@ -8,7 +8,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ## Project trackers
 
-- [TODO backlog](TODO.md)
+- [TODO backlog](TODO.md) — domain-grouped analytics, observability, and infrastructure backlog
 - [Works log](WORKS.md)
 
 ---
