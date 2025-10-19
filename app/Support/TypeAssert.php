@@ -4,15 +4,50 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-function assert_string_non_empty(mixed $v): string {
-    if (!is_string($v) || $v==='') throw new \InvalidArgumentException('Expected non-empty string');
-    return $v;
+use InvalidArgumentException;
+
+function assert_string(mixed $value, ?string $message = null): string
+{
+    if (! is_string($value)) {
+        throw new InvalidArgumentException($message ?? sprintf('Expected string, %s given.', get_debug_type($value)));
+    }
+
+    return $value;
 }
+
+function assert_non_empty_string(mixed $value, ?string $message = null): string
+{
+    $string = assert_string($value, $message);
+
+    if ($string === '') {
+        throw new InvalidArgumentException($message ?? 'Expected non-empty string.');
+    }
+
+    return $string;
+}
+
+function assert_array(mixed $value, ?string $message = null): array
+{
+    if (! is_array($value)) {
+        throw new InvalidArgumentException($message ?? sprintf('Expected array, %s given.', get_debug_type($value)));
+    }
+
+    return $value;
+}
+
 /**
  * @template T of object
- * @param mixed $v
- * @param class-string<T> $cls
+ *
+ * @param mixed $value
+ * @param class-string<T> $className
+ * @param string|null $message
  * @return T
  */
-function assert_instanceof(mixed $v,string $cls){ if(!($v instanceof $cls)) throw new \InvalidArgumentException('instance'); return $v; }
-function assert_array(mixed $v): array { if(!is_array($v)) throw new \InvalidArgumentException('array'); return $v; }
+function assert_instanceof(mixed $value, string $className, ?string $message = null): object
+{
+    if (! $value instanceof $className) {
+        throw new InvalidArgumentException($message ?? sprintf('Expected instance of %s, %s given.', $className, get_debug_type($value)));
+    }
+
+    return $value;
+}
