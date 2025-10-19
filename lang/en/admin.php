@@ -14,6 +14,8 @@ return [
             'to' => 'To',
             'placement' => 'Placement',
             'variant' => 'Variant',
+            'variant_all' => 'All variants',
+            'placement_all' => 'All placements',
             'placements' => [
                 'all' => 'All placements',
                 'home' => 'Home page',
@@ -25,6 +27,7 @@ return [
                 'a' => 'Variant A',
                 'b' => 'Variant B',
             ],
+            'apply' => 'Apply filters',
             'refresh' => 'Update analytics',
         ],
         'charts' => [
@@ -40,12 +43,19 @@ return [
             'heading' => 'Funnels',
             'total' => 'Total',
         ],
+        'empty_summary' => 'No data available for the selected filters.',
     ],
     'metrics' => [
         'title' => 'Queues / Horizon',
         'heading' => 'Queues',
         'stats' => 'Jobs: :jobs, Failed: :failed, Batches: :batches',
         'refresh' => 'Refresh stats',
+        'queue_label' => 'Jobs queued',
+        'failed_label' => 'Failed jobs',
+        'processed_label' => 'Processed batches',
+        'horizon_workload' => 'Workload',
+        'horizon_supervisors' => 'Supervisors',
+        'horizon_empty' => 'No Horizon metrics available.',
         'labels' => [
             'jobs' => 'Jobs queued',
             'failed' => 'Failed jobs',
@@ -70,6 +80,12 @@ return [
         ],
     ],
     'trends' => [
+        'period' => 'Period: :from — :to (:days days)',
+        'empty' => 'No results match the selected filters.',
+        'days_label' => 'Days',
+        'clicks' => 'Clicks: :count',
+        'imdb' => 'IMDb rating: :rating',
+        'votes' => 'Votes: :count',
         'filters' => [
             'days' => 'Days',
             'type' => 'Type',

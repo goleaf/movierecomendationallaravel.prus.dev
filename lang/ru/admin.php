@@ -14,6 +14,8 @@ return [
             'to' => 'До даты',
             'placement' => 'Площадка',
             'variant' => 'Вариант',
+            'variant_all' => 'Все варианты',
+            'placement_all' => 'Все площадки',
             'placements' => [
                 'all' => 'Все площадки',
                 'home' => 'Главная',
@@ -25,6 +27,7 @@ return [
                 'a' => 'Вариант A',
                 'b' => 'Вариант B',
             ],
+            'apply' => 'Применить фильтры',
             'refresh' => 'Обновить аналитику',
         ],
         'charts' => [
@@ -40,12 +43,19 @@ return [
             'heading' => 'Воронки',
             'total' => 'Итого',
         ],
+        'empty_summary' => 'Нет данных для выбранных фильтров.',
     ],
     'metrics' => [
         'title' => 'Очереди / Horizon',
         'heading' => 'Очереди',
         'stats' => 'Заданий: :jobs, Ошибок: :failed, Пакетов: :batches',
         'refresh' => 'Обновить статистику',
+        'queue_label' => 'Заданий в очереди',
+        'failed_label' => 'Ошибок',
+        'processed_label' => 'Обработано пакетов',
+        'horizon_workload' => 'Нагрузка',
+        'horizon_supervisors' => 'Супервайзеры',
+        'horizon_empty' => 'Данные Horizon недоступны.',
         'labels' => [
             'jobs' => 'Заданий в очереди',
             'failed' => 'Ошибок',
@@ -70,6 +80,12 @@ return [
         ],
     ],
     'trends' => [
+        'period' => 'Период: :from — :to (:days дней)',
+        'empty' => 'Нет данных, соответствующих выбранным фильтрам.',
+        'days_label' => 'Дней',
+        'clicks' => 'Клики: :count',
+        'imdb' => 'Рейтинг IMDb: :rating',
+        'votes' => 'Голосов: :count',
         'filters' => [
             'days' => 'Дней',
             'type' => 'Тип',
