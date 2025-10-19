@@ -198,6 +198,27 @@ Other useful flags:
 
 ---
 
+## Troubleshooting
+
+Keeping rotated log files writable is essential for ingestion pipelines and Laravel's structured daily logs.
+
+### storage/logs permissions
+
+- Ensure the directory is writable by both the web server and CLI users: `chmod -R ug+rw storage/logs`.
+- If your deployment splits deploy and runtime users, grant execute permissions on parent directories so rotation can create new files: `chmod -R ug+x storage`.
+
+### File owners
+
+- Align the owner and group with your PHP-FPM user (for example, `www-data` on Debian/Ubuntu): `chown -R www-data:www-data storage/logs`.
+- When using deploy tools that run as a different user, add them to the same group so `daily` rotation can replace log files without permission errors.
+
+### SELinux contexts
+
+- On SELinux-enabled hosts, allow web processes to write into `storage/logs` with `sudo chcon -R -t httpd_sys_rw_content_t storage/logs`.
+- After deployments, restore contexts with `sudo restorecon -Rv storage/logs` to keep log rotation working.
+
+---
+
 ## Service providers & middleware
 
 Enable the custom providers in `config/app.php`:
