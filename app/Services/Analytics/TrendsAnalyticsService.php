@@ -18,6 +18,9 @@ class TrendsAnalyticsService
         private readonly AnalyticsCache $cache,
     ) {}
 
+    /**
+     * @return Collection<int, object>
+     */
     public function trending(
         int $days,
         string $type = '',
@@ -32,6 +35,9 @@ class TrendsAnalyticsService
         return $this->buildTrendingItems($normalized['filters'], $normalized['period']);
     }
 
+    /**
+     * @return Collection<int, object>
+     */
     private function fallback(string $type, string $genre, int $yearFrom, int $yearTo): Collection
     {
         $fallback = Movie::query()
@@ -44,18 +50,16 @@ class TrendsAnalyticsService
             ->limit(40)
             ->get();
 
-        return $fallback->map(function (Movie $movie) {
-            return (object) [
-                'id' => $movie->id,
-                'title' => $movie->title,
-                'poster_url' => $movie->poster_url,
-                'year' => $movie->year,
-                'type' => $movie->type,
-                'imdb_rating' => $movie->imdb_rating,
-                'imdb_votes' => $movie->imdb_votes,
-                'clicks' => null,
-            ];
-        });
+        return $fallback->map(static fn (Movie $movie): object => (object) [
+            'id' => $movie->id,
+            'title' => $movie->title,
+            'poster_url' => $movie->poster_url,
+            'year' => $movie->year,
+            'type' => $movie->type,
+            'imdb_rating' => $movie->imdb_rating,
+            'imdb_votes' => $movie->imdb_votes,
+            'clicks' => null,
+        ]);
     }
 
     /**
@@ -92,6 +96,7 @@ class TrendsAnalyticsService
     /**
      * @param  array{days: int, type: string, genre: string, year_from: int, year_to: int}  $filters
      * @param  array{from: CarbonImmutable, to: CarbonImmutable}  $period
+     * @return Collection<int, object>
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
@@ -128,7 +133,7 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items->map(static fn (object $item): array => (array) $item)->all();
                 }
             }
 
@@ -159,7 +164,7 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items->map(static fn (object $item): array => (array) $item)->all();
                 }
             }
 
@@ -169,10 +174,11 @@ class TrendsAnalyticsService
                 $filters['year_from'],
                 $filters['year_to'],
             )
-                ->map(fn ($item) => (array) $item)
+                ->map(static fn (object $item): array => (array) $item)
                 ->all();
         });
 
+        /** @var list<array<string, mixed>> $cached */
         return collect($cached)
             ->map(static fn (array $row): object => (object) $row)
             ->values();
@@ -193,11 +199,11 @@ class TrendsAnalyticsService
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $to = null,
     ): array {
-        $normalizedDays = max(1, min(30, $days));
+        $normalizedDays = (int) max(1, min(30, $days));
         $normalizedType = trim($type);
         $normalizedGenre = trim($genre);
-        $normalizedYearFrom = max(0, $yearFrom);
-        $normalizedYearTo = max(0, $yearTo);
+        $normalizedYearFrom = (int) max(0, $yearFrom);
+        $normalizedYearTo = (int) max(0, $yearTo);
 
         $periodFrom = $from?->startOfDay();
         $periodTo = $to?->endOfDay();
@@ -212,8 +218,8 @@ class TrendsAnalyticsService
             [$periodFrom, $periodTo] = [$periodTo, $periodFrom];
         }
 
-        $rangeDays = max(1, $periodFrom->diffInDays($periodTo) ?: 0);
-        $normalizedDays = max(1, min(30, $rangeDays));
+        $rangeDays = (int) max(1, $periodFrom->diffInDays($periodTo) ?: 0);
+        $normalizedDays = (int) max(1, min(30, $rangeDays));
 
         return [
             'filters' => [

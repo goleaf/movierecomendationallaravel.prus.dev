@@ -7,6 +7,7 @@ namespace App\Services\Analytics;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class QueueMetricsService
 {
@@ -29,9 +30,9 @@ class QueueMetricsService
      */
     public function snapshot(): array
     {
-        $jobs = Schema::hasTable('jobs') ? (int) (DB::table('jobs')->count() ?? 0) : 0;
-        $failed = Schema::hasTable('failed_jobs') ? (int) (DB::table('failed_jobs')->count() ?? 0) : 0;
-        $batches = Schema::hasTable('job_batches') ? (int) (DB::table('job_batches')->count() ?? 0) : 0;
+        $jobs = Schema::hasTable('jobs') ? (int) DB::table('jobs')->count() : 0;
+        $failed = Schema::hasTable('failed_jobs') ? (int) DB::table('failed_jobs')->count() : 0;
+        $batches = Schema::hasTable('job_batches') ? (int) DB::table('job_batches')->count() : 0;
 
         $horizon = [
             'workload' => null,
@@ -39,17 +40,18 @@ class QueueMetricsService
         ];
 
         try {
-            $workload = Redis::hgetall('horizon:workload');
-            $supervisors = Redis::smembers('horizon:supervisors');
+            $connection = Redis::connection();
 
-            if (! empty($workload)) {
-                $horizon['workload'] = $workload;
+            $workload = $connection->command('hgetall', ['horizon:workload']);
+            if (is_array($workload) && $workload !== []) {
+                $horizon['workload'] = array_map(static fn ($value): string => (string) $value, $workload);
             }
 
-            if (! empty($supervisors)) {
-                $horizon['supervisors'] = $supervisors;
+            $supervisors = $connection->command('smembers', ['horizon:supervisors']);
+            if (is_array($supervisors) && $supervisors !== []) {
+                $horizon['supervisors'] = array_values(array_map(static fn ($value): string => (string) $value, $supervisors));
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Horizon might not be configured locally.
         }
 
@@ -73,10 +75,14 @@ class QueueMetricsService
     {
         $snapshot = $this->snapshot();
 
-        $metrics = [];
+        $metrics = [
+            'queue' => 0,
+            'failed' => 0,
+            'processed' => 0,
+        ];
 
         foreach (self::METRIC_KEY_MAP as $uiKey => $snapshotKey) {
-            $metrics[$uiKey] = $snapshot[$snapshotKey];
+            $metrics[$uiKey] = (int) $snapshot[$snapshotKey];
         }
 
         $metrics['horizon'] = $snapshot['horizon'];
