@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\Http\Policy;
 use App\Support\TranslationPayload;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Throwable;
 
 class TmdbI18n
@@ -53,7 +53,7 @@ class TmdbI18n
             return TranslationPayload::prepare($translations);
         }
 
-        $resp = Http::timeout(20)->get("{$this->base}/find/{$imdbId}", [
+        $resp = Policy::external()->get("{$this->base}/find/{$imdbId}", [
             'api_key' => $this->apiKey,
             'external_source' => 'imdb_id',
         ]);
@@ -172,7 +172,7 @@ class TmdbI18n
         $key = $this->cacheKey($type, $id, $lang);
         $payload = Cache::remember($key, now()->addSeconds($this->cacheTtl), function () use ($type, $id, $lang): array {
             $path = $type === 'tv' ? "tv/{$id}" : "movie/{$id}";
-            $resp = Http::timeout(20)->get("{$this->base}/{$path}", [
+            $resp = Policy::external()->get("{$this->base}/{$path}", [
                 'api_key' => $this->apiKey,
                 'language' => $lang,
             ]);

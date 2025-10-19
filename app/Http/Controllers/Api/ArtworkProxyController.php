@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Http\Policy;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Http;
 
 class ArtworkProxyController extends Controller
 {
@@ -27,7 +27,9 @@ class ArtworkProxyController extends Controller
             abort(422, 'Invalid source.');
         }
 
-        $response = Http::timeout(10)->accept('*/*')->get($source);
+        $response = Policy::external()
+            ->replaceHeaders(['Accept' => '*/*'])
+            ->get($source);
 
         if ($response->failed()) {
             abort($response->status());
