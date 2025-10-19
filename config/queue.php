@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 $failoverConnections = array_values(array_filter(
-    array_map('trim', explode(',', (string) env('QUEUE_FAILOVER_CONNECTIONS', 'database,sync'))),
+    array_map('trim', explode(',', (string) env('QUEUE_FAILOVER_CONNECTIONS', 'redis,database'))),
     static fn (string $connection): bool => $connection !== '',
 ));
 
 if ($failoverConnections === []) {
-    $failoverConnections = ['database', 'sync'];
+    $failoverConnections = ['redis', 'database'];
+} else {
+    $failoverConnections = array_values(array_unique(array_merge(['redis', 'database'], $failoverConnections)));
 }
 
 return [
