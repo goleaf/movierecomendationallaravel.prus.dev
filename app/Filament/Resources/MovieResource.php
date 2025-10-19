@@ -9,16 +9,12 @@ use App\Filament\Resources\MovieResource\RelationManagers\DeviceHistoryRelationM
 use App\Filament\Resources\MovieResource\RelationManagers\RecAbLogsRelationManager;
 use App\Filament\Resources\MovieResource\RelationManagers\RecClicksRelationManager;
 use App\Models\Movie;
-use App\Models\User;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
-use Filament\Infolists\Components\Section as InfolistSection;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -27,7 +23,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use TomatoPHP\FilamentTranslationComponent\Components\Translation;
+use UnitEnum;
 
 /**
  * @extends Resource<Movie>
