@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
+use function image_proxy_url;
+
 class TrendsPage extends Component
 {
     #[Url]
@@ -151,8 +153,8 @@ class TrendsPage extends Component
 
     protected function loadItems(): void
     {
-        $fromDate = now()->copy()->subDays($this->days)->startOfDay();
-        $toDate = now()->endOfDay();
+        $fromDate = now()->copy()->subDays($this->days)->startOfDay()->toImmutable();
+        $toDate = now()->endOfDay()->toImmutable();
 
         $this->from = $fromDate->toDateString();
         $this->to = $toDate->toDateString();
@@ -189,7 +191,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => image_proxy_url($item->poster_url),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,
@@ -227,7 +229,7 @@ class TrendsPage extends Component
                 return [
                     'id' => (int) $item->id,
                     'title' => $item->title,
-                    'poster_url' => $item->poster_url,
+                    'poster_url' => image_proxy_url($item->poster_url),
                     'year' => $item->year,
                     'type' => $item->type,
                     'imdb_rating' => $item->imdb_rating,

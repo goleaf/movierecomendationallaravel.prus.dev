@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AdminSsrController;
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MetricsController;
@@ -27,6 +28,10 @@ Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
+
+Route::get('/proxy/image', ImageProxyController::class)
+    ->middleware('signed')
+    ->name('images.proxy');
 
 Route::get('/metrics', MetricsController::class)->name('metrics');
 

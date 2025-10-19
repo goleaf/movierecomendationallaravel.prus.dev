@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Kirschbaum\Commentions\Contracts\Commentable;
 use Kirschbaum\Commentions\HasComments;
+
+use function image_proxy_url;
 
 /**
  * @property int $id
@@ -92,6 +95,20 @@ class Movie extends Model implements Commentable
             'translations' => 'array',
             'raw' => 'array',
         ];
+    }
+
+    protected function posterUrl(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (?string $value): ?string => image_proxy_url($value),
+        );
+    }
+
+    protected function backdropUrl(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (?string $value): ?string => image_proxy_url($value),
+        );
     }
 
     public function setGenresAttribute(array|string|null $value): void

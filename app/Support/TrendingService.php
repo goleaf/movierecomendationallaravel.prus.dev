@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+use function image_proxy_url;
+
 class TrendingService
 {
     public function __construct(private readonly TrendsRollupService $rollup) {}
@@ -172,7 +174,7 @@ class TrendingService
             return $items->map(fn (object $item) => [
                 'id' => (int) $item->id,
                 'title' => (string) $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => image_proxy_url($item->poster_url),
                 'year' => $item->year !== null ? (int) $item->year : null,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,

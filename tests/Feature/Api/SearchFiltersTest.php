@@ -4,9 +4,12 @@ namespace Tests\Feature\Api;
 
 use App\Models\Movie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Csp\AddCspHeaders;
 use Tests\Seeders\MovieCatalogSeeder;
 use Tests\TestCase;
+
+use function image_proxy_url;
 
 class SearchFiltersTest extends TestCase
 {
@@ -119,5 +122,32 @@ class SearchFiltersTest extends TestCase
         $this->assertTrue($items->every(fn (array $item): bool => in_array('animation', $item['genres'], true)));
         $this->assertTrue($items->every(fn (array $item): bool => $item['year'] >= 2018 && $item['year'] <= 2020));
         $this->assertTrue($items->pluck('id')->contains($matching->id));
+    }
+
+    public function test_search_results_include_proxied_poster_urls(): void
+    {
+        $now = Carbon::parse('2025-01-10 12:00:00');
+        Carbon::setTestNow($now);
+
+        $poster = 'https://img.example.com/posters/proxy-search.jpg';
+
+        $movie = Movie::factory()->movie()->create([
+            'title' => 'Proxy Search Showcase',
+            'poster_url' => $poster,
+            'genres' => ['drama'],
+        ]);
+
+        $response = $this->get('/search?q=Proxy&per=10', [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertOk();
+
+        $response->assertJson(fn ($json) => $json
+            ->where('data.0.id', $movie->id)
+            ->where('data.0.poster_url', image_proxy_url($poster))
+        );
+
+        Carbon::setTestNow();
     }
 }

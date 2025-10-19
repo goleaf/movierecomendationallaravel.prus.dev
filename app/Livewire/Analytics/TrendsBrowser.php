@@ -8,6 +8,8 @@ use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
+use function image_proxy_url;
+
 class TrendsBrowser extends Component
 {
     public bool $showAdvanced = false;
@@ -80,7 +82,7 @@ class TrendsBrowser extends Component
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => image_proxy_url($item->poster_url),
                 'year' => $item->year,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating,

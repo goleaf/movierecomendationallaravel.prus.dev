@@ -92,8 +92,8 @@ class HomePage extends Component
             return collect();
         }
 
-        $from = now()->copy()->subDays(7)->startOfDay();
-        $to = now()->endOfDay();
+        $from = now()->copy()->subDays(7)->startOfDay()->toImmutable();
+        $to = now()->endOfDay()->toImmutable();
         $limit = 8;
 
         $aggregates = $this->cache->rememberTrending('snapshot', [
