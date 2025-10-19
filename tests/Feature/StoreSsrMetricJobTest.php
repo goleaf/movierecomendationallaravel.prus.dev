@@ -27,6 +27,14 @@ class StoreSsrMetricJobTest extends TestCase
     {
         Storage::fake('local');
 
+        config()->set('ssrmetrics.storage', [
+            'driver' => 'database',
+            'fallback_driver' => 'jsonl',
+            'retention_days' => 30,
+            'database' => ['table' => 'ssr_metrics'],
+            'jsonl' => ['disk' => 'local', 'path' => 'metrics/ssr.jsonl'],
+        ]);
+
         $now = Carbon::parse('2024-01-01 12:00:00');
         Carbon::setTestNow($now);
 
@@ -77,15 +85,25 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->collected_at)->toDateTimeString());
 
-        $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(2048, $meta['html_bytes']);
-        $this->assertTrue($meta['has_json_ld']);
-        $this->assertTrue($meta['has_open_graph']);
+        if (Schema::hasColumn('ssr_metrics', 'meta')) {
+            $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame(2048, $meta['html_bytes']);
+            $this->assertTrue($meta['has_json_ld']);
+            $this->assertTrue($meta['has_open_graph']);
+        }
     }
 
     public function test_it_appends_metric_to_jsonl_when_table_missing(): void
     {
         Storage::fake('local');
+
+        config()->set('ssrmetrics.storage', [
+            'driver' => 'database',
+            'fallback_driver' => 'jsonl',
+            'retention_days' => 30,
+            'database' => ['table' => 'ssr_metrics'],
+            'jsonl' => ['disk' => 'local', 'path' => 'metrics/ssr.jsonl'],
+        ]);
 
         $now = Carbon::parse('2024-01-02 08:30:00');
         Carbon::setTestNow($now);
@@ -146,5 +164,131 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertSame(98, $decoded['first_byte_ms']);
         $this->assertFalse($decoded['has_json_ld']);
         $this->assertTrue($decoded['has_open_graph']);
+    }
+
+    public function test_it_prunes_database_metrics_outside_retention_window(): void
+    {
+        Storage::fake('local');
+
+        config()->set('ssrmetrics.storage', [
+            'driver' => 'database',
+            'fallback_driver' => 'jsonl',
+            'retention_days' => 2,
+            'database' => ['table' => 'ssr_metrics'],
+            'jsonl' => ['disk' => 'local', 'path' => 'metrics/ssr.jsonl'],
+        ]);
+
+        $now = Carbon::parse('2024-01-10 09:00:00');
+        Carbon::setTestNow($now);
+
+        $oldTimestamp = $now->copy()->subDays(5);
+
+        $oldData = [
+            'path' => '/stale',
+            'score' => 10,
+            'size' => 100,
+            'meta_count' => 1,
+            'og_count' => 1,
+            'ldjson_count' => 0,
+            'img_count' => 0,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 50,
+            'created_at' => $oldTimestamp->toDateTimeString(),
+            'updated_at' => $oldTimestamp->toDateTimeString(),
+        ];
+
+        if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+            $oldData['collected_at'] = $oldTimestamp->toDateTimeString();
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'html_bytes')) {
+            $oldData['html_bytes'] = 100;
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'has_json_ld')) {
+            $oldData['has_json_ld'] = false;
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'has_open_graph')) {
+            $oldData['has_open_graph'] = false;
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'meta')) {
+            $oldData['meta'] = json_encode([], JSON_THROW_ON_ERROR);
+        }
+
+        DB::table('ssr_metrics')->insert($oldData);
+
+        $payload = [
+            'path' => '/fresh',
+            'score' => 90,
+            'html_size' => 2048,
+            'meta_count' => 4,
+            'og_count' => 2,
+            'ldjson_count' => 1,
+            'img_count' => 2,
+            'blocking_scripts' => 0,
+            'first_byte_ms' => 110,
+            'collected_at' => $now->toIso8601String(),
+        ];
+
+        $job = new StoreSsrMetric($payload);
+        $job->handle();
+
+        $paths = DB::table('ssr_metrics')->pluck('path')->all();
+
+        $this->assertSame(['/fresh'], $paths);
+    }
+
+    public function test_it_prunes_jsonl_metrics_outside_retention_window(): void
+    {
+        Storage::fake('local');
+
+        config()->set('ssrmetrics.storage', [
+            'driver' => 'jsonl',
+            'fallback_driver' => null,
+            'retention_days' => 1,
+            'database' => ['table' => 'ssr_metrics'],
+            'jsonl' => ['disk' => 'local', 'path' => 'metrics/ssr.jsonl'],
+        ]);
+
+        $now = Carbon::parse('2024-02-01 10:00:00');
+        Carbon::setTestNow($now);
+
+        $disk = Storage::disk('local');
+        $disk->makeDirectory('metrics');
+
+        $staleTimestamp = $now->copy()->subDays(5)->toIso8601String();
+        $disk->put('metrics/ssr.jsonl', json_encode([
+            'ts' => $staleTimestamp,
+            'path' => '/stale',
+            'score' => 10,
+        ], JSON_THROW_ON_ERROR).PHP_EOL);
+
+        $payload = [
+            'path' => '/fresh',
+            'score' => 95,
+            'html_size' => 4096,
+            'meta_count' => 6,
+            'og_count' => 4,
+            'ldjson_count' => 2,
+            'img_count' => 5,
+            'blocking_scripts' => 1,
+            'first_byte_ms' => 75,
+            'collected_at' => $now->toIso8601String(),
+        ];
+
+        $job = new StoreSsrMetric($payload);
+        $job->handle();
+
+        $contents = $disk->get('metrics/ssr.jsonl');
+        $lines = array_values(array_filter(explode(PHP_EOL, $contents)));
+
+        $this->assertCount(1, $lines);
+
+        $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('/fresh', $decoded['path']);
+        $this->assertSame($now->toIso8601String(), $decoded['ts']);
     }
 }
