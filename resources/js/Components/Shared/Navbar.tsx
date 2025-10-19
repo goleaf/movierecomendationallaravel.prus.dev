@@ -49,7 +49,13 @@ const Navbar = () => {
         >
             <Link href={route("landing-page")} className="flex items-center gap-3" prefetch cacheFor={60}>
                 {hasLogo ? (
-                    <img src={siteSettings.logo} alt={siteSettings.name ?? appName} className="max-h-16 max-w-full object-cover" />
+                    <img
+                        src={siteSettings.logo}
+                        alt={siteSettings.name ?? appName}
+                        className="max-h-16 max-w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                    />
                 ) : (
                     <h1
                         className={cn(

@@ -25,7 +25,17 @@
     @foreach($items as $item)
       <a class="card" href="{{ route('movies.show', ['movie'=>$item->id, 'placement'=>$item->placement ?? 'trends', 'variant'=>$item->variant ?? 'mixed']) }}">
         @if($item->poster_url)
-          <img src="{{ $item->poster_url }}" alt="{{ $item->title ? 'Постер фильма «' . $item->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          @php($posterSrcset = poster_srcset($item->poster_url))
+          <img
+            src="{{ $item->poster_url }}"
+            @if ($posterSrcset)
+              srcset="{{ e($posterSrcset) }}"
+              sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, (min-width: 768px) 33vw, 80vw"
+            @endif
+            alt="{{ $item->title ? 'Постер фильма «' . $item->title . '»' : 'Постер фильма' }}"
+            loading="lazy"
+            decoding="async"
+          />
         @endif
         <div><strong>{{ $item->title }}</strong> ({{ $item->year ?? __('messages.common.dash') }})</div>
         <div class="muted">

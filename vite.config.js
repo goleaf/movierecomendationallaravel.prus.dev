@@ -7,6 +7,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
+                'resources/css/critical.css',
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/App.tsx',

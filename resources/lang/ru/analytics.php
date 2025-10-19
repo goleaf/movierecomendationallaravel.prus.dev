@@ -64,6 +64,11 @@ return [
         'ssr_stats' => [
             'label' => 'SSR Score',
             'description' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
+            'today' => 'Сегодня',
+            'yesterday' => 'Вчера',
+            'yesterday_description' => 'Средний балл вчера',
+            'trend' => 'Δ к вчерашнему дню: :delta • Среднее за 7 дней: :rolling',
+            'paths' => 'Отслеживаемые пути',
         ],
         'ssr_drop' => [
             'heading' => 'Топ страниц по просадке SSR (день к дню)',
@@ -75,7 +80,7 @@ return [
             ],
         ],
         'ssr_score' => [
-            'heading' => 'Тренд SSR Score',
+            'heading' => 'Тренд SSR Score · Δ :delta',
             'dataset' => 'SSR score',
         ],
         'images' => [

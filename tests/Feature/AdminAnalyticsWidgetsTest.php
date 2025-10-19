@@ -56,9 +56,14 @@ class AdminAnalyticsWidgetsTest extends TestCase
     public function test_ssr_widgets_render_seeded_scores(): void
     {
         Livewire::test(SsrStatsWidget::class)
-            ->assertSee('SSR Score')
-            ->assertSee('94')
-            ->assertSee('1 path');
+            ->assertSee('Today')
+            ->assertSee('91.33')
+            ->assertSee('Δ vs yesterday: -1.67')
+            ->assertSee('7-day avg: 92.00')
+            ->assertSee('Yesterday')
+            ->assertSee('93.00')
+            ->assertSee('Tracked paths')
+            ->assertSee('3 paths');
 
         $scoreComponent = Livewire::test(SsrScoreWidget::class);
         $scoreComponent->call('rendering');
@@ -77,7 +82,7 @@ class AdminAnalyticsWidgetsTest extends TestCase
         $this->assertEqualsWithDelta(93.0, $chartData['datasets'][0]['data'][0], 0.01);
         $this->assertEqualsWithDelta(91.33, $chartData['datasets'][0]['data'][1], 0.01);
 
-        $scoreComponent->assertSee('SSR Score (trend)');
+        $scoreComponent->assertSee('SSR Score (trend · Δ -1.67)');
 
         Livewire::test(SsrDropWidget::class)
             ->assertSee('Top pages by SSR score drop')

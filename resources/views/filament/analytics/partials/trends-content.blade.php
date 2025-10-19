@@ -31,7 +31,18 @@
       @foreach($items as $item)
         <div class="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
           @if($item['poster_url'])
-            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}" class="mb-3 w-full rounded-lg" loading="lazy" />
+            @php($posterSrcset = poster_srcset($item['poster_url']))
+            <img
+              src="{{ $item['poster_url'] }}"
+              @if ($posterSrcset)
+                srcset="{{ e($posterSrcset) }}"
+                sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 80vw"
+              @endif
+              alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}"
+              class="mb-3 w-full rounded-lg"
+              loading="lazy"
+              decoding="async"
+            />
           @endif
           <div class="text-base font-semibold text-white">{{ $item['title'] }} <span class="text-sm text-gray-400">{{ $item['year'] ?? __('messages.common.dash') }}</span></div>
           <div class="mt-1 text-xs text-gray-400">

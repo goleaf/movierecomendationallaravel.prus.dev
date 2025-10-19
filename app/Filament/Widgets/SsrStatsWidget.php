@@ -4,38 +4,22 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Services\Analytics\SsrMetricsService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class SsrStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $score = 0;
-        $paths = 0;
+        $summary = app(SsrMetricsService::class)->summary();
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $row = DB::table('ssr_metrics')->orderByDesc('id')->first();
-
-            if ($row) {
-                $score = (int) $row->score;
-                $paths = 1;
-            }
-        } elseif (Storage::exists('metrics/last.json')) {
-            $json = json_decode(Storage::get('metrics/last.json'), true) ?: [];
-            $paths = count($json);
-
-            foreach ($json as $r) {
-                $score += (int) ($r['score'] ?? 0);
-            }
-
-            if ($paths > 0) {
-                $score = (int) round($score / $paths);
-            }
-        }
+        $paths = (int) $summary['today_paths'];
+        $delta = (float) $summary['delta'];
+        $trendDescription = __('analytics.widgets.ssr_stats.trend', [
+            'delta' => number_format($delta, 2),
+            'rolling' => number_format((float) $summary['rolling'], 2),
+        ]);
 
         $description = trans_choice(
             'analytics.widgets.ssr_stats.description',
@@ -44,7 +28,13 @@ class SsrStatsWidget extends BaseWidget
         );
 
         return [
-            Stat::make(__('analytics.widgets.ssr_stats.label'), (string) $score)
+            Stat::make(__('analytics.widgets.ssr_stats.today'), number_format((float) $summary['today'], 2))
+                ->description($trendDescription)
+                ->descriptionIcon($delta >= 0 ? 'heroicon-s-arrow-trending-up' : 'heroicon-s-arrow-trending-down')
+                ->color($delta >= 0 ? 'success' : 'danger'),
+            Stat::make(__('analytics.widgets.ssr_stats.yesterday'), number_format((float) $summary['yesterday'], 2))
+                ->description(__('analytics.widgets.ssr_stats.yesterday_description')),
+            Stat::make(__('analytics.widgets.ssr_stats.paths'), number_format($paths))
                 ->description($description),
         ];
     }

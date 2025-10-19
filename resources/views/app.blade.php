@@ -38,7 +38,43 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://fonts.gstatic.com/s/josefinsans/v34/Qw3aZQNVED7rKGKxtqIqX5EUDXx4.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/josefinsans/v34/Qw3aZQNVED7rKGKxtqIqX5EUA3x4RHw.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,400;0,700&display=swap" as="style">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,400;0,700&display=swap"
+        rel="stylesheet"
+        media="print"
+        onload="this.media='all'"
+    >
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+    </noscript>
+
+    @php
+        $criticalCss = '';
+
+        try {
+            if (\Illuminate\Support\Facades\Vite::isRunningHot()) {
+                $criticalCss = \Illuminate\Support\Facades\File::exists(resource_path('css/critical.css'))
+                    ? \Illuminate\Support\Facades\File::get(resource_path('css/critical.css'))
+                    : '';
+            } else {
+                $criticalAsset = \Illuminate\Support\Facades\Vite::asset('resources/css/critical.css');
+                $criticalPath = $criticalAsset ? public_path($criticalAsset) : null;
+
+                if ($criticalPath && \Illuminate\Support\Facades\File::exists($criticalPath)) {
+                    $criticalCss = \Illuminate\Support\Facades\File::get($criticalPath);
+                }
+            }
+        } catch (\Throwable $e) {
+            $criticalCss = '';
+        }
+    @endphp
+
+    @if (trim($criticalCss) !== '')
+        <style data-critical>{!! $criticalCss !!}</style>
+    @endif
 
     @viteReactRefresh
     @vite(['resources/js/App.tsx', "resources/js/Pages/{$page['component']}.tsx", "resources/css/app.css"])

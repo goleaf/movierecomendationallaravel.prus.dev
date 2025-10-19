@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\CollectSsrMetricsCommand;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
 use App\Http\Middleware\EnsureDeviceCookie;
@@ -18,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        CollectSsrMetricsCommand::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureDeviceCookie::class);
         $middleware->prepend(AttachRequestContext::class);

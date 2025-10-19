@@ -64,6 +64,11 @@ return [
         'ssr_stats' => [
             'label' => 'SSR Score',
             'description' => '{0}No tracked paths|{1}:count path|[2,*]:count paths',
+            'today' => 'Today',
+            'yesterday' => 'Yesterday',
+            'yesterday_description' => 'Average score yesterday',
+            'trend' => 'Δ vs yesterday: :delta • 7-day avg: :rolling',
+            'paths' => 'Tracked paths',
         ],
         'ssr_drop' => [
             'heading' => 'Top pages by SSR score drop (day over day)',
@@ -75,7 +80,7 @@ return [
             ],
         ],
         'ssr_score' => [
-            'heading' => 'SSR Score (trend)',
+            'heading' => 'SSR Score (trend · Δ :delta)',
             'dataset' => 'SSR score',
         ],
         'images' => [

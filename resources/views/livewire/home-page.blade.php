@@ -16,10 +16,16 @@
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
                         @if ($movie->poster_url)
+                            @php($posterSrcset = poster_srcset($movie->poster_url))
                             <img
                                 src="{{ $movie->poster_url }}"
+                                @if ($posterSrcset)
+                                    srcset="{{ e($posterSrcset) }}"
+                                    sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 28vw, (min-width: 640px) 40vw, 80vw"
+                                @endif
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
+                                decoding="async"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
                             />
                         @endif
@@ -53,10 +59,16 @@
                         class="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition duration-200 hover:border-slate-700 hover:bg-slate-900"
                     >
                         @if ($movie->poster_url)
+                            @php($posterSrcset = poster_srcset($movie->poster_url))
                             <img
                                 src="{{ $movie->poster_url }}"
+                                @if ($posterSrcset)
+                                    srcset="{{ e($posterSrcset) }}"
+                                    sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 28vw, (min-width: 640px) 40vw, 80vw"
+                                @endif
                                 alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
+                                decoding="async"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
                             />
                         @endif

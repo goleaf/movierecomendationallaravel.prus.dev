@@ -12,7 +12,17 @@
     @foreach($recommended as $movie)
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>'home', 'variant'=>$homeVariant]) }}">
         @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          @php($posterSrcset = poster_srcset($movie->poster_url))
+          <img
+            src="{{ $movie->poster_url }}"
+            @if ($posterSrcset)
+                srcset="{{ e($posterSrcset) }}"
+                sizes="(min-width: 1024px) 28vw, (min-width: 768px) 33vw, 80vw"
+            @endif
+            alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
+            loading="lazy"
+            decoding="async"
+          />
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">{{ __('messages.common.imdb_with_votes_colon', ['rating' => $movie->imdb_rating ?? __('messages.common.dash'), 'votes' => number_format($movie->imdb_votes ?? 0, 0, '.', ' ')]) }}</div>
@@ -33,7 +43,17 @@
       @php($movie = $row['movie'])
       <a class="card" href="{{ route('movies.show', ['movie'=>$movie, 'placement'=>$row['placement'], 'variant'=>$row['variant']]) }}">
         @if($movie->poster_url)
-          <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+          @php($posterSrcset = poster_srcset($movie->poster_url))
+          <img
+            src="{{ $movie->poster_url }}"
+            @if ($posterSrcset)
+                srcset="{{ e($posterSrcset) }}"
+                sizes="(min-width: 1024px) 28vw, (min-width: 768px) 33vw, 80vw"
+            @endif
+            alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
+            loading="lazy"
+            decoding="async"
+          />
         @endif
         <div><strong>{{ $movie->title }}</strong> ({{ $movie->year ?? __('messages.common.dash') }})</div>
         <div class="muted">
