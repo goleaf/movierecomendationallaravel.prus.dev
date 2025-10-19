@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Movie;
+use App\Settings\RecommendationWeightsSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
@@ -16,6 +17,8 @@ class RecAb
     private const COOKIE_NAME = 'ab_variant';
 
     private const COOKIE_LIFETIME_MINUTES = 60 * 24 * 365 * 5;
+
+    private ?RecommendationWeightsSettings $settings = null;
 
     /** @return array{0:string,1:Collection<int,Movie>} */
     public function forDevice(string $deviceId, int $limit = 12): array
@@ -51,7 +54,7 @@ class RecAb
 
     protected function pickVariant(string $deviceId): string
     {
-        $weights = config('recs.ab_split', ['A' => 50.0, 'B' => 50.0]);
+        $weights = $this->settings()->ab_split;
         $weightA = (float) ($weights['A'] ?? 50.0);
         $weightB = (float) ($weights['B'] ?? 50.0);
         $total = $weightA + $weightB;
@@ -61,7 +64,7 @@ class RecAb
         }
 
         $threshold = $weightA / $total;
-        $seed = config('recs.seed');
+        $seed = $this->settings()->seed;
         $random = is_string($seed) && $seed !== ''
             ? $this->deterministicRandom($deviceId, $seed)
             : random_int(0, 10000) / 10000;
@@ -80,7 +83,8 @@ class RecAb
     /** @return Collection<int,Movie> */
     protected function score(string $variant, string $deviceId, int $limit): Collection
     {
-        $rawWeights = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
+        /** @var array<string, float|int> $rawWeights */
+        $rawWeights = $this->settings()->{$variant} ?? [];
         $weights = $this->normaliseWeights($rawWeights);
 
         $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
@@ -191,5 +195,14 @@ class RecAb
         }
 
         return array_map(static fn (float $value): float => $value / $sum, $scores);
+    }
+
+    private function settings(): RecommendationWeightsSettings
+    {
+        if ($this->settings === null) {
+            $this->settings = app(RecommendationWeightsSettings::class);
+        }
+
+        return $this->settings;
     }
 }
