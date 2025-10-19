@@ -1,10 +1,11 @@
 @extends('layouts.app')
 @section('title', $movie->title)
 @section('content')
+@php($poster = proxy_image_url($movie->poster_url))
 <div class="card">
   <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;">
-    @if($movie->poster_url)
-      <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"/>
+    @if($poster)
+      <img src="{{ $poster }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"/>
     @endif
     <div>
       <h2>{{ $movie->title }} ({{ $movie->year ?? __('messages.common.dash') }})</h2>
