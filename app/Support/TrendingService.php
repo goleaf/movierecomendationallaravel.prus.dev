@@ -28,10 +28,6 @@ class TrendingService
         $fromDate = CarbonImmutable::parse($from);
         $toDate = CarbonImmutable::parse($to);
 
-        if (! Schema::hasTable('rec_clicks')) {
-            return $this->fallbackSnapshot($limit);
-        }
-
         $this->rollup->ensureBackfill($fromDate, $toDate);
 
         $top = collect();
@@ -46,7 +42,7 @@ class TrendingService
                 ->pluck('clicks', 'movie_id');
         }
 
-        if ($top->isEmpty()) {
+        if ($top->isEmpty() && Schema::hasTable('rec_clicks')) {
             $top = DB::table('rec_clicks')
                 ->selectRaw('movie_id, count(*) as clicks')
                 ->whereBetween('created_at', [$from, $to])
