@@ -85,6 +85,21 @@ return [
             'workload' => 'Workload',
             'supervisors' => 'Supervisors',
             'empty' => 'No Horizon metrics available.',
+            'actions' => [
+                'pause' => [
+                    'label' => 'Pause Horizon',
+                    'confirm' => 'Pause all Horizon workers?',
+                    'success' => 'Horizon queues paused.',
+                ],
+                'resume' => [
+                    'label' => 'Resume Horizon',
+                    'confirm' => 'Resume Horizon workers?',
+                    'success' => 'Horizon queues resumed.',
+                ],
+                'failed' => 'Unable to update Horizon queue status.',
+                'unauthorized' => 'You do not have permission to manage Horizon queues.',
+                'unavailable' => 'Horizon is not installed or reachable.',
+            ],
         ],
         'horizon_workload' => 'Horizon workload',
         'horizon_supervisors' => 'Horizon supervisors',
