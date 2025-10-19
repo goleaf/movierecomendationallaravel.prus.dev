@@ -8,11 +8,55 @@ return [
         'bars_alt' => 'CTR bar chart',
         'ab_summary_heading' => 'A/B Summary',
         'ab_summary_item' => 'Variant :variant — Imps: :impressions, Clicks: :clicks, CTR: :ctr%',
+        'no_data' => 'No data for the selected period.',
+        'filters' => [
+            'from' => 'From',
+            'to' => 'To',
+            'placement' => 'Placement',
+            'variant' => 'Variant',
+            'placements' => [
+                'all' => 'All placements',
+                'home' => 'Home page',
+                'show' => 'Show page',
+                'trends' => 'Trends page',
+            ],
+            'variants' => [
+                'all' => 'All variants',
+                'a' => 'Variant A',
+                'b' => 'Variant B',
+            ],
+            'refresh' => 'Update analytics',
+        ],
+        'charts' => [
+            'daily_heading' => 'Daily CTR (A vs B)',
+            'placements_heading' => 'CTR by placement',
+        ],
+        'placement_clicks' => [
+            'heading' => 'Clicks by placement',
+            'placement' => 'Placement',
+            'clicks' => 'Clicks',
+        ],
+        'funnels' => [
+            'heading' => 'Funnels',
+            'total' => 'Total',
+        ],
     ],
     'metrics' => [
         'title' => 'Queues / Horizon',
         'heading' => 'Queues',
         'stats' => 'Jobs: :jobs, Failed: :failed, Batches: :batches',
+        'refresh' => 'Refresh stats',
+        'labels' => [
+            'jobs' => 'Jobs queued',
+            'failed' => 'Failed jobs',
+            'batches' => 'Batches',
+        ],
+        'horizon' => [
+            'heading' => 'Horizon',
+            'workload' => 'Workload',
+            'supervisors' => 'Supervisors',
+            'empty' => 'No Horizon metrics available.',
+        ],
     ],
     'funnel' => [
         'period' => 'Period: :from — :to',
@@ -26,6 +70,13 @@ return [
         ],
     ],
     'trends' => [
+        'filters' => [
+            'days' => 'Days',
+            'type' => 'Type',
+            'genre' => 'Genre',
+            'year_from' => 'Year from',
+            'year_to' => 'Year to',
+        ],
         'days_option' => ':days days',
         'type_placeholder' => 'Type',
         'types' => [

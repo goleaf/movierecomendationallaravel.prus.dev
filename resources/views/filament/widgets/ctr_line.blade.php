@@ -1,3 +1,7 @@
 <x-filament-widgets::widget>
-  <img src="{{ route('admin.ctr.svg') }}" alt="{{ __('admin.ctr.line_alt') }}"/>
+  @if($svg)
+    <div wire:ignore>{!! $svg !!}</div>
+  @else
+    <div class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+  @endif
 </x-filament-widgets::widget>
