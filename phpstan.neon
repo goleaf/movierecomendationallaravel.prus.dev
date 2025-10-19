@@ -1,0 +1,11 @@
+parameters:
+    level: 7
+    paths:
+        - app
+        - bootstrap/app.php
+        - routes
+        - database
+        - config
+    inferPrivatePropertyTypeFromConstructor: true
+    checkMissingIterableValueType: true
+    checkGenericClassInNonGenericObjectType: true

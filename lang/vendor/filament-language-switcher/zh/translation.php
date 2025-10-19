@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     // Translate to Chinese
     'change' => '更改语言',

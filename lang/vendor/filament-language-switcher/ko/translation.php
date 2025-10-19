@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     // Translate to Korean
     'change' => '언어 변경',

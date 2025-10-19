@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     // Array of custom code builders that can be used for generating API code examples
     'code_builders' => [],

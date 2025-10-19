@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'drivers' => [
         \TomatoPHP\FilamentPayments\Services\Drivers\Cryptomus::class,

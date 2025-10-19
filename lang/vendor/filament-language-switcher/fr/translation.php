@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'change' => 'Changer la langue',
     'lang' => [
