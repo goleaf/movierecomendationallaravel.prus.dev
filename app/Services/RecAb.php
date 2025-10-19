@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Movie;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
 
@@ -25,14 +26,23 @@ class RecAb
 
     protected function resolveVariant(string $deviceId): string
     {
-        $existing = request()->cookie(self::COOKIE_NAME);
+        $request = request();
+        $existing = $request instanceof Request ? $request->cookie(self::COOKIE_NAME) : null;
         if (in_array($existing, ['A', 'B'], true)) {
+            if ($request instanceof Request) {
+                $request->attributes->set('ab_variant', $existing);
+            }
+
             return $existing;
         }
 
         $variant = $this->pickVariant($deviceId);
 
         Cookie::queue(self::COOKIE_NAME, $variant, self::COOKIE_LIFETIME_MINUTES);
+
+        if ($request instanceof Request) {
+            $request->attributes->set('ab_variant', $variant);
+        }
 
         return $variant;
     }

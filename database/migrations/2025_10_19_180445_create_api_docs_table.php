@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('api_docs')) {
+            return;
+        }
+
         Schema::create('api_docs', function (Blueprint $table) {
             $table->id();
             $table->string('title');
