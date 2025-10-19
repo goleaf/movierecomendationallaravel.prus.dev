@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "66cef35ca337e7d90e33fdc9751303bf",
+    "content-hash": "c13f81c3e1ad5bd524a051d02b70f97b",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1902,6 +1902,63 @@
                 }
             ],
             "time": "2024-07-20T21:45:45+00:00"
+        },
+        {
+            "name": "guava/filament-icon-picker",
+            "version": "2.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lukas-frey/filament-icon-picker.git",
+                "reference": "a9c2709db2df2d658fd045022d0300c2fa8a6fba"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lukas-frey/filament-icon-picker/zipball/a9c2709db2df2d658fd045022d0300c2fa8a6fba",
+                "reference": "a9c2709db2df2d658fd045022d0300c2fa8a6fba",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0@stable",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^7.0|^8.0|^9.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Guava\\FilamentIconPicker\\FilamentIconPickerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Guava\\FilamentIconPicker\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Lukas Frey",
+                    "email": "mail@lukasfrey.cz"
+                }
+            ],
+            "description": "A filament plugin that adds an icon picker field.",
+            "support": {
+                "issues": "https://github.com/lukas-frey/filament-icon-picker/issues",
+                "source": "https://github.com/lukas-frey/filament-icon-picker/tree/2.3.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/LukasFreyCZ",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-08-19T12:48:35+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
@@ -8601,6 +8658,64 @@
             "time": "2025-09-11T10:12:26+00:00"
         },
         {
+            "name": "tempest/highlight",
+            "version": "2.13.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tempestphp/highlight.git",
+                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tempestphp/highlight/zipball/b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
+                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "assertchris/ellison": "^1.0.2",
+                "friendsofphp/php-cs-fixer": "^3.84",
+                "league/commonmark": "^2.4",
+                "phpstan/phpstan": "^1.12.0",
+                "phpunit/phpunit": "^10.0",
+                "symfony/var-dumper": "^6.4|^7.0"
+            },
+            "suggest": {
+                "assertchris/ellison": "Allows you to analyse sentence complexity",
+                "league/commonmark": "Adds markdown support"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Tempest\\Highlight\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Brent Roose",
+                    "email": "brendt@stitcher.io"
+                }
+            ],
+            "description": "Fast, extensible, server-side code highlighting",
+            "support": {
+                "issues": "https://github.com/tempestphp/highlight/issues",
+                "source": "https://github.com/tempestphp/highlight/tree/2.13.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/brendt",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-07-18T12:38:05+00:00"
+        },
+        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "v2.3.0",
             "source": {
@@ -9216,6 +9331,75 @@
                 "source": "https://github.com/webmozarts/assert/tree/1.11.0"
             },
             "time": "2022-06-03T18:03:27+00:00"
+        },
+        {
+            "name": "zpmlabs/filament-api-docs-builder",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ZPMLabs/filament-api-docs.git",
+                "reference": "dda676e2d8d4efabb535a66960e6a9593ab03aaa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ZPMLabs/filament-api-docs/zipball/dda676e2d8d4efabb535a66960e6a9593ab03aaa",
+                "reference": "dda676e2d8d4efabb535a66960e6a9593ab03aaa",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "guava/filament-icon-picker": "^2.2",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.15.0",
+                "tempest/highlight": "^2.10"
+            },
+            "require-dev": {
+                "nunomaduro/collision": "^7.9",
+                "orchestra/testbench": "^8.0",
+                "pestphp/pest": "^2.1",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "FilamentApiDocsBuilder": "InfinityXTech\\FilamentApiDocsBuilder\\Facades\\FilamentApiDocsBuilder"
+                    },
+                    "providers": [
+                        "InfinityXTech\\FilamentApiDocsBuilder\\FilamentApiDocsBuilderServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "InfinityXTech\\FilamentApiDocsBuilder\\": "src/",
+                    "InfinityXTech\\FilamentApiDocsBuilder\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "InfinityXTech",
+                    "email": "developer@infinity-x.tech",
+                    "role": "Developer"
+                }
+            ],
+            "description": "This package will give you the best API docs building experience.",
+            "homepage": "https://github.com/infinityxtech/filament-api-docs-builder",
+            "keywords": [
+                "InfinityXTech",
+                "filament-api-docs-builder",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/infinityxtech/filament-api-docs-builder/issues",
+                "source": "https://github.com/infinityxtech/filament-api-docs-builder"
+            },
+            "time": "2024-11-11T13:28:26+00:00"
         }
     ],
     "packages-dev": [

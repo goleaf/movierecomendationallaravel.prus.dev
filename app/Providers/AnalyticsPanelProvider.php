@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
-use TomatoPHP\FilamentAccounts\FilamentAccountsPlugin;
+use InfinityXTech\FilamentApiDocsBuilder\FilamentApiDocsBuilderPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -20,18 +20,7 @@ class AnalyticsPanelProvider extends PanelProvider
                 'Analytics',
                 'Administration',
             ])
-            ->plugin(
-                FilamentAccountsPlugin::make()
-                    ->useTypes()
-                    ->useAvatar()
-                    ->showAddressField()
-                    ->showTypeField()
-                    ->useExport()
-                    ->useImport()
-                    ->useLoginBy()
-                    ->canLogin()
-                    ->canBlocked()
-            )
+            ->plugin(FilamentApiDocsBuilderPlugin::make())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->widgets([
