@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\Movie;
 use App\Models\User;
 use App\Observers\MovieObserver;
+use App\Services\Ingestion\IdempotencyService;
 use Filament\Facades\Filament;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(IdempotencyService::class, static fn (): IdempotencyService => new IdempotencyService);
     }
 
     /**
