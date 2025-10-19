@@ -8,11 +8,11 @@ use App\Filament\Widgets\FunnelWidget;
 use App\Filament\Widgets\SsrDropWidget;
 use App\Filament\Widgets\SsrScoreWidget;
 use App\Filament\Widgets\SsrStatsWidget;
+use App\Services\Analytics\SsrMetricsService;
 use App\Filament\Widgets\ZTestWidget;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -56,38 +56,51 @@ class AdminAnalyticsWidgetsTest extends TestCase
 
     public function test_ssr_widgets_render_seeded_scores(): void
     {
+        /** @var SsrMetricsService $service */
+        $service = $this->app->make(SsrMetricsService::class);
+
+        $headline = $service->headline();
+
+        $this->assertSame('SSR Score', $headline['label']);
+        $this->assertSame(94, $headline['score']);
+        $this->assertSame(3, $headline['paths']);
+        $this->assertSame('3 paths', $headline['description']);
+
         Livewire::test(SsrStatsWidget::class)
-            ->assertSee('SSR Score')
-            ->assertSee('94')
-            ->assertSee('3 paths');
+            ->assertSee($headline['label'])
+            ->assertSee((string) $headline['score'])
+            ->assertSee($headline['description']);
 
-        $scoreComponent = Livewire::test(SsrScoreWidget::class);
-        $scoreComponent->call('rendering');
+        $trend = $service->trend();
 
-        /** @var array<string, mixed> $chartData */
-        $chartData = (function (): array {
-            /** @phpstan-ignore-next-line */
-            return $this->getCachedData();
-        })->call($scoreComponent->instance());
-
-        $this->assertSame(['SSR score'], [$chartData['datasets'][0]['label']]);
+        $this->assertSame(['SSR score'], [$trend['datasets'][0]['label']]);
         $this->assertSame([
             Carbon::now()->subDay()->toDateString(),
             Carbon::now()->toDateString(),
-        ], $chartData['labels']);
-        $this->assertEqualsWithDelta(93.0, $chartData['datasets'][0]['data'][0], 0.01);
-        $this->assertEqualsWithDelta(91.33, $chartData['datasets'][0]['data'][1], 0.01);
+        ], $trend['labels']);
+        $this->assertEqualsWithDelta(93.0, $trend['datasets'][0]['data'][0], 0.01);
+        $this->assertEqualsWithDelta(91.33, $trend['datasets'][0]['data'][1], 0.01);
 
-        $scoreComponent->assertSee('SSR Score (trend)');
+        $scoreComponent = Livewire::test(SsrScoreWidget::class);
+        $scoreComponent->call('rendering');
+        $scoreComponent->assertSet('cachedData', $trend);
+        $scoreComponent->assertSee(__('analytics.widgets.ssr_score.heading'));
+        $scoreComponent->assertSee($trend['datasets'][0]['label']);
+
+        $drops = $service->dropRows();
+
+        $this->assertNotEmpty($drops);
+        $this->assertSame('/', $drops[0]['path']);
+        $this->assertEqualsWithDelta(96.0, $drops[0]['score_yesterday'], 0.01);
+        $this->assertEqualsWithDelta(88.0, $drops[0]['score_today'], 0.01);
+        $this->assertEqualsWithDelta(-8.0, $drops[0]['delta'], 0.01);
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
-            ->assertSee('/');
-
-        $this->assertEquals(
-            [185, 244, 201, 176, 192],
-            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
-        );
+            ->assertSee(__('analytics.widgets.ssr_drop.heading'))
+            ->assertSee($drops[0]['path'])
+            ->assertSee(number_format($drops[0]['score_yesterday'], 2))
+            ->assertSee(number_format($drops[0]['score_today'], 2))
+            ->assertSee(number_format($drops[0]['delta'], 2));
     }
 
     public function test_z_test_widget_displays_variant_breakdown(): void
