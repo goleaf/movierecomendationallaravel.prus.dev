@@ -2,26 +2,29 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\SsrMetric;
 use Filament\Tables;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Schema;
 
 class SsrDropWidget extends BaseWidget
 {
     protected static ?string $heading = 'Top SSR Score Drops (день к дню)';
+
     protected int|string|array $columnSpan = 'full';
 
-    protected function getTableQuery()
+    protected function getTableQuery(): Builder|Relation|null
     {
-        if (!Schema::hasTable('ssr_metrics')) {
-            return DB::table(DB::raw('(select 1) as empty'))->whereRaw('1=0');
+        if (! Schema::hasTable('ssr_metrics')) {
+            return SsrMetric::query()->whereRaw('1=0');
         }
 
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
 
-        $sql = <<<SQL
+        $sql = <<<'SQL'
             with agg as (
                 select path, date(created_at) as d, avg(score) as avg_score
                 from ssr_metrics
@@ -34,7 +37,8 @@ class SsrDropWidget extends BaseWidget
                 from agg
                 group by path
             )
-            select path,
+            select row_number() over (order by coalesce(score_today, 0) - coalesce(score_yesterday, 0), path) as id,
+                path,
                 coalesce(score_today, 0) as score_today,
                 coalesce(score_yesterday, 0) as score_yesterday,
                 coalesce(score_today, 0) - coalesce(score_yesterday, 0) as delta
@@ -43,8 +47,8 @@ class SsrDropWidget extends BaseWidget
             limit 10
         SQL;
 
-        return DB::table(DB::raw("({$sql}) as t"))
-            ->setBindings([$yesterday, $today, $today, $yesterday]);
+        return SsrMetric::query()
+            ->fromRaw("({$sql}) as ssr_metrics", [$yesterday, $today, $today, $yesterday]);
     }
 
     protected function getTableColumns(): array
