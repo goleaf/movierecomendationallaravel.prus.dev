@@ -34,6 +34,11 @@ class RequestContextProcessor
             $record['context']['ab_variant'] = $variant;
         }
 
+        $filmId = $request->attributes->get('film_id', $request->headers->get('X-Film-ID', $request->query('film_id')));
+        if (is_string($filmId) && $filmId !== '') {
+            $record['context']['film_id'] = $filmId;
+        }
+
         return $record;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Logging\RequestContextProcessor;
 use Monolog\Formatter\JsonFormatter;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -22,7 +23,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'daily'),
 
     /*
     |--------------------------------------------------------------------------
@@ -58,7 +59,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'daily')),
             'ignore_exceptions' => false,
         ],
 
@@ -152,6 +153,22 @@ return [
             'level' => env('IMPORTER_LOG_LEVEL', 'info'),
             'days' => 14,
             'replace_placeholders' => true,
+        ],
+
+        'ingestion' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/ingestion.log'),
+            'level' => env('INGESTION_LOG_LEVEL', 'info'),
+            'days' => env('INGESTION_LOG_DAYS', 14),
+            'formatter' => LineFormatter::class,
+            'formatter_with' => [
+                'format' => "[%datetime%] %channel%.%level_name% request-id:%context.request_id% film-id:%context.film_id% %message% %context% %extra%\n",
+                'dateFormat' => 'Y-m-d H:i:s',
+            ],
+            'processors' => [
+                RequestContextProcessor::class,
+                PsrLogMessageProcessor::class,
+            ],
         ],
 
         'null' => [
