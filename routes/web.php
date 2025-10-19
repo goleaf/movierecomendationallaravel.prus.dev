@@ -7,6 +7,7 @@ use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\Rss\NewReleasesFeedController;
 use App\Http\Controllers\Rss\UpcomingFeedController;
@@ -26,6 +27,8 @@ Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->middleware(AutoTranslate::class)
     ->name('movies.show');
+
+Route::get('/metrics', MetricsController::class)->name('metrics');
 
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
