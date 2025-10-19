@@ -80,4 +80,47 @@ class TrendsAnalyticsService
             ];
         });
     }
+
+    /**
+     * @return array{
+     *     items: Collection<int, object>,
+     *     filters: array{days: int, type: string, genre: string, year_from: int, year_to: int},
+     *     period: array{from: string, to: string, days: int}
+     * }
+     */
+    public function getTrendsData(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): array
+    {
+        $normalizedDays = max(1, min(30, $days));
+        $normalizedType = trim($type);
+        $normalizedGenre = trim($genre);
+        $normalizedYearFrom = max(0, $yearFrom);
+        $normalizedYearTo = max(0, $yearTo);
+
+        $periodFrom = CarbonImmutable::now()->subDays($normalizedDays)->startOfDay();
+        $periodTo = CarbonImmutable::now()->endOfDay();
+
+        $items = $this->trending(
+            $normalizedDays,
+            $normalizedType,
+            $normalizedGenre,
+            $normalizedYearFrom,
+            $normalizedYearTo,
+        );
+
+        return [
+            'items' => $items,
+            'filters' => [
+                'days' => $normalizedDays,
+                'type' => $normalizedType,
+                'genre' => $normalizedGenre,
+                'year_from' => $normalizedYearFrom,
+                'year_to' => $normalizedYearTo,
+            ],
+            'period' => [
+                'from' => $periodFrom->toDateString(),
+                'to' => $periodTo->toDateString(),
+                'days' => $normalizedDays,
+            ],
+        ];
+    }
 }
