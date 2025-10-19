@@ -6,13 +6,10 @@ use App\Services\Analytics\TrendsAnalyticsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class TrendsController extends Controller
 {
-    public function __construct(private readonly TrendsAnalyticsService $analytics)
-    {
-    }
+    public function __construct(private readonly TrendsAnalyticsService $analytics) {}
 
     public function __invoke(Request $request): View|JsonResponse
     {
@@ -22,10 +19,16 @@ class TrendsController extends Controller
         $yf = (int) $request->query('yf', 0);
         $yt = (int) $request->query('yt', 0);
 
-        $items = $this->analytics->trending($days, $type, $genre, $yf, $yt);
+        $result = $this->analytics->getTrendsData($days, $type, $genre, $yf, $yt);
+
+        $items = $result['items'];
+        $filters = $result['filters'];
+        $period = $result['period'];
 
         if ($request->wantsJson()) {
             return response()->json([
+                'from' => $period['from'],
+                'to' => $period['to'],
                 'days' => $period['days'],
                 'type' => $filters['type'],
                 'genre' => $filters['genre'],
@@ -34,9 +37,6 @@ class TrendsController extends Controller
                 'items' => $items,
             ]);
         }
-
-        $from = now()->subDays($days)->format('Y-m-d 00:00:00');
-        $to = now()->format('Y-m-d 23:59:59');
 
         return view('trends.index', [
             'days' => $period['days'],

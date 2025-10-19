@@ -12,47 +12,9 @@ class TrendsAnalyticsService
 {
     public function trending(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): Collection
     {
-        $days = max(1, min(30, $days));
-        $type = trim($type);
-        $genre = trim($genre);
-        $yearFrom = max(0, $yearFrom);
-        $yearTo = max(0, $yearTo);
+        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo);
 
-        $from = CarbonImmutable::now()->subDays($days)->startOfDay();
-        $to = CarbonImmutable::now()->endOfDay();
-
-        if (Schema::hasTable('rec_clicks')) {
-            $query = DB::table('rec_clicks')
-                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
-                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
-                ->whereBetween('rec_clicks.created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
-                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
-                ->orderByDesc('clicks');
-
-            if ($type !== '') {
-                $query->where('movies.type', $type);
-            }
-
-            if ($genre !== '') {
-                $query->whereJsonContains('movies.genres', $genre);
-            }
-
-            if ($yearFrom > 0) {
-                $query->where('movies.year', '>=', $yearFrom);
-            }
-
-            if ($yearTo > 0) {
-                $query->where('movies.year', '<=', $yearTo);
-            }
-
-            $items = $query->limit(40)->get();
-
-            if ($items->isNotEmpty()) {
-                return $items;
-            }
-        }
-
-        return $this->fallback($type, $genre, $yearFrom, $yearTo);
+        return $this->buildTrendingItems($normalized['filters'], $normalized['period']);
     }
 
     private function fallback(string $type, string $genre, int $yearFrom, int $yearTo): Collection
@@ -90,25 +52,83 @@ class TrendsAnalyticsService
      */
     public function getTrendsData(int $days, string $type = '', string $genre = '', int $yearFrom = 0, int $yearTo = 0): array
     {
+        $normalized = $this->normalizeParameters($days, $type, $genre, $yearFrom, $yearTo);
+
+        $items = $this->buildTrendingItems($normalized['filters'], $normalized['period']);
+
+        return [
+            'items' => $items,
+            'filters' => $normalized['filters'],
+            'period' => [
+                'from' => $normalized['period']['from']->toDateString(),
+                'to' => $normalized['period']['to']->toDateString(),
+                'days' => $normalized['filters']['days'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array{days: int, type: string, genre: string, year_from: int, year_to: int}  $filters
+     * @param  array{from: CarbonImmutable, to: CarbonImmutable}  $period
+     */
+    private function buildTrendingItems(array $filters, array $period): Collection
+    {
+        if (Schema::hasTable('rec_clicks')) {
+            $query = DB::table('rec_clicks')
+                ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')
+                ->whereBetween('rec_clicks.created_at', [$period['from']->toDateTimeString(), $period['to']->toDateTimeString()])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($filters['type'] !== '') {
+                $query->where('movies.type', $filters['type']);
+            }
+
+            if ($filters['genre'] !== '') {
+                $query->whereJsonContains('movies.genres', $filters['genre']);
+            }
+
+            if ($filters['year_from'] > 0) {
+                $query->where('movies.year', '>=', $filters['year_from']);
+            }
+
+            if ($filters['year_to'] > 0) {
+                $query->where('movies.year', '<=', $filters['year_to']);
+            }
+
+            $items = $query->limit(40)->get();
+
+            if ($items->isNotEmpty()) {
+                return $items;
+            }
+        }
+
+        return $this->fallback(
+            $filters['type'],
+            $filters['genre'],
+            $filters['year_from'],
+            $filters['year_to'],
+        );
+    }
+
+    /**
+     * @return array{
+     *     filters: array{days: int, type: string, genre: string, year_from: int, year_to: int},
+     *     period: array{from: CarbonImmutable, to: CarbonImmutable}
+     * }
+     */
+    private function normalizeParameters(int $days, string $type, string $genre, int $yearFrom, int $yearTo): array
+    {
         $normalizedDays = max(1, min(30, $days));
         $normalizedType = trim($type);
         $normalizedGenre = trim($genre);
         $normalizedYearFrom = max(0, $yearFrom);
         $normalizedYearTo = max(0, $yearTo);
 
-        $periodFrom = CarbonImmutable::now()->subDays($normalizedDays)->startOfDay();
-        $periodTo = CarbonImmutable::now()->endOfDay();
-
-        $items = $this->trending(
-            $normalizedDays,
-            $normalizedType,
-            $normalizedGenre,
-            $normalizedYearFrom,
-            $normalizedYearTo,
-        );
+        $now = CarbonImmutable::now();
 
         return [
-            'items' => $items,
             'filters' => [
                 'days' => $normalizedDays,
                 'type' => $normalizedType,
@@ -117,9 +137,8 @@ class TrendsAnalyticsService
                 'year_to' => $normalizedYearTo,
             ],
             'period' => [
-                'from' => $periodFrom->toDateString(),
-                'to' => $periodTo->toDateString(),
-                'days' => $normalizedDays,
+                'from' => $now->subDays($normalizedDays)->startOfDay(),
+                'to' => $now->endOfDay(),
             ],
         ];
     }
