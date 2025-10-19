@@ -7,6 +7,8 @@ use App\Http\Controllers\CtrSvgController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\Rss\NewReleasesFeedController;
+use App\Http\Controllers\Rss\UpcomingFeedController;
 use App\Http\Controllers\SearchPageController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Livewire\HomePage;
@@ -19,6 +21,11 @@ Route::get('/', HomePage::class)->name('home');
 Route::get('/search', SearchPageController::class)->name('search');
 Route::get('/trends', TrendsPage::class)->name('trends');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
+
+Route::prefix('rss')->name('rss.')->group(function (): void {
+    Route::get('/new', NewReleasesFeedController::class)->name('new');
+    Route::get('/upcoming', UpcomingFeedController::class)->name('upcoming');
+});
 
 Route::get('/works', function () {
     $path = base_path('WORKS.md');
