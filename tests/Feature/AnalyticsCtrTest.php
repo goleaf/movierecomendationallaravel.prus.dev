@@ -7,9 +7,11 @@ namespace Tests\Feature;
 use App\Filament\Widgets\FunnelWidget;
 use App\Http\Controllers\CtrController;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class AnalyticsCtrTest extends TestCase
@@ -80,6 +82,51 @@ class AnalyticsCtrTest extends TestCase
         $this->assertSame(4, $funnels['Итого']['clks']);
         $this->assertEqualsWithDelta(40.0, $funnels['Итого']['ctr'], 0.01);
         $this->assertEqualsWithDelta($funnels['Итого']['ctr'], $funnels['Итого']['cuped_ctr'], 0.01);
+    }
+
+    public function test_daily_series_prefers_snapshots_with_legacy_fallback(): void
+    {
+        Carbon::setTestNow('2025-01-15 00:00:00');
+
+        $movieId = DB::table('movies')->insertGetId([
+            'imdb_tt' => 'tt9999999',
+            'title' => 'Daily Series',
+            'type' => 'movie',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $dayOne = CarbonImmutable::parse('2025-01-13 12:00:00');
+        $dayTwo = CarbonImmutable::parse('2025-01-14 12:00:00');
+
+        DB::table('rec_ab_logs')->insert(array_merge(
+            $this->makeImpressions('home', 'A', 10, $movieId, Carbon::instance($dayOne)),
+            $this->makeImpressions('home', 'B', 5, $movieId, Carbon::instance($dayOne)),
+            $this->makeImpressions('home', 'A', 4, $movieId, Carbon::instance($dayTwo)),
+            $this->makeImpressions('home', 'B', 6, $movieId, Carbon::instance($dayTwo)),
+        ));
+
+        DB::table('rec_clicks')->insert(array_merge(
+            $this->makeClicks('home', 'A', 2, $movieId, Carbon::instance($dayOne)),
+            $this->makeClicks('home', 'B', 1, $movieId, Carbon::instance($dayOne)),
+            $this->makeClicks('home', 'A', 1, $movieId, Carbon::instance($dayTwo)),
+        ));
+
+        app(\App\Services\Analytics\CtrDailySnapshotService::class)
+            ->aggregateForDate($dayOne->toImmutable());
+
+        $service = app(\App\Services\Analytics\CtrAnalyticsService::class);
+
+        $result = $service->dailySeries($dayOne->toImmutable()->startOfDay(), $dayTwo->toImmutable()->startOfDay());
+
+        $this->assertSame(['2025-01-13', '2025-01-14'], $result['days']);
+        $this->assertEqualsWithDelta(20.0, $result['series']['A'][0], 0.01);
+        $this->assertEqualsWithDelta(20.0, $result['series']['B'][0], 0.01);
+        $this->assertEqualsWithDelta(25.0, $result['series']['A'][1], 0.01);
+        $this->assertEqualsWithDelta(0.0, $result['series']['B'][1], 0.01);
+        $this->assertSame(25.0, $result['max']);
+
+        Carbon::setTestNow();
     }
 
     public function test_funnel_widget_rows_use_placement_impressions(): void
@@ -163,15 +210,20 @@ class AnalyticsCtrTest extends TestCase
     private function makeImpressions(string $placement, string $variant, int $count, int $movieId, Carbon $timestamp): array
     {
         return array_map(function (int $index) use ($placement, $variant, $movieId, $timestamp) {
-            return [
+            $row = [
                 'device_id' => 'device-'.$placement.'-'.$variant.'-'.$index,
                 'placement' => $placement,
                 'variant' => $variant,
                 'movie_id' => $movieId,
-                'payload' => null,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
             ];
+
+            if (Schema::hasColumn('rec_ab_logs', 'payload')) {
+                $row['payload'] = null;
+            }
+
+            return $row;
         }, range(1, $count));
     }
 
@@ -181,15 +233,23 @@ class AnalyticsCtrTest extends TestCase
     private function makeClicks(string $placement, string $variant, int $count, int $movieId, Carbon $timestamp): array
     {
         return array_map(function (int $index) use ($placement, $variant, $movieId, $timestamp) {
-            return [
+            $row = [
                 'movie_id' => $movieId,
-                'device_id' => 'click-'.$placement.'-'.$variant.'-'.$index,
                 'placement' => $placement,
                 'variant' => $variant,
-                'clicked_at' => $timestamp,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
             ];
+
+            if (Schema::hasColumn('rec_clicks', 'device_id')) {
+                $row['device_id'] = 'click-'.$placement.'-'.$variant.'-'.$index;
+            }
+
+            if (Schema::hasColumn('rec_clicks', 'clicked_at')) {
+                $row['clicked_at'] = $timestamp;
+            }
+
+            return $row;
         }, range(1, $count));
     }
 
