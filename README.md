@@ -4,14 +4,6 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 ---
 
-## Project trackers
-
-- [TODO backlog](TODO.md) — canonical uppercase filename to prevent case-insensitive checkout conflicts
-- [Works log](WORKS.md)
-- [MCP & Boost playbook](docs/mcp-tooling.md)
-
----
-
 ## Feature overview
 
 - **Data ingestion & enrichment** – ready-to-run import jobs for TMDB/OMDb metadata with translation support and background queues.
@@ -62,75 +54,6 @@ Install the frontend dependencies and start Vite if you are working with the UI:
 npm install
 npm run dev   # use npm run build for production assets
 ```
-
-### Connect your MCP tooling
-
-Boost configuration is already versioned. Launch the Laravel Boost MCP server with:
-
-```bash
-php artisan boost:mcp
-```
-
-Editors that support MCP (Cursor, Zed, etc.) will auto-discover the `.cursor/mcp.json` profile and connect without extra tweaks. Review [the full playbook](docs/mcp-tooling.md) for available capabilities and day-to-day workflows.
-
----
-
-## Boost MCP tooling
-
-Boost ships with an MCP server so AI agents can inspect and operate on the
-project using Laravel-aware helpers. The curated toolset focuses on the tasks we
-perform most often while building analytics features and Filament panels.
-
-### Capability map
-
-| Workflow focus | MCP tool | Why it matters | Config source |
-| --- | --- | --- | --- |
-| Analytics pipelines & Filament scaffolding | `ListArtisanCommands` | Surfaces the custom Artisan commands that wrap ingestion jobs and Filament generators. | `config/boost.php` → `mcp.capabilities.artisan` |
-| Laravel & Filament research | `SearchDocs` | Runs version-aware documentation searches before writing code. | `config/boost.php` → `mcp.capabilities.docs` |
-| Experiment toggles | `GetConfig` | Reads feature flags that gate CTR experiments and dashboards. | `config/boost.php` → `mcp.capabilities.config` |
-| Panel routing | `ListRoutes` | Lists the Filament panel routes that back office links depend on. | `config/boost.php` → `mcp.capabilities.routes` |
-| Preview links | `GetAbsoluteUrl` | Generates absolute URLs for analytics dashboards and Filament resources. | `config/boost.php` → `mcp.capabilities.urls` |
-| Schema exploration | `DatabaseSchema` | Provides read-only schema dumps to speed up analytics query design. | `config/boost.php` → `mcp.capabilities.schema` |
-
-Write operations such as `DatabaseQuery` and `Tinker` stay disabled in
-development by default so agents cannot mutate data unintentionally. Adjust the
-`mcp.tools.exclude` list in `config/boost.php` if you need to opt in later.
-
-### Editor integration
-
-The repository’s `boost.json` already registers the MCP endpoint for editors and
-agents that understand Boost configuration:
-
-```json
-{
-    "mcpServers": {
-        "laravel-boost": {
-            "command": "php",
-            "args": ["artisan", "boost:mcp"]
-        }
-    }
-}
-```
-
-Run `php artisan boost:mcp` from your development shell (or let your editor do
-it automatically) to boot the server. Boost only activates when `APP_ENV=local`
-or `APP_DEBUG=true`, so production builds stay unaffected.
-
-### Usage guidelines
-
-- **Analytics work** – Start by calling `SearchDocs` with queries for funnels,
-  queue metrics, or SSR insights. Follow up with `DatabaseSchema` to confirm
-  table names before writing SQL or dashboard cards.
-- **Filament changes** – Use `ListArtisanCommands` to locate the generator or
-  helper command you need, then inspect panel routes with `ListRoutes` and
-  create preview links with `GetAbsoluteUrl` for QA reviewers.
-- **Configuration checks** – Before toggling experiments, fetch the current
-  settings via `GetConfig` so AI agents understand the active recommendation
-  strategy weights and feature flags.
-
-These workflows keep agents grounded in the project’s real structure and
-encourage documentation-first changes when shipping analytics or Filament
-features.
 
 ---
 
