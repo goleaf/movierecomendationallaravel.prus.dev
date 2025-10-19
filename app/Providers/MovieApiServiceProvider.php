@@ -8,7 +8,10 @@ use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\TmdbClient;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 
 class MovieApiServiceProvider extends ServiceProvider
 {
@@ -34,6 +37,8 @@ class MovieApiServiceProvider extends ServiceProvider
                 ],
                 [],
                 'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
+                [],
+                $this->resolveLogger($config['log_channel'] ?? null),
             );
 
             return new TmdbClient($client, $defaultLocale, $acceptedLocales);
@@ -54,6 +59,8 @@ class MovieApiServiceProvider extends ServiceProvider
                 ],
                 [],
                 'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
+                [],
+                $this->resolveLogger($config['log_channel'] ?? null),
             );
 
             return new OmdbClient($client, (array) ($config['default_params'] ?? []));
@@ -65,5 +72,23 @@ class MovieApiServiceProvider extends ServiceProvider
         $trimmed = rtrim($baseUrl, '/');
 
         return $trimmed !== '' ? $trimmed.'/' : $baseUrl;
+    }
+
+    protected function resolveLogger(?string $channel): ?LoggerInterface
+    {
+        if ($channel === null || $channel === '') {
+            return null;
+        }
+
+        try {
+            return Log::channel($channel);
+        } catch (InvalidArgumentException $exception) {
+            Log::warning('Failed to resolve movie API logger channel.', [
+                'channel' => $channel,
+                'exception' => $exception,
+            ]);
+        }
+
+        return null;
     }
 }

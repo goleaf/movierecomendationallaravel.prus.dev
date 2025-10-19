@@ -42,6 +42,7 @@ return [
         'base_url' => env('TMDB_BASE_URL', 'https://api.themoviedb.org/3/'),
         'cache_ttl' => (int) env('TMDB_CACHE_TTL', 3600),
         'timeout' => (float) env('TMDB_TIMEOUT', 10),
+        'log_channel' => env('TMDB_LOG_CHANNEL'),
         'retry' => [
             'attempts' => (int) env('TMDB_RETRY_ATTEMPTS', 2),
             'delay_ms' => (int) env('TMDB_RETRY_DELAY_MS', 250),
@@ -65,6 +66,7 @@ return [
         'key' => env('OMDB_API_KEY'),
         'base_url' => env('OMDB_BASE_URL', 'https://www.omdbapi.com/'),
         'timeout' => (float) env('OMDB_TIMEOUT', 10),
+        'log_channel' => env('OMDB_LOG_CHANNEL'),
         'retry' => [
             'attempts' => (int) env('OMDB_RETRY_ATTEMPTS', 1),
             'delay_ms' => (int) env('OMDB_RETRY_DELAY_MS', 300),
