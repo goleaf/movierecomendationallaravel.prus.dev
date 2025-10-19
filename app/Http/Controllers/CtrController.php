@@ -17,58 +17,99 @@ class CtrController extends Controller
 
         $logs = DB::table('rec_ab_logs')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"]);
         $clicks = DB::table('rec_clicks')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"]);
+
         if ($placement) {
             $clicks->where('placement', $placement);
         }
+
         if ($variant) {
             $logs->where('variant', $variant);
             $clicks->where('variant', $variant);
         }
 
-        $impVariant = $logs->select('variant', DB::raw('count(*) as imps'))->groupBy('variant')->pluck('imps', 'variant')->all();
-        $clkVariant = $clicks->select('variant', DB::raw('count(*) as clks'))->groupBy('variant')->pluck('clks', 'variant')->all();
-
-        $logsPlacement = DB::table('rec_ab_logs')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"]);
-        if ($variant) {
-            $logsPlacement->where('variant', $variant);
-        }
-
-        $impPlacement = $logsPlacement
-            ->select('placement', DB::raw('count(*) as imps'))
-            ->groupBy('placement')
-            ->pluck('imps', 'placement')
+        $impVariant = (clone $logs)
+            ->select('variant', DB::raw('count(*) as imps'))
+            ->groupBy('variant')
+            ->pluck('imps', 'variant')
+            ->map(static fn ($value) => (int) $value)
             ->all();
 
-        $viewPlacement = DB::table('device_history')
-            ->whereBetween('viewed_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-            ->select('page', DB::raw('count(*) as views'))
-            ->groupBy('page')
-            ->pluck('views', 'page')
+        $placementVariantImpressions = (clone $logs)
+            ->select('placement', 'variant', DB::raw('count(*) as imps'))
+            ->groupBy('placement', 'variant')
+            ->get()
+            ->groupBy('placement')
+            ->map(static function ($rows) {
+                return $rows
+                    ->pluck('imps', 'variant')
+                    ->map(static fn ($value) => (int) $value)
+                    ->all();
+            })
+            ->all();
+
+        $placementImpressions = [];
+        foreach ($placementVariantImpressions as $placementKey => $variantCounts) {
+            $placementImpressions[$placementKey] = array_sum($variantCounts);
+        }
+
+        $clkVariant = (clone $clicks)
+            ->select('variant', DB::raw('count(*) as clks'))
+            ->groupBy('variant')
+            ->pluck('clks', 'variant')
+            ->map(static fn ($value) => (int) $value)
+            ->all();
+
+        $clicksP = (clone $clicks)
+            ->select('placement', DB::raw('count(*) as clks'))
+            ->groupBy('placement')
+            ->pluck('clks', 'placement')
+            ->map(static fn ($value) => (int) $value)
             ->all();
 
         $summary = [];
         foreach (['A', 'B'] as $v) {
-            $imps = (int) ($impVariant[$v] ?? 0);
-            $clks = (int) ($clkVariant[$v] ?? 0);
-            $summary[] = ['v' => $v, 'imps' => $imps, 'clks' => $clks, 'ctr' => $imps > 0 ? round(100 * $clks / $imps, 2) : 0.0];
+            $imps = $impVariant[$v] ?? 0;
+            $clks = $clkVariant[$v] ?? 0;
+
+            $summary[] = [
+                'v' => $v,
+                'imps' => $imps,
+                'clks' => $clks,
+                'ctr' => $imps > 0 ? round(100 * $clks / $imps, 2) : 0.0,
+            ];
         }
 
-        $clicksP = DB::table('rec_clicks')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-            ->select('placement', DB::raw('count(*) as clks'))->groupBy('placement')->pluck('clks', 'placement')->all();
+        $totalViews = (int) DB::table('device_history')
+            ->whereBetween('viewed_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
+            ->count();
 
-        $totalImps = array_sum($impPlacement);
-        $totalViews = array_sum($viewPlacement);
         $funnels = [];
-        foreach (['home', 'show', 'trends'] as $pl) {
-            $clks = (int) DB::table('rec_clicks')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])->where('placement', $pl)->count();
-            $imps = (int) ($impPlacement[$pl] ?? 0);
-            $views = (int) ($viewPlacement[$pl] ?? 0);
-            $funnels[$pl] = ['imps' => $imps, 'clks' => $clks, 'views' => $views];
+        $funnelPlacements = ['home', 'show', 'trends'];
+        $totalImps = 0;
+        $totalClicks = 0;
+
+        foreach ($funnelPlacements as $funnelPlacement) {
+            $imps = $placementImpressions[$funnelPlacement] ?? 0;
+            $clks = $clicksP[$funnelPlacement] ?? 0;
+
+            $totalImps += $imps;
+            $totalClicks += $clks;
+
+            $funnels[$funnelPlacement] = [
+                'imps' => $imps,
+                'clks' => $clks,
+                'views' => $totalViews,
+            ];
         }
-        $funnels['Итого'] = ['imps' => $totalImps, 'clks' => (int) DB::table('rec_clicks')->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])->count(), 'views' => $totalViews];
+
+        $funnels['Итого'] = [
+            'imps' => $totalImps,
+            'clks' => $totalClicks,
+            'views' => $totalViews,
+        ];
 
         // z-test data
         return view('admin.ctr', compact('from', 'to', 'placement', 'variant', 'summary', 'clicksP', 'funnels', 'impVariant', 'clkVariant'))
-            ->with('funnelGenres',[])->with('funnelYears',[]);
+            ->with('funnelGenres', [])->with('funnelYears', []);
     }
 }
