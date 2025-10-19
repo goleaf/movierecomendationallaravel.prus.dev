@@ -17,7 +17,7 @@ class CtrAnalyticsService
 
     /**
      * @return array{
-     *     summary: list<array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
      *     clicksByPlacement: array<string, int>,
      *     funnels: array<string, array{imps: int, clks: int, views: int, ctr: float, cuped_ctr: float, view_rate: float}>,
      *     totals: array{impressions: int, clicks: int, views: int},
@@ -39,7 +39,7 @@ class CtrAnalyticsService
 
         $placementCtrData = $this->placementCtrs($fromDate, $toDate);
         $placements = $placementCtrData
-            ->map(static fn (array $row): string => explode('-', $row['label'])[0])
+            ->map(static fn (array $row): string => explode('-', (string) $row['label'])[0])
             ->unique()
             ->values()
             ->all();
@@ -58,8 +58,10 @@ class CtrAnalyticsService
         $funnelRows = $this->funnels($fromDate, $toDate, $placements);
         $funnels = collect($funnelRows)
             ->mapWithKeys(static function (array $row): array {
+                $label = (string) $row['label'];
+
                 return [
-                    $row['label'] => [
+                    $label => [
                         'imps' => (int) $row['imps'],
                         'clks' => (int) $row['clicks'],
                         'views' => (int) $row['views'],
@@ -112,7 +114,7 @@ class CtrAnalyticsService
 
     /**
      * @return array{
-     *     summary: list<array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
      *     impressions: array<string, int>,
      *     clicks: array<string, int>,
      *     placementClicks: array<string, int>
@@ -176,10 +178,10 @@ class CtrAnalyticsService
                 $imps = (int) ($impVariant[$code] ?? 0);
                 $clks = (int) ($clkVariant[$code] ?? 0);
                 $summary[] = [
-                    'variant' => $code,
+                    'variant' => (string) $code,
                     'impressions' => $imps,
                     'clicks' => $clks,
-                    'ctr' => $imps > 0 ? round(100 * $clks / $imps, 2) : 0.0,
+                    'ctr' => $imps > 0 ? (float) round(100 * $clks / $imps, 2) : 0.0,
                 ];
             }
 
@@ -646,26 +648,38 @@ class CtrAnalyticsService
 
             $variants = ['A', 'B'];
 
-            return $placements->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
-                return collect($variants)->map(function (string $variant) use ($placement, $clicks, $impressions) {
-                    $clickRow = $clicks->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
-                    $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+            $rows = [];
+
+            foreach ($placements as $placement) {
+                $placementLabel = (string) $placement;
+
+                foreach ($variants as $variant) {
+                    $clickRow = $clicks->firstWhere(
+                        fn ($item) => (string) $item->placement === $placementLabel && (string) $item->variant === $variant
+                    );
+                    $impressionRow = $impressions->firstWhere(
+                        fn ($item) => (string) $item->placement === $placementLabel && (string) $item->variant === $variant
+                    );
 
                     $clickCount = (int) ($clickRow->clicks ?? 0);
                     $imps = (int) ($impressionRow->impressions ?? 0);
 
-                    return [
-                        'label' => $placement.'-'.$variant,
-                        'ctr' => $imps > 0 ? round(100 * $clickCount / $imps, 2) : 0.0,
+                    $rows[] = [
+                        'label' => $placementLabel.'-'.$variant,
+                        'ctr' => $imps > 0 ? (float) round(100 * $clickCount / $imps, 2) : 0.0,
                     ];
-                });
-            })->values()->all();
+                }
+            }
+
+            return $rows;
         });
 
-        return collect($cached)->map(fn (array $row) => [
-            'label' => $row['label'],
-            'ctr' => (float) $row['ctr'],
-        ])->values();
+        return collect($cached)
+            ->map(static fn (array $row): array => [
+                'label' => (string) $row['label'],
+                'ctr' => (float) $row['ctr'],
+            ])
+            ->values();
     }
 
     /**
@@ -688,7 +702,11 @@ class CtrAnalyticsService
         $key = "admin.ctr.filters.placements.$placement";
         $translated = __($key);
 
-        if (is_string($translated) && $translated !== $key) {
+        if (is_array($translated)) {
+            $translated = reset($translated) ?: null;
+        }
+
+        if (is_string($translated) && $translated !== $key && $translated !== '') {
             return $translated;
         }
 
