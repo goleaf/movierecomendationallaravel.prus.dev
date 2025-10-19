@@ -41,7 +41,6 @@ final class AnalyticsPanelProvider extends PanelProvider
         $pages = array_values(array_filter([
             'App\\Filament\\Pages\\Analytics\\CtrPage',
             'App\\Filament\\Pages\\Analytics\\TrendsPage',
-            'App\\Filament\\Pages\\Analytics\\TrendsAdvancedPage',
             'App\\Filament\\Pages\\Analytics\\QueuePage',
         ], static fn (string $class): bool => class_exists($class)));
 
