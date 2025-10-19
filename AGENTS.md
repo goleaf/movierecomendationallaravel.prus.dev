@@ -24,6 +24,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
 
+## SSR Metrics Workflow
+- The `StoreSsrMetric` job is the single entry point for persisting SSR metric payloads. Describe any behavioural changes or conventions involving this job directly in pull requests or documentation updates.
+- Middleware handling SSR responses must dispatch the `StoreSsrMetric` job so metrics are captured consistently across synchronous and queued flows.
+- When writing or updating tests around SSR metrics, target the dedicated PHPUnit suites that cover middleware dispatch and the job itself. Running `php artisan test --group=ssr-metrics` and `php artisan test tests/Jobs/StoreSsrMetricTest.php` is expected.
+- Follow queue-aware testing and implementation patterns—use helpers like `Queue::fake()` or `Queue::assertPushed()` when asserting dispatch behaviour.
+- Ensure JSONL fallback handling remains intact when the job processes batched SSR payloads; contributors should verify both primary and fallback storage paths during development.
+
 ## Verification Scripts
 - Do not create verification scripts or tinker when tests cover that functionality and prove it works. Unit and feature tests are more important.
 
