@@ -12,6 +12,7 @@ use App\Filament\Widgets\ZTestWidget;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -82,6 +83,11 @@ class AdminAnalyticsWidgetsTest extends TestCase
         Livewire::test(SsrDropWidget::class)
             ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
+
+        $this->assertEquals(
+            [185, 244, 201, 176, 192],
+            DB::table('ssr_metrics')->orderBy('id')->pluck('first_byte_ms')->all()
+        );
     }
 
     public function test_z_test_widget_displays_variant_breakdown(): void

@@ -68,6 +68,7 @@ return new class extends Migration
             $table->unsignedInteger('ldjson_count');
             $table->unsignedInteger('img_count');
             $table->unsignedInteger('blocking_scripts');
+            $table->unsignedInteger('first_byte_ms')->default(0);
             $table->timestamps();
         });
     }

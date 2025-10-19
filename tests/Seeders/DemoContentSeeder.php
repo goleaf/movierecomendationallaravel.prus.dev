@@ -157,10 +157,10 @@ class DemoContentSeeder extends Seeder
         }, $views));
 
         $ssrMetrics = [
-            ['path' => '/', 'score' => 85, 'delta' => 1],
-            ['path' => '/trends', 'score' => 78, 'delta' => 1],
-            ['path' => '/', 'score' => 90, 'delta' => 0],
-            ['path' => '/trends', 'score' => 72, 'delta' => 0],
+            ['path' => '/', 'score' => 85, 'delta' => 1, 'first_byte_ms' => 210],
+            ['path' => '/trends', 'score' => 78, 'delta' => 1, 'first_byte_ms' => 238],
+            ['path' => '/', 'score' => 90, 'delta' => 0, 'first_byte_ms' => 192],
+            ['path' => '/trends', 'score' => 72, 'delta' => 0, 'first_byte_ms' => 265],
         ];
 
         DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
@@ -168,6 +168,7 @@ class DemoContentSeeder extends Seeder
                 'path' => $row['path'],
                 'score' => $row['score'],
                 'meta' => null,
+                'first_byte_ms' => $row['first_byte_ms'],
                 'created_at' => $now->subDays($row['delta']),
                 'updated_at' => $now->subDays($row['delta']),
             ];
