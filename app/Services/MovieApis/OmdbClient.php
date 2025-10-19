@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Support\UriHelpers;
 use Illuminate\Support\Uri;
 
 class OmdbClient
@@ -14,6 +15,7 @@ class OmdbClient
     public function __construct(
         protected RateLimitedClient $client,
         protected array $defaultParameters = [],
+        protected ?string $apiKey = null,
     ) {}
 
     /**
@@ -75,10 +77,10 @@ class OmdbClient
         $parameters = $this->buildQuery($query, $overrides);
 
         if ($parameters !== []) {
-            $uri = $uri->withQuery($parameters);
+            $uri = UriHelpers::withQuery($uri, $parameters);
         }
 
-        return $uri;
+        return UriHelpers::signWithApiKey($uri, 'apikey', $this->apiKey);
     }
 
     protected function send(Uri $uri): array

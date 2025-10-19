@@ -13,7 +13,7 @@ use Tests\TestCase;
 class ClientUriBuildTest extends TestCase
 {
     #[DataProvider('percentEncodedValuesProvider')]
-    public function test_clients_percent_encode_segments_and_query(string $value): void
+    public function test_tmdb_client_builds_signed_percent_encoded_uri(string $value): void
     {
         $tmdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
 
@@ -24,15 +24,20 @@ class ClientUriBuildTest extends TestCase
                 $this->identicalTo([
                     'external_source' => 'imdb_id',
                     'language' => 'en-US',
+                    'api_key' => 'abc 123',
                 ]),
             )
             ->willReturn([]);
 
-        $tmdbClient = new TmdbClient($tmdbRateLimitedClient, 'en-US');
+        $tmdbClient = new TmdbClient($tmdbRateLimitedClient, 'en-US', [], 'abc 123');
 
         $tmdbClient->findByImdbId($value);
+    }
 
-        $defaultParameters = ['apikey' => 'abc 123'];
+    #[DataProvider('percentEncodedValuesProvider')]
+    public function test_omdb_client_builds_signed_percent_encoded_query(string $value): void
+    {
+        $defaultParameters = ['plot' => 'short'];
 
         $omdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
 
@@ -41,16 +46,12 @@ class ClientUriBuildTest extends TestCase
             ->with(
                 $this->identicalTo('/'),
                 $this->callback(function (array $query) use ($value, $defaultParameters): bool {
-                    $expected = http_build_query(
-                        array_merge($defaultParameters, ['s' => $value]),
-                        '',
-                        '&',
-                        PHP_QUERY_RFC3986,
-                    );
-
                     $this->assertSame(
-                        $expected,
-                        http_build_query($query, '', '&', PHP_QUERY_RFC3986),
+                        array_merge($defaultParameters, [
+                            's' => $value,
+                            'apikey' => 'abc 123',
+                        ]),
+                        $query,
                     );
 
                     return true;
@@ -58,9 +59,29 @@ class ClientUriBuildTest extends TestCase
             )
             ->willReturn([]);
 
-        $omdbClient = new OmdbClient($omdbRateLimitedClient, $defaultParameters);
+        $omdbClient = new OmdbClient($omdbRateLimitedClient, $defaultParameters, 'abc 123');
 
         $omdbClient->search($value);
+    }
+
+    public function test_omdb_client_ignores_empty_override_values(): void
+    {
+        $omdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
+
+        $omdbRateLimitedClient->expects($this->once())
+            ->method('get')
+            ->with(
+                $this->identicalTo('/'),
+                $this->identicalTo([
+                    't' => 'Inception',
+                    'apikey' => 'abc 123',
+                ]),
+            )
+            ->willReturn([]);
+
+        $omdbClient = new OmdbClient($omdbRateLimitedClient, [], 'abc 123');
+
+        $omdbClient->findByTitle('Inception', ['plot' => '']);
     }
 
     /**

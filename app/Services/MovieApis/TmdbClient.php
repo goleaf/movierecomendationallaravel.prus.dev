@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Support\UriHelpers;
 use Illuminate\Support\Uri;
 
 class TmdbClient
@@ -15,6 +16,7 @@ class TmdbClient
         protected RateLimitedClient $client,
         protected string $defaultLocale,
         protected array $acceptedLocales = [],
+        protected ?string $apiKey = null,
     ) {
         if ($this->defaultLocale === '' && $this->acceptedLocales !== []) {
             $this->defaultLocale = $this->acceptedLocales[0];
@@ -32,13 +34,13 @@ class TmdbClient
     {
         $locale = $this->resolveLocale($language);
 
-        $uri = $this->buildUri([
-            'find',
-            $imdbId,
-        ], [
-            'external_source' => 'imdb_id',
-            'language' => $locale,
-        ]);
+        $uri = $this->buildUri(
+            ['find', $imdbId],
+            [
+                'external_source' => 'imdb_id',
+                'language' => $locale,
+            ],
+        );
 
         return $this->send($uri);
     }
@@ -52,12 +54,12 @@ class TmdbClient
         $mediaType = $this->normalizeMediaType($mediaType);
         $locale = $this->resolveLocale($language);
 
-        $uri = $this->buildUri([
-            $mediaType,
-            $id,
-        ], $additionalQuery + [
-            'language' => $locale,
-        ]);
+        $uri = $this->buildUri(
+            [$mediaType, $id],
+            $additionalQuery + [
+                'language' => $locale,
+            ],
+        );
 
         return $this->send($uri);
     }
@@ -81,27 +83,13 @@ class TmdbClient
 
     protected function buildUri(array $segments, array $query = []): Uri
     {
-        $uri = Uri::of()->withPath($this->buildPath($segments));
+        $uri = UriHelpers::withPathSegments(Uri::of('/'), $segments);
 
         if ($query !== []) {
-            $uri = $uri->withQuery($query);
+            $uri = UriHelpers::withQuery($uri, $query);
         }
 
-        return $uri;
-    }
-
-    protected function buildPath(array $segments): string
-    {
-        if ($segments === []) {
-            return '/';
-        }
-
-        $encodedSegments = array_map(
-            static fn (string|int $segment): string => rawurlencode((string) $segment),
-            $segments,
-        );
-
-        return implode('/', $encodedSegments);
+        return UriHelpers::signWithApiKey($uri, 'api_key', $this->apiKey);
     }
 
     protected function send(Uri $uri): array
