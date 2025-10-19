@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\AnalyticsFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class CtrRangeRequest extends FormRequest
 {
@@ -27,8 +29,8 @@ final class CtrRangeRequest extends FormRequest
         return [
             'from' => ['required', 'date_format:Y-m-d'],
             'to' => ['required', 'date_format:Y-m-d'],
-            'p' => ['nullable', 'string'],
-            'v' => ['nullable', 'string'],
+            'p' => ['nullable', 'string', Rule::in(AnalyticsFilters::allowedPlacements())],
+            'v' => ['nullable', 'string', Rule::in(AnalyticsFilters::allowedVariants())],
         ];
     }
 
@@ -77,35 +79,19 @@ final class CtrRangeRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $now = now()->toImmutable();
+        $range = AnalyticsFilters::normalizeDateRange(
+            $this->query('from'),
+            $this->query('to'),
+            $now->subDays(7),
+            $now,
+        );
+
         $this->merge([
-            'from' => $this->prepareDate($this->query('from'), now()->subDays(7)),
-            'to' => $this->prepareDate($this->query('to'), now()),
-            'p' => $this->prepareNullableString($this->query('p')),
-            'v' => $this->prepareNullableString($this->query('v')),
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'p' => AnalyticsFilters::normalizePlacement($this->query('p')),
+            'v' => AnalyticsFilters::normalizeVariant($this->query('v')),
         ]);
-    }
-
-    private function prepareDate(mixed $value, CarbonImmutable $fallback): string
-    {
-        if (is_string($value) && $value !== '') {
-            try {
-                return CarbonImmutable::parse($value)->format('Y-m-d');
-            } catch (\Throwable) {
-                // Ignore and fall back
-            }
-        }
-
-        return $fallback->format('Y-m-d');
-    }
-
-    private function prepareNullableString(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $string = trim((string) $value);
-
-        return $string === '' ? null : $string;
     }
 }
