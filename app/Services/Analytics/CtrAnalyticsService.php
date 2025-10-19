@@ -404,7 +404,11 @@ class CtrAnalyticsService
             $max = max($max, $ctrA, $ctrB);
         }
 
-        $max = max(5.0, ceil($max / 5.0) * 5.0);
+        $max = max(5.0, ceil(max($max, 0.0) / 5.0) * 5.0);
+
+        if (! is_finite($max) || $max <= 0.0) {
+            $max = 5.0;
+        }
 
         return [
             'days' => $days,
@@ -424,16 +428,36 @@ class CtrAnalyticsService
         $width = 720;
         $height = 260;
         $pad = 40;
-        $mapPoints = function (array $values) use ($data, $width, $height, $pad): string {
+        $chartMax = (float) ($data['max'] ?? 0.0);
+        if (! is_finite($chartMax) || $chartMax <= 0.0) {
+            $chartMax = 5.0;
+        }
+
+        $mapPoints = function (array $values) use ($chartMax, $width, $height, $pad): string {
+            $values = array_values(array_map(
+                static fn ($value): float => is_numeric($value) ? (float) $value : 0.0,
+                $values
+            ));
+
             $count = count($values);
-            if ($count <= 1) {
-                $count = 1;
+            if ($count === 0) {
+                return '';
             }
+
+            $horizontalRange = max(1.0, $width - 2 * $pad);
+            $verticalRange = max(1.0, $height - 2 * $pad);
+            $maxValue = max(1.0, $chartMax);
+            $steps = max(1, $count - 1);
 
             $points = [];
             foreach ($values as $index => $value) {
-                $x = $pad + ($count <= 1 ? 0 : $index * ($width - 2 * $pad) / ($count - 1));
-                $y = $height - $pad - ($value / max(1.0, $data['max'])) * ($height - 2 * $pad);
+                $x = $pad + ($count <= 1 ? 0.0 : $index * $horizontalRange / $steps);
+                $y = $height - $pad - ($value / $maxValue) * $verticalRange;
+
+                if (! is_finite($x) || ! is_finite($y)) {
+                    continue;
+                }
+
                 $points[] = sprintf('%.1f,%.1f', $x, $y);
             }
 
@@ -443,7 +467,7 @@ class CtrAnalyticsService
         $grid = '';
         for ($i = 0; $i <= 5; $i++) {
             $y = $pad + $i * ($height - 2 * $pad) / 5;
-            $value = round($data['max'] - $i * $data['max'] / 5, 1);
+            $value = round($chartMax - $i * $chartMax / 5, 1);
             $grid .= '<line x1="'.$pad.'" y1="'.($y).'" x2="'.($width - $pad).'" y2="'.($y).'" stroke="#1d2229" stroke-width="1"/>';
             $grid .= '<text x="5" y="'.($y + 4).'" fill="#889" font-size="10">'.$value.'%</text>';
         }
@@ -471,7 +495,11 @@ class CtrAnalyticsService
         $barWidth = 24;
         $gap = 18;
         $max = (float) $data->max('ctr');
-        $max = max(5.0, ceil($max / 5.0) * 5.0);
+        $max = max(5.0, ceil(max($max, 0.0) / 5.0) * 5.0);
+
+        if (! is_finite($max) || $max <= 0.0) {
+            $max = 5.0;
+        }
 
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$width.'" height="'.$height.'">'
             .'<rect x="0" y="0" width="'.$width.'" height="'.$height.'" fill="#0b0c0f"/>';
@@ -486,7 +514,7 @@ class CtrAnalyticsService
         $xOffset = $pad + 10;
         $index = 0;
         foreach ($data as $row) {
-            $ctr = (float) $row['ctr'];
+            $ctr = is_numeric($row['ctr']) ? (float) $row['ctr'] : 0.0;
             $heightValue = ($height - 2 * $pad) * ($ctr / max(1.0, $max));
             $x = $xOffset + $index * ($barWidth + $gap);
             $y = $height - $pad - $heightValue;
@@ -516,7 +544,7 @@ class CtrAnalyticsService
 
         [$fromDateTime, $toDateTime] = $this->formatRange($from, $to);
 
-        $clickRows = DB::table('rec_clicks')
+        $clicks = DB::table('rec_clicks')
             ->selectRaw('placement, variant, count(*) as clicks')
             ->whereBetween('created_at', [$fromDateTime, $toDateTime])
             ->groupBy('placement', 'variant')
