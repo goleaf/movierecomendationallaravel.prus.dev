@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Services\SsrMetricsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,6 +21,8 @@ class StoreSsrMetric implements ShouldQueue
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
+
+    private ?SsrMetricsService $service = null;
 
     /**
      * @param  array<string, mixed>  $payload
@@ -39,7 +42,10 @@ class StoreSsrMetric implements ShouldQueue
 
     private function storeInDatabase(): bool
     {
-        if (! Schema::hasTable('ssr_metrics')) {
+        $service = $this->metricsService();
+        $table = $service->databaseTable();
+
+        if (! Schema::hasTable($table)) {
             return false;
         }
 
@@ -50,39 +56,39 @@ class StoreSsrMetric implements ShouldQueue
                 'created_at' => now(),
             ];
 
-            if (Schema::hasColumn('ssr_metrics', 'size') && isset($this->payload['html_size'])) {
+            if (Schema::hasColumn($table, 'size') && isset($this->payload['html_size'])) {
                 $data['size'] = $this->payload['html_size'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'meta_count') && isset($this->payload['meta_count'])) {
+            if (Schema::hasColumn($table, 'meta_count') && isset($this->payload['meta_count'])) {
                 $data['meta_count'] = $this->payload['meta_count'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'og_count') && isset($this->payload['og_count'])) {
+            if (Schema::hasColumn($table, 'og_count') && isset($this->payload['og_count'])) {
                 $data['og_count'] = $this->payload['og_count'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'ldjson_count') && isset($this->payload['ldjson_count'])) {
+            if (Schema::hasColumn($table, 'ldjson_count') && isset($this->payload['ldjson_count'])) {
                 $data['ldjson_count'] = $this->payload['ldjson_count'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'img_count') && isset($this->payload['img_count'])) {
+            if (Schema::hasColumn($table, 'img_count') && isset($this->payload['img_count'])) {
                 $data['img_count'] = $this->payload['img_count'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'blocking_scripts') && isset($this->payload['blocking_scripts'])) {
+            if (Schema::hasColumn($table, 'blocking_scripts') && isset($this->payload['blocking_scripts'])) {
                 $data['blocking_scripts'] = $this->payload['blocking_scripts'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'first_byte_ms') && isset($this->payload['first_byte_ms'])) {
+            if (Schema::hasColumn($table, 'first_byte_ms') && isset($this->payload['first_byte_ms'])) {
                 $data['first_byte_ms'] = $this->payload['first_byte_ms'];
             }
 
-            if (Schema::hasColumn('ssr_metrics', 'meta') && isset($this->payload['meta'])) {
+            if (Schema::hasColumn($table, 'meta') && isset($this->payload['meta'])) {
                 $data['meta'] = json_encode($this->payload['meta'], JSON_THROW_ON_ERROR);
             }
 
-            DB::table('ssr_metrics')->insert($data);
+            DB::table($table)->insert($data);
 
             return true;
         } catch (\Throwable $e) {
@@ -97,8 +103,14 @@ class StoreSsrMetric implements ShouldQueue
     private function storeInJsonl(): void
     {
         try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
+            $service = $this->metricsService();
+            $disk = $service->storageDisk();
+            $directory = $service->storageDirectory();
+            $path = $service->jsonlPath();
+            $storage = Storage::disk($disk);
+
+            if ($directory !== '' && ! $storage->exists($directory)) {
+                $storage->makeDirectory($directory);
             }
 
             $payload = [
@@ -118,12 +130,21 @@ class StoreSsrMetric implements ShouldQueue
                 'has_open_graph' => ($this->payload['og_count'] ?? 0) > 0,
             ];
 
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+            $storage->append($path, json_encode($payload, JSON_THROW_ON_ERROR));
         } catch (\Throwable $e) {
             Log::error('Failed storing SSR metric.', [
                 'exception' => $e,
                 'payload' => $this->payload,
             ]);
         }
+    }
+
+    private function metricsService(): SsrMetricsService
+    {
+        if ($this->service === null) {
+            $this->service = app(SsrMetricsService::class);
+        }
+
+        return $this->service;
     }
 }

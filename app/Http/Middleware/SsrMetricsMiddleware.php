@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class SsrMetricsMiddleware
 {
+    public function __construct(private readonly SsrMetricsService $metricsService)
+    {
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $startedAt = microtime(true);
@@ -18,13 +23,13 @@ class SsrMetricsMiddleware
         /** @var Response $response */
         $response = $next($request);
 
-        if (! config('ssrmetrics.enabled')) {
+        if (! $this->metricsService->isEnabled()) {
             return $response;
         }
 
-        $path = '/'.ltrim($request->path(), '/');
+        $path = $this->metricsService->normalizePath($request->path());
 
-        if (! collect(config('ssrmetrics.paths', []))->contains($path)) {
+        if (! $this->metricsService->shouldTrackPath($path)) {
             return $response;
         }
 
@@ -56,29 +61,13 @@ class SsrMetricsMiddleware
             'has_open_graph' => $og > 0,
         ];
 
-        $score = 100;
-
-        if ($blocking > 0) {
-            $score -= min(30, 5 * $blocking);
-        }
-
-        if ($ld === 0) {
-            $score -= 10;
-        }
-
-        if ($og < 3) {
-            $score -= 10;
-        }
-
-        if ($size > 900 * 1024) {
-            $score -= 20;
-        }
-
-        if ($imgs > 60) {
-            $score -= 10;
-        }
-
-        $score = max(0, $score);
+        $score = $this->metricsService->computeScore([
+            'blocking_scripts' => $blocking,
+            'ldjson_count' => $ld,
+            'og_count' => $og,
+            'html_size' => $size,
+            'img_count' => $imgs,
+        ]);
 
         $payload = [
             'path' => $path,
