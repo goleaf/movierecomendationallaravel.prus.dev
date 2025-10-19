@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\RecClickFactory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
  *
+ * @method static RecClickFactory factory($count = null, $state = [])
  * @method static Builder<static>|self betweenCreatedAt(DateTimeInterface|string $from, DateTimeInterface|string $to)
  * @method static Builder<static>|self forPlacement(?string $placement)
  * @method static Builder<static>|self forVariant(?string $variant)
@@ -79,5 +81,10 @@ class RecClick extends Model
         }
 
         return $query->where('placement', $placement);
+    }
+
+    protected static function newFactory(): RecClickFactory
+    {
+        return RecClickFactory::new();
     }
 }

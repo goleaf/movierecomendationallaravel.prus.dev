@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\CepFormatter;
+use Database\Factories\CepFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $city
  * @property string|null $neighborhood
  * @property string|null $street
+ *
+ * @method static CepFactory factory($count = null, $state = [])
  */
 class Cep extends Model
 {
@@ -71,5 +74,10 @@ class Cep extends Model
                 'street' => $street,
             ],
         );
+    }
+
+    protected static function newFactory(): CepFactory
+    {
+        return CepFactory::new();
     }
 }
