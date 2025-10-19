@@ -54,12 +54,12 @@
                 @foreach($items as $item)
                     <a href="{{ route('movies.show', ['movie' => $item['id']]) }}" class="flex flex-col overflow-hidden rounded-xl border border-gray-200 transition hover:border-primary-500">
                         @if($item['poster_url'])
-                            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}" loading="lazy" class="aspect-[2/3] w-full object-cover" />
+                            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? __('messages.common.poster_alt', ['title' => $item['title']]) : __('messages.common.poster_alt_generic') }}" loading="lazy" class="aspect-[2/3] w-full object-cover" />
                         @endif
                         <div class="space-y-2 p-4">
-                            <div class="text-base font-semibold text-gray-900">{{ $item['title'] }} <span class="text-sm font-normal text-gray-500">({{ $item['year'] ?? '—' }})</span></div>
+                            <div class="text-base font-semibold text-gray-900">{{ $item['title'] }} <span class="text-sm font-normal text-gray-500">({{ $item['year'] ?? __('messages.common.dash') }})</span></div>
                             <div class="text-sm text-gray-600 space-y-1">
-                                <div>{{ __('admin.trends.clicks', ['count' => $item['clicks'] ?? '—']) }}</div>
+                                <div>{{ __('admin.trends.clicks', ['count' => isset($item['clicks']) ? number_format($item['clicks'], 0, '.', ' ') : __('messages.common.dash')]) }}</div>
                                 @if($item['imdb_rating'])
                                     <div>{{ __('admin.trends.imdb', ['rating' => $item['imdb_rating']]) }}</div>
                                 @endif

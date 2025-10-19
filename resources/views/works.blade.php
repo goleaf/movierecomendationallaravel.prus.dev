@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title','Works Log')
+@section('title', __('messages.works.title'))
 @section('content')
 <div class="card">
-  <h1>Delivered Works</h1>
-  <p class="muted">This page renders the repository <code>WORKS.md</code> file for easy reference inside the admin surface.</p>
+  <h1>{{ __('messages.works.heading') }}</h1>
+  <p class="muted">{!! __('messages.works.description_html') !!}</p>
   <div class="markdown">
     {!! $content !!}
   </div>

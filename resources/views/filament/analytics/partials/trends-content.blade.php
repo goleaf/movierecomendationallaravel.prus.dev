@@ -31,11 +31,11 @@
       @foreach($items as $item)
         <div class="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
           @if($item['poster_url'])
-            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? 'Постер фильма «' . $item['title'] . '»' : 'Постер фильма' }}" class="mb-3 w-full rounded-lg" loading="lazy" />
+            <img src="{{ $item['poster_url'] }}" alt="{{ !empty($item['title']) ? __('messages.common.poster_alt', ['title' => $item['title']]) : __('messages.common.poster_alt_generic') }}" class="mb-3 w-full rounded-lg" loading="lazy" />
           @endif
           <div class="text-base font-semibold text-white">{{ $item['title'] }} <span class="text-sm text-gray-400">{{ $item['year'] ?? __('messages.common.dash') }}</span></div>
           <div class="mt-1 text-xs text-gray-400">
-            {{ __('messages.common.clicks', ['count' => $item['clicks'] ?? __('messages.common.dash')]) }}
+            {{ __('messages.common.clicks', ['count' => isset($item['clicks']) ? number_format($item['clicks'], 0, '.', ' ') : __('messages.common.dash')]) }}
             @if($item['imdb_rating'])
               • {{ __('messages.common.imdb_only', ['rating' => $item['imdb_rating']]) }}
             @endif

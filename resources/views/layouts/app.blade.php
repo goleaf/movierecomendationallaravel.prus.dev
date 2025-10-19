@@ -45,7 +45,7 @@
         $defaultStructuredData = [
             '@context' => 'https://schema.org',
             '@type' => 'WebSite',
-            'name' => 'MovieRec',
+            'name' => __('messages.app.name'),
             'url' => url('/'),
             'potentialAction' => [
                 '@type' => 'SearchAction',

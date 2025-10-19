@@ -59,7 +59,7 @@
 @section('content')
 <div class="card">
   <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;">
-    <img src="{{ $posterImage }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}" loading="lazy"/>
+    <img src="{{ $posterImage }}" alt="{{ $movie->title ? __('messages.common.poster_alt', ['title' => $movie->title]) : __('messages.common.poster_alt_generic') }}" loading="lazy"/>
     <div>
       <h2>{{ $movie->title }} ({{ $movie->year ?? __('messages.common.dash') }})</h2>
       <div class="muted">{{ __('messages.movies.imdb_caption', [
@@ -78,8 +78,9 @@
 <div class="card" style="margin-top:16px;">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
     <div>
-      <h3 style="margin:0;">Discussion</h3>
-      <div class="muted">{{ number_format($movie->comments_count ?? 0) }} {{ \Illuminate\Support\Str::plural('comment', $movie->comments_count ?? 0) }}</div>
+      <h3 style="margin:0;">{{ __('messages.movies.discussion_heading') }}</h3>
+      @php($commentsCount = $movie->comments_count ?? 0)
+      <div class="muted">{{ trans_choice('messages.movies.comments_label', $commentsCount, ['formatted' => number_format($commentsCount, 0, '.', ' ')]) }}</div>
     </div>
   </div>
   <div style="margin-top:12px;">

@@ -44,6 +44,8 @@ return [
         'imdb_only' => 'IMDb :rating',
         'imdb_with_votes' => 'IMDb :rating • :votes',
         'imdb_with_votes_colon' => 'IMDb: :rating • :votes',
+        'poster_alt' => 'Poster for “:title”',
+        'poster_alt_generic' => 'Movie poster',
     ],
     'home' => [
         'title' => 'Recommendations',
@@ -62,6 +64,7 @@ return [
         'empty' => 'No data — check click tracking or adjust the filters.',
         'votes' => ':count votes',
         'filters' => [
+            'period' => 'Period',
             'heading' => 'Filters',
             'days' => 'Days',
             'type' => 'Type',
@@ -71,6 +74,8 @@ return [
             'from' => 'From',
             'to' => 'To',
             'any' => 'Any',
+            'days_option' => '{0}0 days|{1}:count day|[2,*]:count days',
+            'genre_hint' => 'sci-fi, drama, comedy',
         ],
     ],
     'search' => [
@@ -92,5 +97,21 @@ return [
         'imdb_caption' => 'IMDb :rating • :votes • Weighted :score',
         'votes' => ':count votes',
         'genres' => 'Genres: :genres',
+        'discussion_heading' => 'Discussion',
+        'comments_label' => '{0}No comments|{1}:formatted comment|[2,*]:formatted comments',
+    ],
+    'works' => [
+        'title' => 'Works Log',
+        'heading' => 'Delivered Works',
+        'description_html' => 'This page renders the repository <code>WORKS.md</code> file for easy reference inside the admin surface.',
+    ],
+    'welcome' => [
+        'get_started' => "Let's get started",
+        'intro_html' => 'Laravel has an incredibly rich ecosystem. <br>We suggest starting with the following.',
+        'links' => [
+            'documentation' => 'Documentation',
+            'laracasts' => 'Laracasts',
+            'deploy_now' => 'Deploy now',
+        ],
     ],
 ];
