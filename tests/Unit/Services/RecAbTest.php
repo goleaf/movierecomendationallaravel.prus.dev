@@ -6,6 +6,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Settings\RecommendationWeightsSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -22,6 +23,8 @@ class RecAbTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('database.redis.client', 'predis');
+        config()->set('cache.stores.redis', ['driver' => 'array']);
         Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
     }
 
@@ -36,8 +39,16 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(3)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => 0.7,
+            'variant_a_recent' => 0.3,
+            'variant_a_pref' => 0.0,
+            'variant_b_pop' => 0.7,
+            'variant_b_recent' => 0.3,
+            'variant_b_pref' => 0.0,
+            'ab_split_a' => 50.0,
+            'ab_split_b' => 50.0,
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $serviceA = app(RecAb::class);
@@ -58,8 +69,16 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.ab_split', ['A' => 100.0, 'B' => 0.0]);
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => 0.7,
+            'variant_a_recent' => 0.3,
+            'variant_a_pref' => 0.0,
+            'variant_b_pop' => 0.7,
+            'variant_b_recent' => 0.3,
+            'variant_b_pref' => 0.0,
+            'ab_split_a' => 100.0,
+            'ab_split_b' => 0.0,
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET'));
 
@@ -78,9 +97,16 @@ class RecAbTest extends TestCase
     {
         Movie::factory()->count(2)->create();
 
-        config()->set('recs.A', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.B', ['pop' => 0.7, 'recent' => 0.3, 'pref' => 0.0]);
-        config()->set('recs.ab_split', ['A' => 70.0, 'B' => 30.0]);
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => 0.7,
+            'variant_a_recent' => 0.3,
+            'variant_a_pref' => 0.0,
+            'variant_b_pop' => 0.7,
+            'variant_b_recent' => 0.3,
+            'variant_b_pref' => 0.0,
+            'ab_split_a' => 70.0,
+            'ab_split_b' => 30.0,
+        ]);
         config()->set('recs.seed', 'experiment-2025');
 
         $threshold = 70.0 / (70.0 + 30.0);
@@ -130,8 +156,16 @@ class RecAbTest extends TestCase
         ]);
 
         $weights = ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0];
-        config()->set('recs.A', $weights);
-        config()->set('recs.B', $weights);
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => $weights['pop'],
+            'variant_a_recent' => $weights['recent'],
+            'variant_a_pref' => $weights['pref'],
+            'variant_b_pop' => $weights['pop'],
+            'variant_b_recent' => $weights['recent'],
+            'variant_b_pref' => $weights['pref'],
+            'ab_split_a' => 50.0,
+            'ab_split_b' => 50.0,
+        ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
         $service = app(RecAb::class);

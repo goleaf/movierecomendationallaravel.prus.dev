@@ -6,9 +6,9 @@ namespace Tests\Feature;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Settings\RecommendationWeightsSettings;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -18,17 +18,17 @@ class RecAbTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('recs', [
-            'A' => [
-                'pop' => 0.7,
-                'recent' => 0.3,
-                'pref' => 0.0,
-            ],
-            'B' => [
-                'pop' => 0.2,
-                'recent' => 0.8,
-                'pref' => 0.0,
-            ],
+        config()->set('database.redis.client', 'predis');
+        config()->set('cache.stores.redis', ['driver' => 'array']);
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => 0.85,
+            'variant_a_recent' => 0.15,
+            'variant_a_pref' => 0.0,
+            'variant_b_pop' => 0.2,
+            'variant_b_recent' => 0.8,
+            'variant_b_pref' => 0.0,
+            'ab_split_a' => 50.0,
+            'ab_split_b' => 50.0,
         ]);
 
         Schema::dropIfExists('movies');

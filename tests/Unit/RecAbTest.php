@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Models\Movie;
 use App\Services\RecAb;
+use App\Settings\RecommendationWeightsSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -19,6 +20,8 @@ class RecAbTest extends TestCase
     {
         CarbonImmutable::setTestNow(CarbonImmutable::create(2024, 1, 1));
 
+        config()->set('database.redis.client', 'predis');
+        config()->set('cache.stores.redis', ['driver' => 'array']);
         Movie::query()->create([
             'imdb_tt' => 'tt0001',
             'title' => 'Old Hit',
@@ -44,6 +47,17 @@ class RecAbTest extends TestCase
             'year' => 2018,
             'imdb_rating' => 8.0,
             'imdb_votes' => 50000,
+        ]);
+
+        RecommendationWeightsSettings::fake([
+            'variant_a_pop' => 0.85,
+            'variant_a_recent' => 0.1,
+            'variant_a_pref' => 0.05,
+            'variant_b_pop' => 0.2,
+            'variant_b_recent' => 0.7,
+            'variant_b_pref' => 0.1,
+            'ab_split_a' => 50.0,
+            'ab_split_b' => 50.0,
         ]);
 
         $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));

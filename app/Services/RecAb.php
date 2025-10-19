@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Movie;
+use App\Settings\RecommendationWeightsSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
@@ -14,6 +15,8 @@ class RecAb
     private const COOKIE_NAME = 'ab_variant';
 
     private const COOKIE_LIFETIME_MINUTES = 60 * 24 * 365 * 5;
+
+    public function __construct(private readonly RecommendationWeightsSettings $weightsSettings) {}
 
     /** @return array{0:string,1:Collection<int,Movie>} */
     public function forDevice(string $deviceId, int $limit = 12): array
@@ -49,7 +52,7 @@ class RecAb
 
     protected function pickVariant(string $deviceId): string
     {
-        $weights = config('recs.ab_split', ['A' => 50.0, 'B' => 50.0]);
+        $weights = $this->weightsSettings->abSplit();
         $weightA = (float) ($weights['A'] ?? 50.0);
         $weightB = (float) ($weights['B'] ?? 50.0);
         $total = $weightA + $weightB;
@@ -78,7 +81,7 @@ class RecAb
     /** @return Collection<int,Movie> */
     protected function score(string $variant, string $deviceId, int $limit): Collection
     {
-        $W = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
+        $W = $this->weightsSettings->weightsFor($variant);
         $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
 
         $currentYear = now()->year;
