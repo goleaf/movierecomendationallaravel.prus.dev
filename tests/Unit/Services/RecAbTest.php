@@ -7,11 +7,14 @@ namespace Tests\Unit\Services;
 use App\Models\Movie;
 use App\Services\RecAb;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class RecAbTest extends TestCase
@@ -21,6 +24,21 @@ class RecAbTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        config()->set('database.redis.client', 'predis');
+        config()->set('cache.stores.redis', ['driver' => 'array']);
+
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'movie_id')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->unsignedBigInteger('movie_id')->nullable();
+            });
+        }
+
+        if (Schema::hasTable('device_history') && ! Schema::hasColumn('device_history', 'placement')) {
+            Schema::table('device_history', function (Blueprint $table): void {
+                $table->string('placement', 32)->nullable();
+            });
+        }
 
         Carbon::setTestNow(CarbonImmutable::parse('2025-01-15 12:00:00'));
     }
@@ -156,6 +174,75 @@ class RecAbTest extends TestCase
 
         $this->assertSame('A', $variant);
         $this->assertSame($expectedOrder, $list->pluck('id')->values()->all());
+    }
+
+    public function test_variant_b_applies_device_preference_scores(): void
+    {
+        $popular = Movie::factory()->create([
+            'imdb_tt' => 'tt9000010',
+            'title' => 'Galactic Vanguard',
+            'imdb_rating' => 8.7,
+            'imdb_votes' => 500_000,
+            'year' => 2020,
+        ]);
+
+        $preferred = Movie::factory()->create([
+            'imdb_tt' => 'tt9000011',
+            'title' => 'Nebula Drift',
+            'imdb_rating' => 6.4,
+            'imdb_votes' => 30_000,
+            'year' => 2024,
+        ]);
+
+        config()->set('recs.A', ['pop' => 0.9, 'recent' => 0.1, 'pref' => 0.0]);
+        config()->set('recs.B', ['pop' => 0.2, 'recent' => 0.3, 'pref' => 0.5]);
+
+        DB::table('device_history')->insert([
+            'movie_id' => $preferred->id,
+            'device_id' => 'device-pref',
+            'placement' => 'home',
+            'path' => '/variant-b-test',
+            'viewed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'A']));
+        [$variantA, $listA] = app(RecAb::class)->forDevice('device-pref', 2);
+
+        $this->assertSame('A', $variantA);
+        $this->assertSame($popular->id, $listA->first()->id, 'Variant A should favour the popular title without preference data.');
+
+        $this->app->instance('request', Request::create('/', 'GET', [], ['ab_variant' => 'B']));
+        [$variantB, $listB] = app(RecAb::class)->forDevice('device-pref', 2);
+
+        $this->assertSame('B', $variantB);
+        $this->assertSame($preferred->id, $listB->first()->id, 'Variant B should boost the device-preferred title.');
+    }
+
+    public function test_weights_are_normalised_before_scoring(): void
+    {
+        $service = app(RecAb::class);
+
+        $reflection = new \ReflectionClass($service);
+        $method = $reflection->getMethod('normaliseWeights');
+        $method->setAccessible(true);
+
+        /** @var array{pop: float, recent: float, pref: float} $weights */
+        $weights = $method->invoke($service, ['pop' => 3, 'recent' => 1, 'pref' => 1]);
+
+        $this->assertEqualsWithDelta(1.0, array_sum($weights), 0.00001);
+        $this->assertEqualsWithDelta(0.6, $weights['pop'], 0.00001);
+        $this->assertEqualsWithDelta(0.2, $weights['recent'], 0.00001);
+        $this->assertEqualsWithDelta(0.2, $weights['pref'], 0.00001);
+
+        /** @var array{pop: float, recent: float, pref: float} $fallback */
+        $fallback = $method->invoke($service, ['pop' => 0, 'recent' => 0, 'pref' => 0]);
+
+        $this->assertEqualsWithDelta(1.0, array_sum($fallback), 0.00001);
+        $this->assertEqualsWithDelta(0.5, $fallback['pop'], 0.00001);
+        $this->assertEqualsWithDelta(0.2, $fallback['recent'], 0.00001);
+        $this->assertEqualsWithDelta(0.3, $fallback['pref'], 0.00001);
     }
 
     private function expectedVariantForSeed(string $deviceId, float $threshold, string $seed): string

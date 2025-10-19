@@ -8,6 +8,8 @@ use App\Models\Movie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RecAb
 {
@@ -78,20 +80,116 @@ class RecAb
     /** @return Collection<int,Movie> */
     protected function score(string $variant, string $deviceId, int $limit): Collection
     {
-        $W = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
+        $rawWeights = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
+        $weights = $this->normaliseWeights($rawWeights);
+
         $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
+
+        $preferenceScores = $weights['pref'] > 0.0
+            ? $this->preferenceScoresForDevice($deviceId)
+            : [];
 
         $currentYear = now()->year;
 
-        return $movies->map(function (Movie $movie) use ($W, $currentYear) {
+        return $movies->map(function (Movie $movie) use ($weights, $currentYear, $preferenceScores) {
             $weightedScore = $movie->weighted_score;
             $popularity = $weightedScore / 10.0;
             $recency = $movie->year
                 ? max(0.0, (5 - ($currentYear - (int) $movie->year))) / 5.0
                 : 0.0;
-            $score = ($W['pop'] * $popularity) + ($W['recent'] * $recency) + ($W['pref'] * 0.0);
+            $preference = $preferenceScores[$movie->id] ?? 0.0;
+
+            $score = ($weights['pop'] * $popularity) + ($weights['recent'] * $recency);
+
+            if ($weights['pref'] > 0.0) {
+                $score += $weights['pref'] * $preference;
+            }
 
             return ['m' => $movie, 's' => $score];
         })->sortByDesc('s')->pluck('m')->take($limit);
+    }
+
+    /**
+     * @param  array<string, float|int>  $weights
+     * @return array{pop: float, recent: float, pref: float}
+     */
+    private function normaliseWeights(array $weights): array
+    {
+        $defaults = ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3];
+
+        $clamped = [];
+
+        foreach ($defaults as $key => $default) {
+            $value = array_key_exists($key, $weights) ? (float) $weights[$key] : $default;
+            $clamped[$key] = max(0.0, $value);
+        }
+
+        $total = array_sum($clamped);
+
+        if ($total <= 0.0) {
+            return $defaults;
+        }
+
+        return array_map(static fn (float $value): float => $value / $total, $clamped);
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    protected function preferenceScoresForDevice(string $deviceId): array
+    {
+        if ($deviceId === '') {
+            return [];
+        }
+
+        $scores = [];
+
+        if (Schema::hasTable('rec_clicks')) {
+            $clicks = DB::table('rec_clicks')
+                ->selectRaw('movie_id, count(*) as total')
+                ->where('device_id', $deviceId)
+                ->whereNotNull('movie_id')
+                ->groupBy('movie_id')
+                ->pluck('total', 'movie_id')
+                ->all();
+
+            foreach ($clicks as $movieId => $total) {
+                if ($movieId === null) {
+                    continue;
+                }
+
+                $scores[(int) $movieId] = ($scores[(int) $movieId] ?? 0.0) + (float) $total;
+            }
+        }
+
+        if (Schema::hasTable('device_history')) {
+            $history = DB::table('device_history')
+                ->selectRaw('movie_id, count(*) as total')
+                ->where('device_id', $deviceId)
+                ->whereNotNull('movie_id')
+                ->groupBy('movie_id')
+                ->pluck('total', 'movie_id')
+                ->all();
+
+            foreach ($history as $movieId => $total) {
+                if ($movieId === null) {
+                    continue;
+                }
+
+                $scores[(int) $movieId] = ($scores[(int) $movieId] ?? 0.0) + (float) $total;
+            }
+        }
+
+        if ($scores === []) {
+            return [];
+        }
+
+        $sum = array_sum($scores);
+
+        if ($sum <= 0.0) {
+            return [];
+        }
+
+        return array_map(static fn (float $value): float => $value / $sum, $scores);
     }
 }
