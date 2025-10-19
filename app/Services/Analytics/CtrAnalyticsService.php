@@ -37,8 +37,9 @@ class CtrAnalyticsService
         $summaryData = $this->variantSummary($fromDate, $toDate, $placement, $variant);
 
         $placementCtrData = $this->placementCtrs($fromDate, $toDate);
+        /** @var array<int, string> $placements */
         $placements = $placementCtrData
-            ->map(static fn (array $row) => explode('-', $row['label'])[0])
+            ->map(static fn (array $row): string => explode('-', $row['label'])[0])
             ->unique()
             ->values()
             ->all();
@@ -48,16 +49,20 @@ class CtrAnalyticsService
         }
 
         $clicksByPlacement = collect($placements)
-            ->mapWithKeys(static fn (string $key): array => [
-                $key => (int) ($summaryData['placementClicks'][$key] ?? 0),
-            ])
+            ->mapWithKeys(static function (string $key) use ($summaryData): array {
+                return [
+                    $key => (int) ($summaryData['placementClicks'][$key] ?? 0),
+                ];
+            })
             ->all();
 
         $funnelRows = $this->funnels($fromDate, $toDate, $placements);
         $funnels = collect($funnelRows)
             ->mapWithKeys(static function (array $row): array {
+                $label = (string) $row['label'];
+
                 return [
-                    $row['label'] => [
+                    $label => [
                         'imps' => (int) $row['imps'],
                         'clks' => (int) $row['clicks'],
                         'views' => (int) $row['views'],
@@ -69,9 +74,11 @@ class CtrAnalyticsService
             })
             ->all();
 
-        $totalLabel = __('admin.ctr.funnels.total');
+        $rawTotalLabel = __('admin.ctr.funnels.total');
+        $totalLabel = is_string($rawTotalLabel) ? $rawTotalLabel : 'Total';
         $totalViews = $funnels[$totalLabel]['views'] ?? 0;
 
+        /** @var array<int, array{variant: string, impressions: int, clicks: int, ctr: float}> $summary */
         $summary = $summaryData['summary'];
         $totals = [
             'impressions' => array_sum(array_map(
@@ -85,6 +92,7 @@ class CtrAnalyticsService
             'views' => (int) $totalViews,
         ];
 
+        /** @var array<int, string> $variants */
         $variants = array_values(array_unique(array_merge(
             ['A', 'B'],
             array_map(
@@ -108,7 +116,12 @@ class CtrAnalyticsService
     }
 
     /**
-     * @return array{summary: array<int, array<string, mixed>>, impressions: array<string, int>, clicks: array<string, int>, placementClicks: array<string, int>}
+     * @return array{
+     *     summary: array<int, array{variant: string, impressions: int, clicks: int, ctr: float}>,
+     *     impressions: array<string, int>,
+     *     clicks: array<string, int>,
+     *     placementClicks: array<string, int>
+     * }
      */
     public function variantSummary(CarbonImmutable $from, CarbonImmutable $to, ?string $placement = null, ?string $variant = null): array
     {
@@ -147,7 +160,7 @@ class CtrAnalyticsService
                 ->select('variant', DB::raw('count(*) as imps'))
                 ->groupBy('variant')
                 ->pluck('imps', 'variant')
-                ->map(fn ($value) => (int) $value)
+                ->map(static fn (mixed $value): int => (int) $value)
                 ->all();
 
             /** @var array<string, int> $clkVariant */
@@ -155,10 +168,11 @@ class CtrAnalyticsService
                 ->select('variant', DB::raw('count(*) as clks'))
                 ->groupBy('variant')
                 ->pluck('clks', 'variant')
-                ->map(fn ($value) => (int) $value)
+                ->map(static fn (mixed $value): int => (int) $value)
                 ->all();
 
-            $variants = $variant && $variant !== '' ? [$variant] : ['A', 'B'];
+            $variants = $variant !== null && $variant !== '' ? [$variant] : ['A', 'B'];
+            /** @var array<int, array{variant: string, impressions: int, clicks: int, ctr: float}> $summary */
             $summary = [];
             foreach ($variants as $code) {
                 $imps = (int) ($impVariant[$code] ?? 0);
@@ -179,7 +193,7 @@ class CtrAnalyticsService
                 ->select('placement', DB::raw('count(*) as clks'))
                 ->groupBy('placement')
                 ->pluck('clks', 'placement')
-                ->map(fn ($value) => (int) $value)
+                ->map(static fn (mixed $value): int => (int) $value)
                 ->all();
 
             return [
@@ -192,6 +206,7 @@ class CtrAnalyticsService
     }
 
     /**
+     * @param  array<int, string>  $placements
      * @return array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}>
      */
     public function funnels(CarbonImmutable $from, CarbonImmutable $to, array $placements = ['home', 'show', 'trends']): array
@@ -224,7 +239,7 @@ class CtrAnalyticsService
             $impressions = $impressionsQuery
                 ->groupBy('placement')
                 ->pluck('imps', 'placement')
-                ->map(fn ($value) => (int) $value)
+                ->map(static fn (mixed $value): int => (int) $value)
                 ->all();
 
             /** @var array<string, int> $clicks */
@@ -241,7 +256,7 @@ class CtrAnalyticsService
                 $clicks = $clicksQuery
                     ->groupBy('placement')
                     ->pluck('clks', 'placement')
-                    ->map(fn ($value) => (int) $value)
+                    ->map(static fn (mixed $value): int => (int) $value)
                     ->all();
             }
 
@@ -259,7 +274,7 @@ class CtrAnalyticsService
                 $views = $viewsQuery
                     ->groupBy('page')
                     ->pluck('views', 'page')
-                    ->map(fn ($value) => (int) $value)
+                    ->map(static fn (mixed $value): int => (int) $value)
                     ->all();
             }
 
@@ -317,6 +332,9 @@ class CtrAnalyticsService
                 $totalEntries[] = $entry;
             }
 
+            /**
+             * @var array<int, array{label: string, imps: int, clicks: int, views: int, ctr: float, view_rate: float, cuped_ctr: float}> $rows
+             */
             $rows = [];
             $totalImps = 0;
             $totalClicks = 0;
@@ -402,10 +420,18 @@ class CtrAnalyticsService
         $series = ['A' => [], 'B' => []];
         $max = 0.0;
         foreach ($days as $day) {
-            $logA = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $logB = $logs->first(fn ($row) => $row->d === $day && $row->variant === 'B');
-            $clkA = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'A');
-            $clkB = $clicks->first(fn ($row) => $row->d === $day && $row->variant === 'B');
+            $logA = $logs->first(static function (object $row) use ($day): bool {
+                return $row->d === $day && $row->variant === 'A';
+            });
+            $logB = $logs->first(static function (object $row) use ($day): bool {
+                return $row->d === $day && $row->variant === 'B';
+            });
+            $clkA = $clicks->first(static function (object $row) use ($day): bool {
+                return $row->d === $day && $row->variant === 'A';
+            });
+            $clkB = $clicks->first(static function (object $row) use ($day): bool {
+                return $row->d === $day && $row->variant === 'B';
+            });
 
             $impsA = (int) ($logA->imps ?? 0);
             $impsB = (int) ($logB->imps ?? 0);
@@ -444,7 +470,7 @@ class CtrAnalyticsService
         $width = 720;
         $height = 260;
         $pad = 40;
-        $chartMax = (float) ($data['max'] ?? 0.0);
+        $chartMax = (float) $data['max'];
         if (! is_finite($chartMax) || $chartMax <= 0.0) {
             $chartMax = 5.0;
         }
@@ -530,7 +556,7 @@ class CtrAnalyticsService
         $xOffset = $pad + 10;
         $index = 0;
         foreach ($data as $row) {
-            $ctr = is_numeric($row['ctr']) ? (float) $row['ctr'] : 0.0;
+            $ctr = (float) $row['ctr'];
             $heightValue = ($height - 2 * $pad) * ($ctr / max(1.0, $max));
             $x = $xOffset + $index * ($barWidth + $gap);
             $y = $height - $pad - $heightValue;
@@ -576,33 +602,57 @@ class CtrAnalyticsService
                 ->groupBy('placement', 'variant')
                 ->get();
 
-            $placements = $impressions->pluck('placement')
+            /** @var array<int, string> $placementNames */
+            $placementNames = $impressions->pluck('placement')
                 ->merge($clicks->pluck('placement'))
                 ->unique()
-                ->values();
+                ->values()
+                ->map(static fn (mixed $value): string => (string) $value)
+                ->all();
 
             $variants = ['A', 'B'];
 
-            return $placements->flatMap(function (string $placement) use ($variants, $clicks, $impressions) {
-                return collect($variants)->map(function (string $variant) use ($placement, $clicks, $impressions) {
-                    $clickRow = $clicks->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
-                    $impressionRow = $impressions->firstWhere(fn ($item) => $item->placement === $placement && $item->variant === $variant);
+            /** @var array<string, int> $clickTotals */
+            $clickTotals = [];
+            foreach ($clicks as $row) {
+                $key = sprintf('%s-%s', (string) $row->placement, (string) $row->variant);
+                $clickTotals[$key] = (int) $row->clicks;
+            }
 
-                    $clickCount = (int) ($clickRow->clicks ?? 0);
-                    $imps = (int) ($impressionRow->impressions ?? 0);
+            /** @var array<string, int> $impressionTotals */
+            $impressionTotals = [];
+            foreach ($impressions as $row) {
+                $key = sprintf('%s-%s', (string) $row->placement, (string) $row->variant);
+                $impressionTotals[$key] = (int) $row->impressions;
+            }
 
-                    return [
-                        'label' => $placement.'-'.$variant,
+            /** @var array<int, array{label: string, ctr: float}> $rows */
+            $rows = [];
+            foreach ($placementNames as $placementName) {
+                foreach ($variants as $variant) {
+                    $key = sprintf('%s-%s', $placementName, $variant);
+                    $clickCount = $clickTotals[$key] ?? 0;
+                    $imps = $impressionTotals[$key] ?? 0;
+
+                    $rows[] = [
+                        'label' => $key,
                         'ctr' => $imps > 0 ? round(100 * $clickCount / $imps, 2) : 0.0,
                     ];
-                });
-            })->values()->all();
+                }
+            }
+
+            return $rows;
         });
 
-        return collect($cached)->map(fn (array $row) => [
-            'label' => $row['label'],
-            'ctr' => (float) $row['ctr'],
-        ])->values();
+        /** @var array<int, array{label: string, ctr: float}> $cachedRows */
+        $cachedRows = $cached;
+
+        return collect($cachedRows)->map(static function (array $row): array {
+            return [
+                'label' => (string) $row['label'],
+                'ctr' => (float) $row['ctr'],
+            ];
+        })->values();
     }
 
     /**
@@ -625,7 +675,11 @@ class CtrAnalyticsService
         $key = "admin.ctr.filters.placements.$placement";
         $translated = __($key);
 
-        return $translated === $key ? ucfirst($placement) : $translated;
+        if (! is_string($translated) || $translated === $key) {
+            return ucfirst($placement);
+        }
+
+        return $translated;
     }
 
     /**
@@ -658,7 +712,7 @@ class CtrAnalyticsService
         $impressions = $impressionsQuery
             ->groupBy('device_id')
             ->pluck('imps', 'device_id')
-            ->map(fn ($value) => (int) $value)
+            ->map(static fn (mixed $value): int => (int) $value)
             ->all();
 
         if ($impressions === []) {
@@ -678,7 +732,7 @@ class CtrAnalyticsService
             $clicks = $clicksQuery
                 ->groupBy('device_id')
                 ->pluck('clks', 'device_id')
-                ->map(fn ($value) => (int) $value)
+                ->map(static fn (mixed $value): int => (int) $value)
                 ->all();
         }
 
@@ -692,7 +746,7 @@ class CtrAnalyticsService
             }
 
             $clickCount = (int) ($clicks[$deviceId] ?? 0);
-            $baselines[$deviceId] = $imps > 0 ? max(0.0, min(1.0, $clickCount / $imps)) : 0.0;
+            $baselines[$deviceId] = max(0.0, min(1.0, $clickCount / $imps));
 
             $totalImps += $imps;
             $totalClicks += $clickCount;

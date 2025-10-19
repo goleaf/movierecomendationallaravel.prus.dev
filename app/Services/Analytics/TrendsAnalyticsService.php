@@ -18,6 +18,9 @@ class TrendsAnalyticsService
         private readonly AnalyticsCache $cache,
     ) {}
 
+    /**
+     * @return Collection<int, object>
+     */
     public function trending(
         int $days,
         string $type = '',
@@ -32,8 +35,12 @@ class TrendsAnalyticsService
         return $this->buildTrendingItems($normalized['filters'], $normalized['period']);
     }
 
+    /**
+     * @return Collection<int, array{id: int, title: string, poster_url: string|null, year: int|null, type: string, imdb_rating: float|null, imdb_votes: int|null, clicks: int|null}>
+     */
     private function fallback(string $type, string $genre, int $yearFrom, int $yearTo): Collection
     {
+        /** @var Collection<int, Movie> $fallback */
         $fallback = Movie::query()
             ->when($type !== '', fn ($q) => $q->where('type', $type))
             ->when($genre !== '', fn ($q) => $q->whereJsonContains('genres', $genre))
@@ -44,18 +51,18 @@ class TrendsAnalyticsService
             ->limit(40)
             ->get();
 
-        return $fallback->map(function (Movie $movie) {
-            return (object) [
-                'id' => $movie->id,
-                'title' => $movie->title,
-                'poster_url' => $movie->poster_url,
-                'year' => $movie->year,
-                'type' => $movie->type,
-                'imdb_rating' => $movie->imdb_rating,
-                'imdb_votes' => $movie->imdb_votes,
+        return $fallback->map(static function (Movie $movie): array {
+            return [
+                'id' => (int) $movie->id,
+                'title' => (string) $movie->title,
+                'poster_url' => $movie->poster_url !== null ? (string) $movie->poster_url : null,
+                'year' => $movie->year !== null ? (int) $movie->year : null,
+                'type' => (string) $movie->type,
+                'imdb_rating' => $movie->imdb_rating !== null ? (float) $movie->imdb_rating : null,
+                'imdb_votes' => $movie->imdb_votes !== null ? (int) $movie->imdb_votes : null,
                 'clicks' => null,
             ];
-        });
+        })->values()->toBase();
     }
 
     /**
@@ -92,13 +99,15 @@ class TrendsAnalyticsService
     /**
      * @param  array{days: int, type: string, genre: string, year_from: int, year_to: int}  $filters
      * @param  array{from: CarbonImmutable, to: CarbonImmutable}  $period
+     * @return Collection<int, object>
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
         $cached = $this->cache->rememberTrends('items', [
             'filters' => $filters,
             'period' => $period,
-        ], function () use ($filters, $period): array {
+        ], /** @return array<int, array{id: int, title: string, poster_url: string|null, year: int|null, type: string, imdb_rating: float|null, imdb_votes: int|null, clicks: int|null}> */
+        function () use ($filters, $period): array {
             $this->rollup->ensureBackfill($period['from'], $period['to']);
 
             if (Schema::hasTable('rec_trending_rollups')) {
@@ -128,7 +137,9 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items->map(static function (object $item): array {
+                        return self::normalizeTrendingRow($item);
+                    })->all();
                 }
             }
 
@@ -159,7 +170,9 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items->map(static function (object $item): array {
+                        return self::normalizeTrendingRow($item);
+                    })->all();
                 }
             }
 
@@ -168,12 +181,13 @@ class TrendsAnalyticsService
                 $filters['genre'],
                 $filters['year_from'],
                 $filters['year_to'],
-            )
-                ->map(fn ($item) => (array) $item)
-                ->all();
+            )->all();
         });
 
-        return collect($cached)
+        /** @var array<int, array{id: int, title: string, poster_url: string|null, year: int|null, type: string, imdb_rating: float|null, imdb_votes: int|null, clicks: int|null}> $cachedItems */
+        $cachedItems = $cached;
+
+        return collect($cachedItems)
             ->map(static fn (array $row): object => (object) $row)
             ->values();
     }
@@ -193,11 +207,11 @@ class TrendsAnalyticsService
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $to = null,
     ): array {
-        $normalizedDays = max(1, min(30, $days));
+        $normalizedDays = (int) max(1, min(30, $days));
         $normalizedType = trim($type);
         $normalizedGenre = trim($genre);
-        $normalizedYearFrom = max(0, $yearFrom);
-        $normalizedYearTo = max(0, $yearTo);
+        $normalizedYearFrom = (int) max(0, $yearFrom);
+        $normalizedYearTo = (int) max(0, $yearTo);
 
         $periodFrom = $from?->startOfDay();
         $periodTo = $to?->endOfDay();
@@ -212,8 +226,8 @@ class TrendsAnalyticsService
             [$periodFrom, $periodTo] = [$periodTo, $periodFrom];
         }
 
-        $rangeDays = max(1, $periodFrom->diffInDays($periodTo) ?: 0);
-        $normalizedDays = max(1, min(30, $rangeDays));
+        $rangeDays = (int) max(1, $periodFrom->diffInDays($periodTo) ?: 0);
+        $normalizedDays = (int) max(1, min(30, $rangeDays));
 
         return [
             'filters' => [
@@ -227,6 +241,32 @@ class TrendsAnalyticsService
                 'from' => $periodFrom,
                 'to' => $periodTo,
             ],
+        ];
+    }
+
+    /**
+     * @return array{id: int, title: string, poster_url: string|null, year: int|null, type: string, imdb_rating: float|null, imdb_votes: int|null, clicks: int|null}
+     */
+    private static function normalizeTrendingRow(object $item): array
+    {
+        $id = property_exists($item, 'id') ? $item->id : 0;
+        $title = property_exists($item, 'title') ? $item->title : '';
+        $posterUrl = property_exists($item, 'poster_url') ? $item->poster_url : null;
+        $year = property_exists($item, 'year') ? $item->year : null;
+        $type = property_exists($item, 'type') ? $item->type : '';
+        $imdbRating = property_exists($item, 'imdb_rating') ? $item->imdb_rating : null;
+        $imdbVotes = property_exists($item, 'imdb_votes') ? $item->imdb_votes : null;
+        $clicks = property_exists($item, 'clicks') ? $item->clicks : null;
+
+        return [
+            'id' => (int) $id,
+            'title' => (string) $title,
+            'poster_url' => $posterUrl !== null ? (string) $posterUrl : null,
+            'year' => $year !== null ? (int) $year : null,
+            'type' => (string) $type,
+            'imdb_rating' => $imdbRating !== null ? (float) $imdbRating : null,
+            'imdb_votes' => $imdbVotes !== null ? (int) $imdbVotes : null,
+            'clicks' => $clicks !== null ? (int) $clicks : null,
         ];
     }
 }
