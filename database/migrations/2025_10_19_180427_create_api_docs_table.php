@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('api_docs')) {
+            return;
+        }
+
         Schema::create('api_docs', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -20,8 +24,8 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('version')->default('1');
             $table->json('data')->nullable();
-            $table->foreignId('user_id')->nullable();
-            $table->foreignId('tenant_id')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
     }
