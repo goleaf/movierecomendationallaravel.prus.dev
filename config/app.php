@@ -130,6 +130,7 @@ return [
     'providers' => ServiceProvider::defaultProviders()->merge([
         App\Providers\HelpersServiceProvider::class,
         App\Providers\AnalyticsPanelProvider::class,
+        App\Providers\MovieApiServiceProvider::class,
     ])->toArray(),
 
 ];
