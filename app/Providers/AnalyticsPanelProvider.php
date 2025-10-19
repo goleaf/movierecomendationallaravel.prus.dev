@@ -21,14 +21,7 @@ class AnalyticsPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->sidebarCollapsibleOnDesktop()
             ->widgets([
-                \App\Filament\Widgets\QueueStatsWidget::class,
-                \App\Filament\Widgets\FunnelWidget::class,
-                \App\Filament\Widgets\CtrLineWidget::class,
-                \App\Filament\Widgets\CtrBarsWidget::class,
-                \App\Filament\Widgets\ZTestWidget::class,
-                \App\Filament\Widgets\SsrStatsWidget::class,
-                \App\Filament\Widgets\SsrScoreWidget::class,
-                \App\Filament\Widgets\SsrDropWidget::class,
+                \App\Filament\Widgets\AnalyticsTabsWidget::class,
             ])
             ->pages([
                 \App\Filament\Pages\Analytics\CtrPage::class,
