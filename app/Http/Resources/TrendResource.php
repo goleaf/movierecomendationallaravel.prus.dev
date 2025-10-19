@@ -6,6 +6,8 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use function proxy_image_url;
+
 /**
  * @property int $id
  * @property string $title
@@ -23,7 +25,7 @@ class TrendResource extends JsonResource
         return [
             'id' => (int) $this->id,
             'title' => $this->title,
-            'poster_url' => $this->poster_url,
+            'poster_url' => proxy_image_url($this->poster_url),
             'year' => $this->year !== null ? (int) $this->year : null,
             'type' => $this->type,
             'imdb_rating' => $this->imdb_rating !== null ? (float) $this->imdb_rating : null,

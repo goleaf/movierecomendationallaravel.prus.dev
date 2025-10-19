@@ -7,6 +7,8 @@ namespace App\Http\Resources;
 use App\Support\TranslationPayload;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use function proxy_image_url;
+
 /**
  * @property int $id
  * @property string $imdb_tt
@@ -37,10 +39,19 @@ class MovieResource extends JsonResource
         }
 
         return [
-            'id' => $this->id, 'imdb_tt' => $this->imdb_tt, 'title' => $title, 'plot' => $plot, 'type' => $this->type,
-            'year' => $this->year, 'release_date' => optional($this->release_date)->format('Y-m-d'),
-            'imdb_rating' => $this->imdb_rating, 'imdb_votes' => $this->imdb_votes, 'runtime_min' => $this->runtime_min,
-            'genres' => $this->genres, 'poster_url' => $this->poster_url, 'backdrop_url' => $this->backdrop_url,
+            'id' => $this->id,
+            'imdb_tt' => $this->imdb_tt,
+            'title' => $title,
+            'plot' => $plot,
+            'type' => $this->type,
+            'year' => $this->year,
+            'release_date' => optional($this->release_date)->format('Y-m-d'),
+            'imdb_rating' => $this->imdb_rating,
+            'imdb_votes' => $this->imdb_votes,
+            'runtime_min' => $this->runtime_min,
+            'genres' => $this->genres,
+            'poster_url' => proxy_image_url($this->poster_url),
+            'backdrop_url' => proxy_image_url($this->backdrop_url),
         ];
     }
 }

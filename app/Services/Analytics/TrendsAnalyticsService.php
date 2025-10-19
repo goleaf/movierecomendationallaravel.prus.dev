@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+use function proxy_image_url;
+
 class TrendsAnalyticsService
 {
     public function __construct(
@@ -48,7 +50,7 @@ class TrendsAnalyticsService
             return (object) [
                 'id' => $movie->id,
                 'title' => $movie->title,
-                'poster_url' => $movie->poster_url,
+                'poster_url' => proxy_image_url($movie->poster_url),
                 'year' => $movie->year,
                 'type' => $movie->type,
                 'imdb_rating' => $movie->imdb_rating,
@@ -128,7 +130,14 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items
+                        ->map(static function ($item): array {
+                            $row = (array) $item;
+                            $row['poster_url'] = proxy_image_url($row['poster_url'] ?? null);
+
+                            return $row;
+                        })
+                        ->all();
                 }
             }
 
@@ -159,7 +168,14 @@ class TrendsAnalyticsService
                 $items = $query->limit(40)->get();
 
                 if ($items->isNotEmpty()) {
-                    return $items->map(fn ($item) => (array) $item)->all();
+                    return $items
+                        ->map(static function ($item): array {
+                            $row = (array) $item;
+                            $row['poster_url'] = proxy_image_url($row['poster_url'] ?? null);
+
+                            return $row;
+                        })
+                        ->all();
                 }
             }
 

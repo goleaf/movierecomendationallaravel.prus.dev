@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Movie;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class SearchFiltersTest extends TestCase
@@ -17,6 +19,7 @@ class SearchFiltersTest extends TestCase
             'type' => 'movie',
             'year' => 2020,
             'genres' => ['drama', 'comedy'],
+            'poster_url' => 'https://example.com/posters/matching.jpg',
         ]);
 
         Movie::factory()->create([
@@ -40,21 +43,30 @@ class SearchFiltersTest extends TestCase
             'genres' => ['drama'],
         ]);
 
-        $response = $this->getJson(route('api.search', [
-            'type' => 'movie',
-            'genre' => 'drama',
-            'yf' => 2019,
-            'yt' => 2021,
-        ]));
+        CarbonImmutable::setTestNow('2025-01-01 12:00:00');
+        Carbon::setTestNow('2025-01-01 12:00:00');
 
-        $response
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonFragment([
-                'id' => $matching->id,
-                'title' => 'Matching Movie',
+        try {
+            $response = $this->getJson(route('api.search', [
                 'type' => 'movie',
-            ]);
+                'genre' => 'drama',
+                'yf' => 2019,
+                'yt' => 2021,
+            ]));
+
+            $response
+                ->assertOk()
+                ->assertJsonCount(1, 'data')
+                ->assertJsonFragment([
+                    'id' => $matching->id,
+                    'title' => 'Matching Movie',
+                    'type' => 'movie',
+                    'poster_url' => proxy_image_url('https://example.com/posters/matching.jpg'),
+                ]);
+        } finally {
+            CarbonImmutable::setTestNow();
+            Carbon::setTestNow();
+        }
     }
 
     public function test_it_handles_inverted_year_filters(): void

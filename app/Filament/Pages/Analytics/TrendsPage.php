@@ -16,6 +16,8 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Jacobtims\InlineDateTimePicker\Forms\Components\InlineDateTimePicker;
 
+use function proxy_image_url;
+
 class TrendsPage extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -111,7 +113,7 @@ class TrendsPage extends Page implements HasForms
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'poster_url' => $item->poster_url,
+                'poster_url' => proxy_image_url($item->poster_url),
                 'year' => $item->year,
                 'type' => $item->type,
                 'imdb_rating' => $item->imdb_rating,
