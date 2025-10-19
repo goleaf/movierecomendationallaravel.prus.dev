@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Jobs\StoreSsrMetric;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class SsrMetricsMiddleware
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         /** @var Response $response */
         $response = $next($request);
@@ -65,37 +64,17 @@ class SsrMetricsMiddleware
 
         $score = max(0, $score);
 
-        if (\Schema::hasTable('ssr_metrics')) {
-            try {
-                DB::table('ssr_metrics')->insert([
-                    'path' => $path,
-                    'score' => $score,
-                    'size' => $size,
-                    'meta_count' => $meta,
-                    'og_count' => $og,
-                    'ldjson_count' => $ld,
-                    'img_count' => $imgs,
-                    'blocking_scripts' => $blocking,
-                    'created_at' => now(),
-                ]);
-            } catch (\Throwable $e) {
-            }
-        } else {
-            try {
-                Storage::append('metrics/ssr.jsonl', json_encode([
-                    'ts' => now()->toIso8601String(),
-                    'path' => $path,
-                    'score' => $score,
-                    'size' => $size,
-                    'meta' => $meta,
-                    'og' => $og,
-                    'ld' => $ld,
-                    'imgs' => $imgs,
-                    'blocking' => $blocking,
-                ]));
-            } catch (\Throwable $e) {
-            }
-        }
+        StoreSsrMetric::dispatch([
+            'path' => $path,
+            'score' => $score,
+            'size' => $size,
+            'meta_count' => $meta,
+            'og_count' => $og,
+            'ldjson_count' => $ld,
+            'img_count' => $imgs,
+            'blocking_scripts' => $blocking,
+            'captured_at' => now()->toDateTimeString(),
+        ])->afterResponse();
 
         return $response;
     }
