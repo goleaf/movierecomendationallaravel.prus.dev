@@ -9,6 +9,7 @@ use App\Filament\Widgets\SsrDropWidget;
 use App\Filament\Widgets\SsrScoreWidget;
 use App\Filament\Widgets\SsrStatsWidget;
 use App\Filament\Widgets\ZTestWidget;
+use App\Services\SsrMetricsService;
 use Database\Seeders\Testing\FixturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -82,6 +83,25 @@ class AdminAnalyticsWidgetsTest extends TestCase
         Livewire::test(SsrDropWidget::class)
             ->assertSee('Top pages by SSR score drop')
             ->assertSee('/');
+
+        /** @var SsrMetricsService $metrics */
+        $metrics = $this->app->make(SsrMetricsService::class);
+
+        $summary = $metrics->getLatestScoreSummary();
+        $this->assertSame(94, $summary['score']);
+        $this->assertSame(1, $summary['paths']);
+
+        $trend = $metrics->getScoreTrend();
+        $this->assertSame([
+            Carbon::now()->subDay()->toDateString(),
+            Carbon::now()->toDateString(),
+        ], $trend['labels']);
+        $this->assertEqualsWithDelta(93.0, $trend['series'][0], 0.01);
+        $this->assertEqualsWithDelta(91.33, $trend['series'][1], 0.01);
+
+        $dropsQuery = $metrics->getDropQuery();
+        $this->assertNotNull($dropsQuery);
+        $this->assertSame('/', $dropsQuery->get()->first()->path);
     }
 
     public function test_z_test_widget_displays_variant_breakdown(): void
