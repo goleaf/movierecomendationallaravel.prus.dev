@@ -3,60 +3,49 @@
 namespace Database\Seeders;
 
 use App\Models\Movie;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class RecAbLogSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! Schema::hasTable('rec_ab_logs') || ! Schema::hasTable('movies')) {
+        $movieIds = Movie::query()->pluck('id');
+        if ($movieIds->isEmpty()) {
             return;
         }
 
-        DB::table('rec_ab_logs')->delete();
-
-        $movies = Movie::query()->pluck('id')->all();
-        if (empty($movies)) {
-            return;
-        }
-
-        $faker = fake();
+        $devices = collect(range(1, 12))->map(fn (int $i) => sprintf('device-%02d', $i));
         $placements = ['home', 'show', 'trends'];
         $variants = ['A', 'B'];
-        $rows = [];
+        $base = now();
 
-        foreach (range(0, 6) as $daysAgo) {
-            $day = CarbonImmutable::now()->subDays($daysAgo);
+        $records = [];
+        foreach ($devices as $deviceId) {
             foreach ($placements as $placement) {
                 foreach ($variants as $variant) {
-                    $impressions = $faker->numberBetween(35, 70);
-                    for ($i = 0; $i < $impressions; $i++) {
-                        $timestamp = $day
-                            ->setHour($faker->numberBetween(8, 23))
-                            ->setMinute($faker->numberBetween(0, 59))
-                            ->setSecond($faker->numberBetween(0, 59));
+                    foreach (range(0, 6) as $dayOffset) {
+                        $count = random_int(4, 9);
+                        for ($i = 0; $i < $count; $i++) {
+                            $moment = $base
+                                ->subDays($dayOffset)
+                                ->setTime(random_int(9, 23), random_int(0, 59), random_int(0, 59));
 
-                        $rows[] = [
-                            'movie_id' => $faker->randomElement($movies),
-                            'device_id' => $faker->uuid(),
-                            'placement' => $placement,
-                            'variant' => $variant,
-                            'meta' => json_encode([
-                                'session_id' => $faker->uuid(),
-                            ]),
-                            'created_at' => $timestamp,
-                            'updated_at' => $timestamp,
-                        ];
+                            $records[] = [
+                                'device_id' => $deviceId,
+                                'movie_id' => $movieIds->random(),
+                                'placement' => $placement,
+                                'variant' => $variant,
+                                'created_at' => $moment,
+                                'updated_at' => $moment,
+                            ];
+                        }
                     }
                 }
             }
         }
 
-        $chunks = array_chunk($rows, 500);
-        foreach ($chunks as $chunk) {
+        foreach (array_chunk($records, 1000) as $chunk) {
             DB::table('rec_ab_logs')->insert($chunk);
         }
     }

@@ -2,61 +2,43 @@
 
 namespace Database\Seeders;
 
-use App\Models\Movie;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class RecClickSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! Schema::hasTable('rec_clicks') || ! Schema::hasTable('movies')) {
-            return;
-        }
-
-        DB::table('rec_clicks')->delete();
-
-        $movies = Movie::query()
-            ->orderByDesc('imdb_votes')
-            ->limit(8)
+        $logs = DB::table('rec_ab_logs')
+            ->orderBy('created_at')
             ->get();
 
-        if ($movies->isEmpty()) {
+        if ($logs->isEmpty()) {
             return;
         }
 
-        $faker = fake();
-        $placements = ['home', 'show', 'trends'];
-        $variants = ['A', 'B'];
-        $rows = [];
-
-        foreach ($movies as $index => $movie) {
-            foreach ($variants as $variant) {
-                $clicks = $faker->numberBetween(10 + (7 - $index) * 2, 40 + (7 - $index) * 3);
-                for ($i = 0; $i < $clicks; $i++) {
-                    $day = CarbonImmutable::now()->subDays($faker->numberBetween(0, 6));
-                    $timestamp = $day
-                        ->setHour($faker->numberBetween(9, 23))
-                        ->setMinute($faker->numberBetween(0, 59))
-                        ->setSecond($faker->numberBetween(0, 59));
-
-                    $rows[] = [
-                        'movie_id' => $movie->id,
-                        'device_id' => $faker->uuid(),
-                        'placement' => $faker->randomElement($placements),
-                        'variant' => $variant,
-                        'source' => $faker->randomElement(['hero', 'module', 'email', null]),
-                        'created_at' => $timestamp,
-                        'updated_at' => $timestamp,
-                    ];
-                }
+        $records = [];
+        foreach ($logs as $log) {
+            if (random_int(1, 100) > 32) {
+                continue;
             }
+
+            $clickedAt = Carbon::parse($log->created_at)
+                ->addMinutes(random_int(1, 90));
+
+            $records[] = [
+                'device_id' => $log->device_id,
+                'movie_id' => $log->movie_id,
+                'placement' => $log->placement,
+                'variant' => $log->variant,
+                'position' => random_int(1, 12),
+                'created_at' => $clickedAt,
+                'updated_at' => $clickedAt,
+            ];
         }
 
-        $chunks = array_chunk($rows, 500);
-        foreach ($chunks as $chunk) {
+        foreach (array_chunk($records, 500) as $chunk) {
             DB::table('rec_clicks')->insert($chunk);
         }
     }

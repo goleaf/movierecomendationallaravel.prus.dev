@@ -23,6 +23,11 @@ class DatabaseSeeder extends Seeder
             DeviceHistorySeeder::class,
         ]);
 
+        User::factory()->create([
+            'name' => 'Demo Admin',
+            'email' => 'admin@example.com',
+        ]);
+
         User::query()->firstOrCreate(
             ['email' => 'admin@example.com'],
             [

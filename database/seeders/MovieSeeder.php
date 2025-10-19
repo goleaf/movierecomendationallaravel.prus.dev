@@ -3,125 +3,99 @@
 namespace Database\Seeders;
 
 use App\Models\Movie;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
 
 class MovieSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! Schema::hasTable('movies')) {
-            return;
-        }
-
-        Movie::query()->delete();
-
-        $now = CarbonImmutable::now();
-
         $featured = [
             [
                 'imdb_tt' => 'tt9000001',
-                'title' => 'Nebula Rising',
-                'plot' => 'A daring pilot leads a rescue mission across a collapsing wormhole.',
+                'title' => 'Galactic Frontiers',
+                'plot' => 'An unlikely crew charts the edge of the galaxy in search of a new home for humanity.',
                 'type' => 'movie',
-                'year' => $now->subYears(1)->year,
-                'release_date' => $now->subYears(1)->startOfMonth(),
-                'imdb_rating' => 8.7,
-                'imdb_votes' => 185_000,
-                'runtime_min' => 128,
-                'genres' => ['Sci-Fi', 'Adventure'],
+                'year' => 2024,
+                'release_date' => '2024-05-18',
+                'imdb_rating' => 8.6,
+                'imdb_votes' => 125_430,
+                'runtime_min' => 132,
+                'genres' => ['science fiction', 'adventure'],
+                'poster_url' => 'https://picsum.photos/seed/galactic-frontiers/600/900',
+                'backdrop_url' => 'https://picsum.photos/seed/galactic-frontiers/1280/720',
             ],
             [
                 'imdb_tt' => 'tt9000002',
-                'title' => 'Metro Pulse',
-                'plot' => 'Detectives race to stop a series of synchronized cyber heists.',
-                'type' => 'movie',
-                'year' => $now->subYears(2)->year,
-                'release_date' => $now->subYears(2)->startOfMonth(),
-                'imdb_rating' => 8.1,
-                'imdb_votes' => 142_500,
-                'runtime_min' => 117,
-                'genres' => ['Thriller', 'Action'],
+                'title' => 'Mysteries of Everspring',
+                'plot' => 'A small-town detective unravels a web of secrets after a string of strange disappearances.',
+                'type' => 'series',
+                'year' => 2023,
+                'release_date' => '2023-09-07',
+                'imdb_rating' => 8.2,
+                'imdb_votes' => 87_912,
+                'runtime_min' => 52,
+                'genres' => ['mystery', 'drama', 'thriller'],
+                'poster_url' => 'https://picsum.photos/seed/mysteries-everspring/600/900',
+                'backdrop_url' => 'https://picsum.photos/seed/mysteries-everspring/1280/720',
             ],
             [
                 'imdb_tt' => 'tt9000003',
-                'title' => 'Echoes of Winter',
-                'plot' => 'An alpine village uncovers a buried secret when the snow melts early.',
+                'title' => 'Laughing Matters',
+                'plot' => 'Three stand-up comics tour the world discovering that laughter is a universal language.',
                 'type' => 'movie',
-                'year' => $now->subYears(3)->year,
-                'release_date' => $now->subYears(3)->startOfMonth(),
-                'imdb_rating' => 7.9,
-                'imdb_votes' => 96_300,
-                'runtime_min' => 101,
-                'genres' => ['Drama'],
+                'year' => 2022,
+                'release_date' => '2022-11-25',
+                'imdb_rating' => 7.5,
+                'imdb_votes' => 64_001,
+                'runtime_min' => 108,
+                'genres' => ['comedy'],
+                'poster_url' => 'https://picsum.photos/seed/laughing-matters/600/900',
+                'backdrop_url' => 'https://picsum.photos/seed/laughing-matters/1280/720',
             ],
             [
                 'imdb_tt' => 'tt9000004',
-                'title' => 'Solar Caravan',
-                'plot' => 'A family of inventors tours festivals with a self-sustaining rover.',
-                'type' => 'series',
-                'year' => $now->subYears(1)->year,
-                'release_date' => $now->subYears(1)->startOfYear(),
-                'imdb_rating' => 8.5,
-                'imdb_votes' => 52_000,
-                'runtime_min' => 52,
-                'genres' => ['Documentary', 'Adventure'],
+                'title' => 'Echoes of the Deep',
+                'plot' => 'Marine biologists confront a mysterious signal originating from the ocean floor.',
+                'type' => 'movie',
+                'year' => 2021,
+                'release_date' => '2021-03-14',
+                'imdb_rating' => 8.1,
+                'imdb_votes' => 142_307,
+                'runtime_min' => 118,
+                'genres' => ['thriller', 'science fiction'],
+                'poster_url' => 'https://picsum.photos/seed/echoes-deep/600/900',
+                'backdrop_url' => 'https://picsum.photos/seed/echoes-deep/1280/720',
             ],
             [
                 'imdb_tt' => 'tt9000005',
-                'title' => 'Harbor Lights',
-                'plot' => 'A quiet seaside town becomes a haven for runaway innovators.',
-                'type' => 'mini-series',
-                'year' => $now->subYears(4)->year,
-                'release_date' => $now->subYears(4)->startOfMonth(),
-                'imdb_rating' => 8.3,
-                'imdb_votes' => 78_000,
-                'runtime_min' => 55,
-                'genres' => ['Drama', 'Romance'],
-            ],
-            [
-                'imdb_tt' => 'tt9000006',
-                'title' => 'Quantum Alley',
-                'plot' => 'Two rival researchers share a lab after a funding shake-up.',
-                'type' => 'series',
-                'year' => $now->subYears(2)->year,
-                'release_date' => $now->subYears(2)->startOfYear(),
-                'imdb_rating' => 8.9,
-                'imdb_votes' => 204_000,
-                'runtime_min' => 48,
-                'genres' => ['Sci-Fi', 'Drama'],
-            ],
-            [
-                'imdb_tt' => 'tt9000007',
-                'title' => 'Crimson Atlas',
-                'plot' => 'A cartographer maps the dreams of an entire metropolis.',
+                'title' => 'Song of the Ember',
+                'plot' => 'A gifted bard must unite divided kingdoms through a melody that could reignite magic.',
                 'type' => 'movie',
-                'year' => $now->subYears(1)->year,
-                'release_date' => $now->subMonths(9)->startOfDay(),
-                'imdb_rating' => 8.2,
-                'imdb_votes' => 121_000,
-                'runtime_min' => 124,
-                'genres' => ['Fantasy', 'Drama'],
-            ],
-            [
-                'imdb_tt' => 'tt9000008',
-                'title' => 'Aurora Station',
-                'plot' => 'The last train to the Arctic outpost arrives without a crew.',
-                'type' => 'movie',
-                'year' => $now->subYears(1)->year,
-                'release_date' => $now->subMonths(6)->startOfDay(),
-                'imdb_rating' => 8.4,
-                'imdb_votes' => 132_000,
-                'runtime_min' => 111,
-                'genres' => ['Mystery', 'Thriller'],
+                'year' => 2020,
+                'release_date' => '2020-08-02',
+                'imdb_rating' => 8.8,
+                'imdb_votes' => 204_512,
+                'runtime_min' => 145,
+                'genres' => ['fantasy', 'adventure'],
+                'poster_url' => 'https://picsum.photos/seed/song-ember/600/900',
+                'backdrop_url' => 'https://picsum.photos/seed/song-ember/1280/720',
             ],
         ];
 
-        foreach ($featured as $attributes) {
-            Movie::factory()->create($attributes);
+        foreach ($featured as $movieData) {
+            Movie::query()->create(array_merge($movieData, [
+                'translations' => [
+                    'en' => [
+                        'title' => $movieData['title'],
+                        'plot' => $movieData['plot'],
+                    ],
+                ],
+                'raw' => ['source' => 'seed'],
+            ]));
         }
 
-        Movie::factory()->count(16)->create();
+        Movie::factory()
+            ->count(40)
+            ->create();
     }
 }
