@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Support\SsrMetricsStorage;
 use App\Support\MetricsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class PrometheusMetricsService
 {
@@ -203,37 +203,13 @@ class PrometheusMetricsService
      */
     private function loadSsrFallback(): array
     {
-        if (Storage::exists('metrics/ssr.jsonl')) {
-            $content = trim((string) Storage::get('metrics/ssr.jsonl'));
-            if ($content !== '') {
-                $lines = preg_split('/\r?\n/', $content) ?: [];
-                $records = [];
+        $records = SsrMetricsStorage::readJsonl();
 
-                foreach ($lines as $line) {
-                    if ($line === '') {
-                        continue;
-                    }
-
-                    $decoded = json_decode($line, true);
-                    if (is_array($decoded)) {
-                        $records[] = $decoded;
-                    }
-                }
-
-                if ($records !== []) {
-                    return $records;
-                }
-            }
+        if ($records !== []) {
+            return $records;
         }
 
-        if (Storage::exists('metrics/last.json')) {
-            $decoded = json_decode((string) Storage::get('metrics/last.json'), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
-        }
-
-        return [];
+        return SsrMetricsStorage::readLastSnapshot();
     }
 
     private function metric(string $name, string $type, string $help, int|float $value): array

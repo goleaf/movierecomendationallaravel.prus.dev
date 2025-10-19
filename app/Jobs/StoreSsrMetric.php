@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Support\SsrMetricsStorage;
 use Illuminate\Bus\Queueable;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -120,15 +122,14 @@ class StoreSsrMetric implements ShouldQueue
 
     private function storeInJsonl(): void
     {
-        try {
-            if (! Storage::exists('metrics')) {
-                Storage::makeDirectory('metrics');
-            }
+        $path = SsrMetricsStorage::jsonlPath();
+        $directory = SsrMetricsStorage::directory();
+        $disks = SsrMetricsStorage::disks();
 
-            $payload = [
-                'ts' => $this->normalizedPayload['collected_at']->toIso8601String(),
-                'path' => $this->normalizedPayload['path'],
-                'score' => $this->normalizedPayload['score'],
+        $payload = [
+            'ts' => $this->normalizedPayload['collected_at']->toIso8601String(),
+            'path' => $this->normalizedPayload['path'],
+            'score' => $this->normalizedPayload['score'],
                 'html_bytes' => $this->normalizedPayload['html_bytes'],
                 'size' => $this->normalizedPayload['html_bytes'],
                 'html_size' => $this->normalizedPayload['html_bytes'],
@@ -143,17 +144,48 @@ class StoreSsrMetric implements ShouldQueue
                 'blocking_scripts' => $this->normalizedPayload['blocking_scripts'],
                 'blocking' => $this->normalizedPayload['blocking_scripts'],
                 'first_byte_ms' => $this->normalizedPayload['first_byte_ms'],
-                'has_json_ld' => $this->normalizedPayload['has_json_ld'],
-                'has_open_graph' => $this->normalizedPayload['has_open_graph'],
-            ];
+            'has_json_ld' => $this->normalizedPayload['has_json_ld'],
+            'has_open_graph' => $this->normalizedPayload['has_open_graph'],
+        ];
 
-            Storage::append('metrics/ssr.jsonl', json_encode($payload, JSON_THROW_ON_ERROR));
+        try {
+            $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            Log::error('Failed storing SSR metric.', [
+            Log::error('Failed encoding SSR metric payload for storage.', [
                 'exception' => $e,
                 'payload' => $this->payload,
             ]);
+
+            return;
         }
+
+        $attemptedDisks = [];
+        $lastException = null;
+
+        foreach ($disks as $disk) {
+            try {
+                /** @var FilesystemAdapter $storage */
+                $storage = Storage::disk($disk);
+
+                if ($directory !== '') {
+                    $this->ensureDirectoryExists($storage, $directory);
+                }
+
+                $storage->append($path, $encoded);
+
+                return;
+            } catch (Throwable $e) {
+                $attemptedDisks[] = $disk;
+                $lastException = $e;
+            }
+        }
+
+        Log::error('Failed storing SSR metric.', [
+            'exception' => $lastException,
+            'payload' => $this->payload,
+            'disks' => $attemptedDisks,
+            'path' => $path,
+        ]);
     }
 
     /**
@@ -283,5 +315,16 @@ class StoreSsrMetric implements ShouldQueue
         }
 
         return Carbon::now();
+    }
+
+    private function ensureDirectoryExists(FilesystemAdapter $storage, string $directory): void
+    {
+        if ($directory === '') {
+            return;
+        }
+
+        if (! $storage->directoryExists($directory)) {
+            $storage->makeDirectory($directory);
+        }
     }
 }

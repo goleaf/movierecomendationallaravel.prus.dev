@@ -165,6 +165,24 @@ REC_B_RECENT=0.15
 REC_B_PREF=0.50
 ```
 
+### SSR metrics environment flags
+
+| Variable | Default | Purpose & when to tune |
+| --- | --- | --- |
+| `SSR_METRICS_STORAGE_DISK` | Filesystem default (usually `local`) | Selects the primary disk that receives JSONL fallbacks when the database sink is unavailable. Point this at durable storage (for example, S3 or an NFS mount) when app servers are ephemeral.【F:config/ssrmetrics.php†L5-L52】【F:app/Jobs/StoreSsrMetric.php†L127-L169】 |
+| `SSR_METRICS_STORAGE_FALLBACK_DISK` | Matches `SSR_METRICS_STORAGE_DISK` | Optional secondary disk used if the primary disk write fails. Configure this for cross-region redundancy or to keep a local copy while mirroring to remote storage.【F:config/ssrmetrics.php†L33-L52】【F:app/Jobs/StoreSsrMetric.php†L133-L169】 |
+| `SSR_METRICS_STORAGE_DIRECTORY` | `metrics` | Directory created on the chosen disk before writing `ssr.jsonl`. Override this when the storage backend expects a different base folder or when isolating metrics per environment.【F:config/ssrmetrics.php†L37-L52】【F:app/Jobs/StoreSsrMetric.php†L127-L169】 |
+| `SSR_METRICS_STORAGE_PATH` | `metrics/ssr.jsonl` | Sets the newline-delimited metrics file path used by the fallback writer and readers. Change it if you need to colocate metrics under an existing hierarchy or bucket prefix.【F:config/ssrmetrics.php†L43-L52】【F:app/Support/SsrMetricsStorage.php†L19-L59】 |
+| `SSR_METRICS_STORAGE_LAST_PATH` | `metrics/last.json` | Points at the JSON snapshot consumed by Prometheus and analytics fallbacks when JSONL history is unavailable. Override to align with legacy exporters or alternate snapshot locations.【F:config/ssrmetrics.php†L45-L52】【F:app/Support/SsrMetricsStorage.php†L25-L80】 |
+| `SSR_METRICS_SCORE_BLOCKING_PER_SCRIPT` / `SSR_METRICS_SCORE_BLOCKING_MAX` | `5` / `30` | Control how harshly synchronous scripts penalise the SSR score. Increase the per-script value to enforce stricter budgets or lower it when inline scripts are unavoidable.【F:config/ssrmetrics.php†L54-L76】【F:app/Http/Middleware/SsrMetricsMiddleware.php†L61-L90】 |
+| `SSR_METRICS_SCORE_MISSING_LDJSON` | `10` | Deducted when structured data is missing. Lower this if certain routes intentionally omit JSON-LD payloads.【F:config/ssrmetrics.php†L67-L70】【F:app/Http/Middleware/SsrMetricsMiddleware.php†L70-L90】 |
+| `SSR_METRICS_SCORE_LOW_OG_MINIMUM` / `SSR_METRICS_SCORE_LOW_OG_DEDUCTION` | `3` / `10` | Governs the minimum Open Graph tag count and related deduction. Raise the minimum for richer social previews or relax the penalty for lighter pages.【F:config/ssrmetrics.php†L70-L74】【F:app/Http/Middleware/SsrMetricsMiddleware.php†L72-L84】 |
+| `SSR_METRICS_SCORE_OVERSIZED_HTML_THRESHOLD` / `SSR_METRICS_SCORE_OVERSIZED_HTML_DEDUCTION` | `900*1024` / `20` | Caps payload size before the score drops. Tune this when SSR responses are intentionally large (for example, reports) or when you need stricter budgets for critical paths.【F:config/ssrmetrics.php†L74-L78】【F:app/Http/Middleware/SsrMetricsMiddleware.php†L82-L90】 |
+| `SSR_METRICS_SCORE_EXCESS_IMAGES_THRESHOLD` / `SSR_METRICS_SCORE_EXCESS_IMAGES_DEDUCTION` | `60` / `10` | Adjusts the tolerance for image-heavy pages. Lower the threshold to highlight slow galleries or raise it when large media grids are expected.【F:config/ssrmetrics.php†L78-L82】【F:app/Http/Middleware/SsrMetricsMiddleware.php†L86-L90】 |
+| `SSR_METRICS_RETENTION_DATABASE_DAYS` / `SSR_METRICS_RETENTION_JSONL_DAYS` | `14` / `7` | Document the retention targets operations should apply when pruning the `ssr_metrics` table or JSONL fallbacks. Increase them for extended historical analysis; decrease to cap storage footprints.【F:config/ssrmetrics.php†L52-L66】 |
+| `SSR_METRICS_PATHS` | `/, /trends, /analytics/ctr` | Replaces the default monitored routes list. Supply a comma-separated set (for example, `/`, `/landing`) when different paths require instrumentation.【F:config/ssrmetrics.php†L7-L32】【F:app/Console/Commands/SsrCollectCommand.php†L24-L66】 |
+| `SSR_METRICS_PATHS_APPEND` / `SSR_METRICS_PATHS_EXCLUDE` | *(empty)* | Append extra monitored paths or drop defaults without rewriting the full list. Useful for environment-specific overrides (e.g. staging-only experiments).【F:config/ssrmetrics.php†L17-L32】 |
+
 Other useful flags:
 
 - `QUEUE_CONNECTION=redis` when running Horizon for background jobs.
