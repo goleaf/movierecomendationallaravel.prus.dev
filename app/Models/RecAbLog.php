@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $placement
  * @property string $variant
  * @property int|null $movie_id
- * @property array|null $payload
+ * @property array|null $meta
  * @property-read \Carbon\CarbonImmutable $created_at
  * @property-read \Carbon\CarbonImmutable $updated_at
  * @property-read Movie|null $movie
@@ -25,11 +25,14 @@ class RecAbLog extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'payload' => 'array',
-        'created_at' => 'immutable_datetime',
-        'updated_at' => 'immutable_datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'meta' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
 
     public function movie(): BelongsTo
     {
