@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 final class MovieSearchFilters
 {
-    private const ALLOWED_TYPES = ['movie', 'series', 'animation'];
+    public const ALLOWED_TYPES = ['movie', 'series', 'animation'];
 
     public function __construct(
         public readonly string $query,
