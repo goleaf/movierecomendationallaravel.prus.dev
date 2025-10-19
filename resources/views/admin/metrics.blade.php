@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', __('admin.metrics.title'))
+@section('meta_robots', 'noindex, nofollow')
 @section('content')
 <div class="card"><h3>{{ __('admin.metrics.heading') }}</h3>
 <p>{{ __('admin.metrics.stats', [

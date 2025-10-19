@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', __('admin.ctr.title'))
+@section('meta_robots', 'noindex, nofollow')
 @section('content')
 <div class="card">
   <div class="muted">{{ __('admin.ctr.period', ['from' => $from, 'to' => $to]) }}</div>

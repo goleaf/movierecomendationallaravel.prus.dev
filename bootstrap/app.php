@@ -27,6 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('web', HandleInertiaRequests::class);
         $middleware->appendToGroup('web', SsrMetricsMiddleware::class);
+
+        $middleware->alias([
+            'noindex' => \App\Http\Middleware\NoIndex::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

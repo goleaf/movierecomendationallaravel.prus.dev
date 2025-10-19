@@ -1,11 +1,47 @@
 @extends('layouts.app')
 @section('title', $movie->title)
+@section('canonical', route('movies.show', $movie))
+@section('og_image', $movie->poster_url ?: asset('images/og-default.svg'))
+@if($movie->plot)
+  @section('meta_description', \Illuminate\Support\Str::limit($movie->plot, 155))
+@endif
+@section('structured_data')
+@php
+    $movieStructuredData = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Movie',
+        'name' => $movie->title,
+        'image' => $movie->poster_url ?: asset('images/og-default.svg'),
+        'description' => $movie->plot,
+        'genre' => $movie->genres,
+        'datePublished' => optional($movie->release_date)?->format('Y-m-d'),
+        'url' => route('movies.show', $movie),
+    ];
+
+    if ($movie->imdb_rating && $movie->imdb_votes) {
+        $movieStructuredData['aggregateRating'] = [
+            '@type' => 'AggregateRating',
+            'ratingValue' => $movie->imdb_rating,
+            'ratingCount' => $movie->imdb_votes,
+        ];
+    }
+
+    if ($movie->runtime_min) {
+        $movieStructuredData['duration'] = sprintf('PT%dM', $movie->runtime_min);
+    }
+
+    $movieStructuredData = array_filter(
+        $movieStructuredData,
+        static fn ($value) => $value !== null && $value !== []
+    );
+@endphp
+<script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode($movieStructuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
+@endsection
+
 @section('content')
 <div class="card">
   <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;">
-    @if($movie->poster_url)
-      <img src="{{ $movie->poster_url }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"/>
-    @endif
+    <img src="{{ $movie->poster_url ?: asset('images/og-default.svg') }}" alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"/>
     <div>
       <h2>{{ $movie->title }} ({{ $movie->year ?? __('messages.common.dash') }})</h2>
       <div class="muted">{{ __('messages.movies.imdb_caption', [

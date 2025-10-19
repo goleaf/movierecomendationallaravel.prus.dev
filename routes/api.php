@@ -7,8 +7,10 @@ use App\Http\Resources\MovieResource;
 use App\Models\Movie;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/search', [SearchController::class, 'index'])->name('api.search');
+Route::middleware('noindex')->group(function (): void {
+    Route::get('/search', [SearchController::class, 'index'])->name('api.search');
 
-Route::get('/movies/{movie}', function (Movie $movie) {
-    return new MovieResource($movie);
-})->name('api.movies.show');
+    Route::get('/movies/{movie}', function (Movie $movie) {
+        return new MovieResource($movie);
+    })->name('api.movies.show');
+});

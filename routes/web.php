@@ -46,7 +46,7 @@ Route::get('/works', function () {
     return view('works', ['content' => $content]);
 })->name('works');
 
-Route::prefix('admin')->name('admin.')->group(function (): void {
+Route::prefix('admin')->middleware('noindex')->name('admin.')->group(function (): void {
     Route::permanentRedirect('/ctr', '/analytics/ctr')->name('ctr');
     Route::get('/ctr.svg', [CtrSvgController::class, 'line'])->name('ctr.svg');
     Route::get('/ctr/bars.svg', [CtrSvgBarsController::class, 'bars'])->name('ctr.bars.svg');

@@ -19,6 +19,10 @@ final class AnalyticsPanelProvider extends PanelProvider
             ->id('analytics')
             ->path('analytics')
             ->brandName('Analytics')
+            ->middleware([
+                'web',
+                'noindex',
+            ])
             ->navigationGroups([
                 'Catalog',
                 'Telemetry',
