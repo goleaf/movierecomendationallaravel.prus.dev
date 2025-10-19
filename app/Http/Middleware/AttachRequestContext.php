@@ -7,17 +7,12 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class AttachRequestContext
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $requestId = $this->resolveRequestId($request);
-        $request->attributes->set('request_id', $requestId);
-        $request->headers->set('X-Request-ID', $requestId);
-
         $deviceId = device_id();
         $request->attributes->set('device_id', $deviceId);
 
@@ -26,28 +21,19 @@ class AttachRequestContext
             $request->attributes->set('ab_variant', $variant);
         }
 
-        Log::withContext(array_filter([
-            'request_id' => $requestId,
+        $context = array_filter([
             'device_id' => $deviceId,
             'ab_variant' => $variant,
-        ]));
+        ], static fn ($value) => $value !== null);
+
+        if ($context !== []) {
+            Log::withContext($context);
+        }
 
         /** @var Response $response */
         $response = $next($request);
-        $response->headers->set('X-Request-ID', $requestId);
 
         return $response;
-    }
-
-    protected function resolveRequestId(Request $request): string
-    {
-        $header = $request->headers->get('X-Request-ID', $request->headers->get('X-Request-Id'));
-
-        if (is_string($header) && $header !== '') {
-            return $header;
-        }
-
-        return (string) Str::orderedUuid();
     }
 
     protected function resolveVariant(Request $request): ?string

@@ -54,59 +54,41 @@ class Handler
         });
 
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
-            if (self::shouldRenderAsJson($request)) {
-                return self::errorResponse(401);
-            }
-
-            return null;
+            return self::respond($request, 401);
         });
 
         $exceptions->render(function (AuthorizationException $exception, Request $request) {
-            if (self::shouldRenderAsJson($request)) {
-                return self::errorResponse(403);
-            }
-
-            return null;
+            return self::respond($request, 403);
         });
 
         $exceptions->render(function (ModelNotFoundException|NotFoundHttpException $exception, Request $request) {
-            if (self::shouldRenderAsJson($request)) {
-                return self::errorResponse(404);
-            }
-
-            return null;
+            return self::respond($request, 404);
         });
 
         $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
-            if (self::shouldRenderAsJson($request)) {
-                return self::errorResponse(429);
-            }
-
-            return null;
+            return self::respond($request, 429);
         });
 
         $exceptions->render(function (Throwable $exception, Request $request) {
-            if (! self::shouldRenderAsJson($request)) {
-                return null;
-            }
-
             if ($exception instanceof HttpExceptionInterface) {
                 $status = $exception->getStatusCode();
 
-                if (array_key_exists($status, self::ERROR_DEFINITIONS)) {
-                    return self::errorResponse($status);
+                if (! array_key_exists($status, self::ERROR_DEFINITIONS)) {
+                    return null;
                 }
+
+                return self::respond($request, $status);
             }
 
-            return self::errorResponse(500);
+            return self::respond($request, 500);
         });
     }
 
-    public static function formatErrorResponse(int $status): array
+    public static function formatErrorResponse(Request $request, int $status): array
     {
         $definition = self::ERROR_DEFINITIONS[$status] ?? self::ERROR_DEFINITIONS[500];
 
-        return [
+        $payload = [
             'error' => [
                 'status' => $status,
                 'code' => $definition['code'],
@@ -114,11 +96,43 @@ class Handler
                 'documentation_url' => $definition['documentation_url'] ?? self::documentationUrlFor($status),
             ],
         ];
+
+        $requestId = self::requestIdFrom($request);
+
+        if ($requestId !== null) {
+            $payload['meta'] = [
+                'request_id' => $requestId,
+            ];
+        }
+
+        return $payload;
     }
 
-    private static function errorResponse(int $status): JsonResponse
+    private static function respond(Request $request, int $status)
     {
-        return response()->json(self::formatErrorResponse($status), $status);
+        if (self::shouldRenderAsJson($request)) {
+            return self::jsonErrorResponse($request, $status);
+        }
+
+        return self::htmlErrorResponse($request, $status);
+    }
+
+    private static function jsonErrorResponse(Request $request, int $status): JsonResponse
+    {
+        return response()->json(self::formatErrorResponse($request, $status), $status);
+    }
+
+    private static function htmlErrorResponse(Request $request, int $status)
+    {
+        $payload = self::formatErrorResponse($request, $status);
+
+        return response()->view('errors.generic', [
+            'status' => $payload['error']['status'],
+            'code' => $payload['error']['code'],
+            'message' => $payload['error']['message'],
+            'documentationUrl' => $payload['error']['documentation_url'],
+            'requestId' => $payload['meta']['request_id'] ?? null,
+        ], $status);
     }
 
     private static function documentationUrlFor(int $status): string
@@ -129,5 +143,16 @@ class Handler
     private static function shouldRenderAsJson(Request $request): bool
     {
         return $request->expectsJson() || $request->is('api/*');
+    }
+
+    private static function requestIdFrom(Request $request): ?string
+    {
+        $requestId = $request->attributes->get('request_id', $request->headers->get('X-Request-ID'));
+
+        if (is_string($requestId) && $requestId !== '') {
+            return $requestId;
+        }
+
+        return null;
     }
 }
