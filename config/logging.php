@@ -219,6 +219,11 @@ return [
             'storage' => sprintf('%s/%s', storage_path('logs'), 'importers-YYYY-MM-DD.log'),
             'rotation' => 'Daily files retained for 14 days to keep ingestion noise out of primary logs.',
         ],
+        'ingestion' => [
+            'purpose' => 'Verbose ingestion channel with request context in each line.',
+            'storage' => sprintf('%s/%s', storage_path('logs'), 'ingestion-YYYY-MM-DD.log'),
+            'rotation' => 'Retention controlled by INGESTION_LOG_DAYS (defaults to 14).',
+        ],
         'json' => [
             'purpose' => 'Structured JSON logs for observability pipelines and container stdout collectors.',
             'storage' => 'php://stdout',

@@ -161,17 +161,20 @@ features.
 ## Log Map
 
 The logging configuration exposes a curated set of channels that balance local
-investigations with container-friendly streams. Use the table below to locate
-files quickly and to understand how retention is handled. The source of truth
-for these values lives in [`config/logging.php`](config/logging.php).
+investigations with container-friendly streams. Every channel documented below
+is mirrored in [`config/logging.php`](config/logging.php) via the `log_map`
+section so the README stays in sync with the runtime configuration.
+
+### Channels at a glance
 
 | Channel | Writes to | Rotation / cleanup | Notes |
 | --- | --- | --- | --- |
-| `stack` | Delegates to the channels listed in `LOG_STACK` (defaults to `single`). | Clean up by targeting the nested channels. Switch to `stack/json` when you need both file and stdout logs. | Default channel for the framework. |
+| `stack` | Delegates to the channels listed in `LOG_STACK` (defaults to `daily`). | Clean up by targeting the nested channels. Switch to `stack/json` when you need both file and stdout logs. | Default channel for the framework. |
 | `stack/json` | `storage/logs/laravel.log` **and** `php://stdout` via nested channels. | File cleanup mirrors `single`; stdout retention depends on the process manager. | Handy when running in Docker/Kubernetes. |
 | `single` | `storage/logs/laravel.log`. | Manually delete or truncate the file (`rm storage/logs/laravel.log` or `truncate -s 0 storage/logs/laravel.log`), or delegate to OS logrotate. | Great for quick local debugging. |
-| `daily` | `storage/logs/laravel-YYYY-MM-DD.log`. | Laravel removes files older than `LOG_DAILY_DAYS` (14 by default). | Opt in by setting `LOG_CHANNEL=daily`. |
+| `daily` | `storage/logs/laravel-YYYY-MM-DD.log`. | Laravel removes files older than `LOG_DAILY_DAYS` (14 by default). | Use when you need rotating history on disk. |
 | `importers` | `storage/logs/importers-YYYY-MM-DD.log`. | Keeps 14 days of ingestion logs before pruning. | Keeps importer noise out of the main app logs. |
+| `ingestion` | `storage/logs/ingestion-YYYY-MM-DD.log`. | Retention controlled by `INGESTION_LOG_DAYS` (defaults to 14). | Structured formatter for ingestion request tracing. |
 | `json` | `php://stdout`. | Stream retention is managed by your container runtime or log collector. | Structured JSON payloads for observability pipelines. |
 | `stderr` | `php://stderr`. | Managed by the host runtime. | Surface fatal issues to orchestrators. |
 | `slack` | Remote Slack webhook defined by `LOG_SLACK_WEBHOOK_URL`. | Retention handled by Slack. | Sends critical alerts to on-call chat. |
@@ -180,6 +183,44 @@ for these values lives in [`config/logging.php`](config/logging.php).
 | `errorlog` | `php.ini` `error_log` destination. | Managed by PHP / host. | Fallback to PHP error logging. |
 | `null` | Discarded. | Not applicable. | Use when you need silence in tests. |
 | `emergency` | `storage/logs/laravel.log`. | Same manual cleanup as `single`. | Framework fallback if a primary channel fails. |
+
+### Enable daily rotation
+
+1. Set `LOG_CHANNEL=daily` in `.env` (or override per environment in
+   `config/logging.php`).
+2. Optionally adjust the retention window with `LOG_DAILY_DAYS=30` (or any
+   integer) to keep more historical files.
+3. When stacking channels, update `LOG_STACK` (for example, `LOG_STACK="daily,json"`)
+   so the `stack` driver emits both rotated files and container streams.
+
+### Clean up rotated logs
+
+- Delete a single file after capturing the evidence:
+  `rm storage/logs/laravel.log` or
+  `rm storage/logs/laravel-2025-01-01.log`.
+- Truncate in place to keep permissions intact:
+  `truncate -s 0 storage/logs/laravel.log`.
+- For daily channels, rely on Laravel’s automatic pruning or configure system
+  logrotate for fleet-wide policies.
+
+### Permissions & SELinux debugging
+
+Keeping rotated log files writable is essential for ingestion pipelines and the
+daily log driver.
+
+- **Directory permissions** — ensure the directory is writable by both the web
+  server and CLI users: `chmod -R ug+rw storage/logs`. Grant execute permissions
+  on parent directories (`chmod -R ug+x storage`) so rotation can create new
+  files.
+- **File ownership** — align the owner and group with your PHP-FPM user (for
+  example, `www-data` on Debian/Ubuntu):
+  `chown -R www-data:www-data storage/logs`. When deploy tools run as a
+  different user, add them to the same group so `daily` rotation can replace log
+  files without permission errors.
+- **SELinux contexts** — on SELinux-enabled hosts, allow web processes to write
+  into `storage/logs` with
+  `sudo chcon -R -t httpd_sys_rw_content_t storage/logs`, then restore contexts
+  after deployments via `sudo restorecon -Rv storage/logs`.
 
 ---
 
@@ -232,27 +273,6 @@ Other useful flags:
 - `QUEUE_CONNECTION=redis` when running Horizon for background jobs.
 - `FILAMENT_PATH=/admin` to customise the Filament entry route.
 - `APP_LOCALE` / `APP_FALLBACK_LOCALE` to tune default translations.
-
----
-
-## Troubleshooting
-
-Keeping rotated log files writable is essential for ingestion pipelines and Laravel's structured daily logs.
-
-### storage/logs permissions
-
-- Ensure the directory is writable by both the web server and CLI users: `chmod -R ug+rw storage/logs`.
-- If your deployment splits deploy and runtime users, grant execute permissions on parent directories so rotation can create new files: `chmod -R ug+x storage`.
-
-### File owners
-
-- Align the owner and group with your PHP-FPM user (for example, `www-data` on Debian/Ubuntu): `chown -R www-data:www-data storage/logs`.
-- When using deploy tools that run as a different user, add them to the same group so `daily` rotation can replace log files without permission errors.
-
-### SELinux contexts
-
-- On SELinux-enabled hosts, allow web processes to write into `storage/logs` with `sudo chcon -R -t httpd_sys_rw_content_t storage/logs`.
-- After deployments, restore contexts with `sudo restorecon -Rv storage/logs` to keep log rotation working.
 
 ---
 
