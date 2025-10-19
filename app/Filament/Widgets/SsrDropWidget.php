@@ -22,7 +22,7 @@ class SsrDropWidget extends BaseWidget
     protected function getTableQuery(): Builder|Relation|null
     {
         if (! Schema::hasTable('ssr_metrics')) {
-            return null;
+            return SsrMetric::query()->whereRaw('1=0');
         }
 
         $yesterday = now()->subDay()->toDateString();
