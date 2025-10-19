@@ -2,24 +2,18 @@
 
 namespace App\Filament\Pages\Analytics;
 
-use App\Support\TrendingService;
-use Filament\Pages\Page;
-use Illuminate\Support\Collection;
-use Livewire\Attributes\Url;
-
-class TrendsAdvancedPage extends Page
+class TrendsAdvancedPage extends TrendsPage
 {
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-
     protected static string $view = 'filament.analytics.trends_advanced';
+    protected static ?string $navigationLabel = 'Trends (Advanced)';
+    protected static ?string $navigationGroup = 'Analytics';
+    protected static ?string $slug = 'trends-advanced';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('analytics.panel.navigation.trends_advanced');
-    }
+    public bool $showAdvancedFilters = true;
 
-    public static function getNavigationGroup(): ?string
+    public function mount(): void
     {
-        return __('analytics.panel.navigation_group');
+        parent::mount();
     }
 }

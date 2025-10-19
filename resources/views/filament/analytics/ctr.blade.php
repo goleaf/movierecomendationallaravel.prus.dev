@@ -1,117 +1,137 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        <section class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-            <div class="grid gap-4 md:grid-cols-5">
-                <div>
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">От</label>
-                    <input
-                        type="date"
-                        wire:model.live="from"
-                        class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-                    />
-                </div>
+  <div class="space-y-6">
+    <form wire:submit.prevent="refreshData" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.from') }}</label>
+        <input type="date" wire:model.live="from" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.to') }}</label>
+        <input type="date" wire:model.live="to" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.placement') }}</label>
+        <select wire:model.live="placement" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
+          @foreach($placementOptions as $value => $label)
+            <option value="{{ $value }}">{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-400">{{ __('admin.ctr.filters.variant') }}</label>
+        <select wire:model.live="variant" class="fi-input block w-full rounded-lg border border-gray-700/60 bg-gray-900/40 px-3 py-2 text-sm text-white">
+          @foreach($variantOptions as $value => $label)
+            <option value="{{ $value }}">{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+        <button type="submit" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400">
+          {{ __('admin.ctr.filters.refresh') }}
+        </button>
+      </div>
+    </form>
 
-                <div>
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">До</label>
-                    <input
-                        type="date"
-                        wire:model.live="to"
-                        class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-                    />
-                </div>
+    <x-filament::card>
+      <div class="text-sm text-gray-400">{{ __('admin.ctr.period', ['from' => $from, 'to' => $to]) }}</div>
+      <ul class="mt-4 space-y-2">
+        @forelse($summary as $row)
+          <li class="text-sm text-gray-200">
+            {{ __('admin.ctr.ab_summary_item', [
+              'variant' => $row['variant'],
+              'impressions' => number_format($row['impressions']),
+              'clicks' => number_format($row['clicks']),
+              'ctr' => number_format($row['ctr'], 2),
+            ]) }}
+          </li>
+        @empty
+          <li class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</li>
+        @endforelse
+      </ul>
+    </x-filament::card>
 
-                <div>
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Площадка</label>
-                    <select
-                        wire:model.live="placement"
-                        class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-                    >
-                        <option value="">Все</option>
-                        <option value="home">home</option>
-                        <option value="show">show</option>
-                        <option value="trends">trends</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Вариант</label>
-                    <select
-                        wire:model.live="variant"
-                        class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-                    >
-                        <option value="">A + B</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                    </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button
-                        type="button"
-                        wire:click="refreshReport"
-                        class="inline-flex w-full items-center justify-center rounded-xl border border-sky-500 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-500/20"
-                    >
-                        Обновить
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section class="grid gap-6 lg:grid-cols-2">
-            <img
-                src="{{ route('admin.ctr.svg', ['from' => $from, 'to' => $to]) }}"
-                alt="CTR line chart"
-                class="h-full w-full rounded-2xl border border-slate-800 bg-slate-950/70"
-            />
-            <img
-                src="{{ route('admin.ctr.bars.svg', ['from' => $from, 'to' => $to]) }}"
-                alt="CTR bars chart"
-                class="h-full w-full rounded-2xl border border-slate-800 bg-slate-950/70"
-            />
-        </section>
-
-        <section class="grid gap-6 md:grid-cols-2">
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-50">Итоги A/B</h3>
-                <dl class="mt-4 space-y-3 text-sm text-slate-300">
-                    @foreach ($summary as $row)
-                        <div class="grid grid-cols-2 items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
-                            <dt class="font-semibold text-slate-100">Вариант {{ $row['variant'] }}</dt>
-                            <dd class="text-right text-sm text-slate-400">CTR {{ number_format($row['ctr'], 2) }}%</dd>
-                            <dd class="col-span-2 text-xs text-slate-500">Imps: {{ number_format($row['impressions']) }} • Clicks: {{ number_format($row['clicks']) }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-50">Клики по площадкам</h3>
-                <div class="mt-4 space-y-3 text-sm text-slate-300">
-                    @forelse ($placements as $row)
-                        <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
-                            <span class="font-medium text-slate-100">{{ $row['placement'] ?? '—' }}</span>
-                            <span class="text-slate-400">{{ number_format($row['clicks']) }} кликов</span>
-                        </div>
-                    @empty
-                        <p class="text-sm text-slate-400">Нет данных о кликах за выбранный период.</p>
-                    @endforelse
-                </div>
-            </div>
-        </section>
-
-        <section class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-            <h3 class="text-lg font-semibold text-slate-50">Фуннели</h3>
-            <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ($funnels as $funnel)
-                    <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-                        <p class="text-sm font-semibold uppercase tracking-wide text-slate-400">{{ $funnel['label'] }}</p>
-                        <p class="mt-3 text-2xl font-semibold text-slate-50">{{ number_format($funnel['ctr'], 2) }}%</p>
-                        <p class="mt-2 text-xs text-slate-500">Imps: {{ number_format($funnel['impressions']) }}</p>
-                        <p class="text-xs text-slate-500">Clicks: {{ number_format($funnel['clicks']) }}</p>
-                        <p class="text-xs text-slate-500">Views: {{ number_format($funnel['views']) }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </section>
+    <div class="grid gap-6 lg:grid-cols-2">
+      <x-filament::card>
+        <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.daily_heading') }}</h3>
+        <div class="mt-4 overflow-x-auto" @if($lineSvg) wire:ignore @endif>
+          @if($lineSvg)
+            <div class="min-w-full" aria-hidden="true">{!! $lineSvg !!}</div>
+          @else
+            <div class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+          @endif
+        </div>
+      </x-filament::card>
+      <x-filament::card>
+        <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.charts.placements_heading') }}</h3>
+        <div class="mt-4 overflow-x-auto" @if($barsSvg) wire:ignore @endif>
+          @if($barsSvg)
+            <div class="min-w-full" aria-hidden="true">{!! $barsSvg !!}</div>
+          @else
+            <div class="text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+          @endif
+        </div>
+      </x-filament::card>
     </div>
+
+    <x-filament::card>
+      <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.placement_clicks.heading') }}</h3>
+      @if(empty($placementClicks))
+        <div class="mt-2 text-sm text-gray-400">{{ __('admin.ctr.no_data') }}</div>
+      @else
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-left text-sm text-gray-200">
+            <thead class="uppercase text-xs text-gray-400">
+              <tr>
+                <th class="px-2 py-1">{{ __('admin.ctr.placement_clicks.placement') }}</th>
+                <th class="px-2 py-1">{{ __('admin.ctr.placement_clicks.clicks') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach($placementClicks as $name => $value)
+                <tr class="border-t border-gray-700/40">
+                  <td class="px-2 py-1 font-semibold">{{ $placementOptions[$name] ?? ucfirst($name) }}</td>
+                  <td class="px-2 py-1">{{ number_format($value) }}</td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      @endif
+    </x-filament::card>
+
+    <x-filament::card>
+      <h3 class="text-lg font-semibold text-white">{{ __('admin.ctr.funnels.heading') }}</h3>
+      <div class="text-sm text-gray-400">{{ __('admin.funnel.period', ['from' => $from, 'to' => $to]) }}</div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full text-left text-sm text-gray-200">
+          <thead class="uppercase text-xs text-gray-400">
+            <tr>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.placement') }}</th>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.imps') }}</th>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.clicks') }}</th>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.views') }}</th>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.ctr') }}</th>
+              <th class="px-2 py-1">{{ __('admin.funnel.headers.view_rate') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($funnels as $row)
+              <tr class="border-t border-gray-700/40">
+                <td class="px-2 py-1 font-semibold">{{ $row['label'] }}</td>
+                <td class="px-2 py-1">{{ number_format($row['imps']) }}</td>
+                <td class="px-2 py-1">{{ number_format($row['clicks']) }}</td>
+                <td class="px-2 py-1">{{ number_format($row['views']) }}</td>
+                <td class="px-2 py-1">{{ number_format($row['ctr'], 2) }}</td>
+                <td class="px-2 py-1">{{ number_format($row['view_rate'], 2) }}</td>
+              </tr>
+            @empty
+              <tr>
+                <td class="px-2 py-2 text-sm text-gray-400" colspan="6">{{ __('admin.ctr.no_data') }}</td>
+              </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </x-filament::card>
+  </div>
 </x-filament-panels::page>

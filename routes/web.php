@@ -26,7 +26,9 @@ Route::get('/works', function () {
 })->name('works');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
+    Route::permanentRedirect('/ctr', '/analytics/ctr')->name('ctr');
     Route::get('/ctr.svg', [CtrSvgController::class, 'line'])->name('ctr.svg');
     Route::get('/ctr/bars.svg', [CtrSvgBarsController::class, 'bars'])->name('ctr.bars.svg');
+    Route::permanentRedirect('/metrics', '/analytics/queue')->name('metrics');
     Route::get('/ssr/issues', SsrIssuesController::class)->name('ssr.issues');
 });

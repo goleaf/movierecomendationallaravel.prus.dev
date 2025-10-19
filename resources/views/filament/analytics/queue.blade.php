@@ -1,65 +1,54 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        <section class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Jobs</p>
-                <p class="mt-3 text-3xl font-semibold text-slate-50">{{ number_format($queueCount) }}</p>
-                <p class="mt-2 text-xs text-slate-500">Активные задания в очереди</p>
-            </div>
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Failed</p>
-                <p class="mt-3 text-3xl font-semibold text-slate-50">{{ number_format($failedCount) }}</p>
-                <p class="mt-2 text-xs text-slate-500">Ошибок обработки</p>
-            </div>
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Batches</p>
-                <p class="mt-3 text-3xl font-semibold text-slate-50">{{ number_format($processedCount) }}</p>
-                <p class="mt-2 text-xs text-slate-500">Обработанные батчи</p>
-            </div>
-        </section>
+  <div class="space-y-6">
+    <x-filament::card>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-white">{{ __('admin.metrics.heading') }}</h3>
+        <button type="button" wire:click="refreshData" class="inline-flex items-center rounded-lg border border-primary-500 px-3 py-1 text-xs font-semibold text-primary-200 hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
+          {{ __('admin.metrics.refresh') }}
+        </button>
+      </div>
+      <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-gray-900/40 p-4">
+          <dt class="text-xs uppercase tracking-wide text-gray-400">{{ __('admin.metrics.labels.jobs') }}</dt>
+          <dd class="mt-2 text-2xl font-semibold text-white">{{ number_format($jobs) }}</dd>
+        </div>
+        <div class="rounded-lg bg-gray-900/40 p-4">
+          <dt class="text-xs uppercase tracking-wide text-gray-400">{{ __('admin.metrics.labels.failed') }}</dt>
+          <dd class="mt-2 text-2xl font-semibold @if($failed > 0) text-danger-400 @else text-emerald-400 @endif">{{ number_format($failed) }}</dd>
+        </div>
+        <div class="rounded-lg bg-gray-900/40 p-4">
+          <dt class="text-xs uppercase tracking-wide text-gray-400">{{ __('admin.metrics.labels.batches') }}</dt>
+          <dd class="mt-2 text-2xl font-semibold text-white">{{ number_format($batches) }}</dd>
+        </div>
+      </dl>
+    </x-filament::card>
 
-        <section class="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-sm">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h3 class="text-lg font-semibold text-slate-50">Laravel Horizon</h3>
-                <button
-                    type="button"
-                    wire:click="refreshMetrics"
-                    class="inline-flex items-center justify-center rounded-xl border border-sky-500 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-500/20"
-                >
-                    Обновить
-                </button>
+    <x-filament::card>
+      <h3 class="text-lg font-semibold text-white">{{ __('admin.metrics.horizon.heading') }}</h3>
+      @if($horizon['workload'] || $horizon['supervisors'])
+        <div class="mt-4 grid gap-6 lg:grid-cols-2">
+          @if($horizon['workload'])
+            <div>
+              <h4 class="text-sm font-semibold text-gray-200">{{ __('admin.metrics.horizon.workload') }}</h4>
+              <div class="mt-2 rounded-lg bg-gray-900/40 p-4 text-xs text-gray-200">
+                <pre class="whitespace-pre-wrap break-all">{{ json_encode($horizon['workload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+              </div>
             </div>
-
-            <div class="mt-6 space-y-6">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Workload</p>
-                    @if (!empty($horizon['workload']))
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            @foreach ($horizon['workload'] as $queue => $count)
-                                <div class="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-                                    <p class="text-sm font-medium text-slate-100">{{ $queue }}</p>
-                                    <p class="mt-1 text-sm text-slate-400">{{ number_format($count) }} в обработке</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="mt-3 text-sm text-slate-400">Данные Horizon недоступны.</p>
-                    @endif
-                </div>
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Supervisors</p>
-                    @if (!empty($horizon['supervisors']))
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            @foreach ($horizon['supervisors'] as $supervisor)
-                                <span class="inline-flex items-center rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-200">{{ $supervisor }}</span>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="mt-3 text-sm text-slate-400">Супервайзеры не подключены.</p>
-                    @endif
-                </div>
+          @endif
+          @if($horizon['supervisors'])
+            <div>
+              <h4 class="text-sm font-semibold text-gray-200">{{ __('admin.metrics.horizon.supervisors') }}</h4>
+              <ul class="mt-2 space-y-1 text-sm text-gray-300">
+                @foreach($horizon['supervisors'] as $supervisor)
+                  <li class="rounded bg-gray-900/40 px-3 py-2">{{ $supervisor }}</li>
+                @endforeach
+              </ul>
             </div>
-        </section>
-    </div>
+          @endif
+        </div>
+      @else
+        <div class="text-sm text-gray-400">{{ __('admin.metrics.horizon.empty') }}</div>
+      @endif
+    </x-filament::card>
+  </div>
 </x-filament-panels::page>

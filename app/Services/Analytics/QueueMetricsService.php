@@ -4,24 +4,28 @@ namespace App\Services\Analytics;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Schema;
 
 class QueueMetricsService
 {
     /**
      * @return array{
-     *     queue: int,
+     *     jobs: int,
      *     failed: int,
-     *     processed: int,
-     *     horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null}
+     *     batches: int,
+     *     horizon: array{workload: array<string, string>|null, supervisors: array<int, string>|null},
      * }
      */
-    public function getMetrics(): array
+    public function snapshot(): array
     {
-        $queueCount = (int) DB::table('jobs')->count();
-        $failed = (int) DB::table('failed_jobs')->count();
-        $processed = (int) DB::table('job_batches')->count();
+        $jobs = Schema::hasTable('jobs') ? (int) (DB::table('jobs')->count() ?? 0) : 0;
+        $failed = Schema::hasTable('failed_jobs') ? (int) (DB::table('failed_jobs')->count() ?? 0) : 0;
+        $batches = Schema::hasTable('job_batches') ? (int) (DB::table('job_batches')->count() ?? 0) : 0;
 
-        $horizon = ['workload' => null, 'supervisors' => null];
+        $horizon = [
+            'workload' => null,
+            'supervisors' => null,
+        ];
 
         try {
             $workload = Redis::hgetall('horizon:workload');
@@ -35,13 +39,13 @@ class QueueMetricsService
                 $horizon['supervisors'] = $supervisors;
             }
         } catch (\Throwable) {
-            // Ignore Redis connection issues for this panel.
+            // Horizon might not be configured locally.
         }
 
         return [
-            'queue' => $queueCount,
+            'jobs' => $jobs,
             'failed' => $failed,
-            'processed' => $processed,
+            'batches' => $batches,
             'horizon' => $horizon,
         ];
     }
