@@ -22,7 +22,7 @@ Route::middleware('noindex')->group(function (): void {
 
 Route::fallback(function (Request $request) {
     if ($request->expectsJson() || $request->is('api/*')) {
-        return response()->json(ExceptionHandler::formatErrorResponse(404), 404);
+        return response()->json(ExceptionHandler::formatErrorResponse($request, 404), 404);
     }
 
     abort(404);
