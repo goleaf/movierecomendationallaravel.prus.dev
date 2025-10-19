@@ -10,7 +10,7 @@ MovieRec bundles every feature shipped across the previous MovieRec releases int
 
 - [TODO backlog](TODO.md) — domain-grouped analytics, observability, and infrastructure backlog
 - [Works log](WORKS.md)
-- [MCP & Boost playbook](docs/mcp-tooling.md)
+- [Feature catalog](docs/features.md)
 
 ---
 
