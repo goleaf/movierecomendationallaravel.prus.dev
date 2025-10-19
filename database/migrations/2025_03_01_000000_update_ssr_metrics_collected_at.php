@@ -6,7 +6,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Throwable;
 
 return new class extends Migration
 {
@@ -94,14 +93,14 @@ return new class extends Migration
             Schema::table('ssr_metrics', function (Blueprint $table): void {
                 try {
                     $table->dropIndex('ssr_metrics_collected_at_index');
-                } catch (Throwable) {
+                } catch (\Throwable) {
                     // Index already removed.
                 }
 
                 if (Schema::hasColumn('ssr_metrics', 'path')) {
                     try {
                         $table->dropIndex('ssr_metrics_path_collected_at_index');
-                    } catch (Throwable) {
+                    } catch (\Throwable) {
                         // Index already removed.
                     }
                 }
