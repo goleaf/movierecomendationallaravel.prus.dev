@@ -6,8 +6,6 @@ namespace App\Support;
 
 use Closure;
 use DateTimeInterface;
-use Illuminate\Cache\TaggedCache;
-use Illuminate\Support\Facades\Cache;
 
 class AnalyticsCache
 {
@@ -18,6 +16,8 @@ class AnalyticsCache
     private const TAG_TRENDS = 'analytics:trends';
 
     private const TAG_TRENDING = 'analytics:trending';
+
+    public function __construct(private readonly MetricsCache $cache) {}
 
     public function rememberCtr(string $segment, array $parameters, Closure $resolver): mixed
     {
@@ -36,33 +36,24 @@ class AnalyticsCache
 
     public function flushCtr(): void
     {
-        $this->tags(self::TAG_CTR)->flush();
+        $this->cache->flush(self::TAG_CTR);
     }
 
     public function flushTrends(): void
     {
-        $this->tags(self::TAG_TRENDS)->flush();
+        $this->cache->flush(self::TAG_TRENDS);
     }
 
     public function flushTrending(): void
     {
-        $this->tags(self::TAG_TRENDING)->flush();
+        $this->cache->flush(self::TAG_TRENDING);
     }
 
     private function remember(string $tag, string $segment, array $parameters, Closure $resolver): mixed
     {
         $key = $this->buildKey($segment, $parameters);
 
-        return $this->tags($tag)->remember(
-            $key,
-            now()->addSeconds(self::TTL_SECONDS),
-            $resolver
-        );
-    }
-
-    private function tags(string $tag): TaggedCache
-    {
-        return Cache::store('redis')->tags([$tag]);
+        return $this->cache->remember($tag, $key, self::TTL_SECONDS, $resolver);
     }
 
     private function buildKey(string $segment, array $parameters): string
