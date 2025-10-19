@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             MovieSeeder::class,
+            IngestionRunSeeder::class,
             RecAbLogSeeder::class,
             RecClickSeeder::class,
             DeviceHistorySeeder::class,
