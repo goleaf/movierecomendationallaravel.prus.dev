@@ -18,7 +18,7 @@
                         @if ($movie->poster_url)
                             <img
                                 src="{{ $movie->poster_url }}"
-                                alt="{{ $movie->title }}"
+                                alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
                             />
@@ -55,7 +55,7 @@
                         @if ($movie->poster_url)
                             <img
                                 src="{{ $movie->poster_url }}"
-                                alt="{{ $movie->title }}"
+                                alt="{{ $movie->title ? 'Постер фильма «' . $movie->title . '»' : 'Постер фильма' }}"
                                 loading="lazy"
                                 class="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
                             />
