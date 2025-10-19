@@ -70,10 +70,12 @@ return [
                 'today' => 'Сегодня',
                 'delta' => 'Δ',
             ],
+            'empty' => 'Регрессий SSR за выбранный период не обнаружено.',
         ],
         'ssr_score' => [
             'heading' => 'Тренд SSR Score',
             'dataset' => 'SSR score',
+            'date_column' => 'Дата',
         ],
         'images' => [
             'ctr_line_alt' => 'График CTR (линии)',

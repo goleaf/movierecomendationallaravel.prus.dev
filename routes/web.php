@@ -8,6 +8,7 @@ use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SearchPageController;
+use App\Http\Controllers\SsrDashboardController;
 use App\Http\Controllers\SsrIssuesController;
 use App\Livewire\HomePage;
 use App\Livewire\TrendsPage;
@@ -35,6 +36,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/ctr.svg', [CtrSvgController::class, 'line'])->name('ctr.svg');
     Route::get('/ctr/bars.svg', [CtrSvgBarsController::class, 'bars'])->name('ctr.bars.svg');
     Route::permanentRedirect('/metrics', '/analytics/queue')->name('metrics');
+    Route::get('/analytics/ssr', SsrDashboardController::class)->name('analytics.ssr');
     Route::get('/ssr/issues', SsrIssuesController::class)->name('ssr.issues');
 });
 

@@ -28,4 +28,14 @@ class SsrMetric extends Model
     protected $table = 'ssr_metrics';
 
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'insights' => 'array',
+        ];
+    }
 }

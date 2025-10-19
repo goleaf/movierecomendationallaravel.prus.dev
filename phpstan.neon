@@ -8,6 +8,7 @@ parameters:
         - config
     bootstrapFiles:
         - app/Support/TypeAssert.php
+        - app/Support/helpers.php
     inferPrivatePropertyTypeFromConstructor: true
     checkMissingIterableValueType: true
     checkGenericClassInNonGenericObjectType: true

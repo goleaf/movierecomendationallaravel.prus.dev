@@ -70,10 +70,12 @@ return [
                 'today' => 'Today',
                 'delta' => 'Δ',
             ],
+            'empty' => 'No SSR regressions detected for the selected window.',
         ],
         'ssr_score' => [
             'heading' => 'SSR Score (trend)',
             'dataset' => 'SSR score',
+            'date_column' => 'Date',
         ],
         'images' => [
             'ctr_line_alt' => 'CTR line chart',
