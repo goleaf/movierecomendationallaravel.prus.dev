@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Panel;
 use Filament\PanelProvider;
+use TomatoPHP\FilamentLocations\FilamentLocationsPlugin;
 
 class AnalyticsPanelProvider extends PanelProvider
 {
@@ -30,6 +31,7 @@ class AnalyticsPanelProvider extends PanelProvider
                 \App\Filament\Widgets\SsrScoreWidget::class,
                 \App\Filament\Widgets\SsrDropWidget::class,
             ])
+            ->plugin(FilamentLocationsPlugin::make())
             ->pages([
                 \App\Filament\Pages\Analytics\CtrPage::class,
                 \App\Filament\Pages\Analytics\TrendsPage::class,
