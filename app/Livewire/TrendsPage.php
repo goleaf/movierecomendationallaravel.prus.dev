@@ -1,22 +1,19 @@
 <?php
 
-namespace App\Filament\Pages\Analytics;
+namespace App\Livewire;
 
 use App\Support\TrendingService;
-use Filament\Pages\Page;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
+use Livewire\Component;
 
-class TrendsAdvancedPage extends Page
+#[Layout('layouts.app')]
+#[Title('Тренды рекомендаций')]
+class TrendsPage extends Component
 {
-    protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-
-    protected static string $view = 'filament.analytics.trends_advanced';
-
-    protected static ?string $navigationLabel = 'Trends (Advanced)';
-
-    protected static ?string $navigationGroup = 'Analytics';
-
     #[Url(as: 'days')]
     public int $days = 7;
 
@@ -41,8 +38,10 @@ class TrendsAdvancedPage extends Page
 
     public string $toDate = '';
 
+    public string $metaDescription = 'Следите за трендами рекомендаций и динамикой кликов.';
+
     public array $availableTypes = [
-        '' => 'Любой тип',
+        '' => 'Тип контента',
         'movie' => 'Фильмы',
         'series' => 'Сериалы',
         'animation' => 'Мультфильмы',
@@ -50,14 +49,19 @@ class TrendsAdvancedPage extends Page
 
     public function mount(TrendingService $service): void
     {
-        $this->items = collect();
-        $this->refreshResults($service);
+        $this->normalize();
+        $this->loadItems($service);
     }
 
     public function applyFilters(): void
     {
         $this->normalize();
-        $this->refreshResults(app(TrendingService::class));
+        $this->loadItems(app(TrendingService::class));
+    }
+
+    public function render(): View
+    {
+        return view('livewire.trends-page');
     }
 
     protected function normalize(): void
@@ -65,11 +69,12 @@ class TrendsAdvancedPage extends Page
         $this->days = max(1, min(30, (int) $this->days));
         $this->type = trim($this->type);
         $this->genre = trim($this->genre);
+
         $this->yf = $this->yf !== null ? max(0, (int) $this->yf) : null;
         $this->yt = $this->yt !== null ? max(0, (int) $this->yt) : null;
     }
 
-    protected function refreshResults(TrendingService $service): void
+    protected function loadItems(TrendingService $service): void
     {
         [$this->fromDate, $this->toDate] = $service->rangeDates($this->days);
 
