@@ -2,31 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Http\Resources\SearchResultCollection;
 use App\Models\Movie;
+use App\Support\MovieSearchFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SearchPageController extends Controller
 {
-    /** @return View|SearchResultCollection|JsonResponse */
-    public function __invoke(Request $r)
+    public function __invoke(Request $request): View|SearchResultCollection|JsonResponse
     {
-        $q=trim((string)$r->query('q',''));
-        $type=$r->query('type'); $genre=$r->query('genre');
-        $yf=(int)$r->query('yf',0); $yt=(int)$r->query('yt',0);
+        $filters = MovieSearchFilters::fromRequest($request);
 
-        $query=Movie::query();
-        if($q!=='') $query->where(fn($w)=>$w->where('title','like',"%$q%")->orWhere('imdb_tt',$q));
-        if($type) $query->where('type',$type);
-        if($genre) $query->whereJsonContains('genres',$genre);
-        if($yf) $query->where('year','>=',$yf);
-        if($yt) $query->where('year','<=',$yt);
+        $items = $filters
+            ->apply(Movie::query())
+            ->orderByDesc('imdb_votes')
+            ->orderByDesc('imdb_rating')
+            ->limit(40)
+            ->get();
 
-        $items=$query->orderByDesc('imdb_votes')->orderByDesc('imdb_rating')->limit(40)->get();
+        if ($request->wantsJson()) {
+            return new SearchResultCollection($items);
+        }
 
-        if($r->wantsJson()) return new SearchResultCollection($items);
-        return view('search.index',['q'=>$q,'items'=>$items,'type'=>$type,'genre'=>$genre,'yf'=>$yf,'yt'=>$yt]);
+        return view('search.index', array_merge(
+            ['items' => $items],
+            $filters->toViewData(),
+        ));
     }
 }
