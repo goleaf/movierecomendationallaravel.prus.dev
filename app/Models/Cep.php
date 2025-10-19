@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Support\CepFormatter;
@@ -8,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cep extends Model
 {
+    /** @use HasFactory<\Database\Factories\CepFactory> */
     use HasFactory;
 
     protected $table = 'cep';
@@ -18,6 +21,9 @@ class Cep extends Model
 
     protected $keyType = 'string';
 
+    /**
+     * @var array<int, string>
+     */
     protected $fillable = [
         'cep',
         'state',
@@ -26,6 +32,9 @@ class Cep extends Model
         'street',
     ];
 
+    /**
+     * @var array<string, string>
+     */
     protected $casts = [
         'cep' => 'string',
         'state' => 'string',

@@ -26,7 +26,7 @@ use Kirschbaum\Commentions\HasComments;
  * @property string|null $poster_url
  * @property string|null $backdrop_url
  * @property array{title?: array<string, string>, plot?: array<string, string>}|null $translations
- * @property array|null $raw
+ * @property array<string, mixed>|null $raw
  * @property-read float $weighted_score
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecAbLog> $recAbLogs
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecClick> $recClicks
@@ -35,6 +35,8 @@ use Kirschbaum\Commentions\HasComments;
 class Movie extends Model implements Commentable
 {
     use HasComments;
+
+    /** @use HasFactory<\Database\Factories\MovieFactory> */
     use HasFactory;
 
     /**
@@ -79,6 +81,9 @@ class Movie extends Model implements Commentable
 
     protected $guarded = [];
 
+    /**
+     * @var array<int, string>
+     */
     protected $appends = ['weighted_score'];
 
     protected function casts(): array
@@ -94,6 +99,9 @@ class Movie extends Model implements Commentable
         ];
     }
 
+    /**
+     * @param  array<int, string>|string|null  $value
+     */
     public function setGenresAttribute(array|string|null $value): void
     {
         if ($value === null) {
@@ -126,19 +134,37 @@ class Movie extends Model implements Commentable
         return round($weighted, 4);
     }
 
+    /**
+     * @return HasMany<RecAbLog, static>
+     */
     public function recAbLogs(): HasMany
     {
-        return $this->hasMany(RecAbLog::class);
+        /** @var HasMany<RecAbLog, static> $relation */
+        $relation = $this->hasMany(RecAbLog::class);
+
+        return $relation;
     }
 
+    /**
+     * @return HasMany<RecClick, static>
+     */
     public function recClicks(): HasMany
     {
-        return $this->hasMany(RecClick::class);
+        /** @var HasMany<RecClick, static> $relation */
+        $relation = $this->hasMany(RecClick::class);
+
+        return $relation;
     }
 
+    /**
+     * @return HasMany<DeviceHistory, static>
+     */
     public function deviceHistory(): HasMany
     {
-        return $this->hasMany(DeviceHistory::class);
+        /** @var HasMany<DeviceHistory, static> $relation */
+        $relation = $this->hasMany(DeviceHistory::class);
+
+        return $relation;
     }
 
     /**
@@ -157,6 +183,7 @@ class Movie extends Model implements Commentable
     }
 
     /**
+     * @param  array<int, string>|string  $value
      * @return array<int, string>
      */
     private function normalizeGenres(array|string $value): array
@@ -170,10 +197,6 @@ class Movie extends Model implements Commentable
         $normalized = [];
 
         foreach ($genres as $genre) {
-            if (! is_string($genre)) {
-                continue;
-            }
-
             foreach ($this->mapGenre($genre) as $mapped) {
                 if ($mapped === '') {
                     continue;
