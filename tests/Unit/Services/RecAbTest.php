@@ -140,13 +140,12 @@ class RecAbTest extends TestCase
 
         $expectedOrder = $movies
             ->mapWithKeys(function (Movie $movie) use ($weights) {
-                $popularity = ((float) ($movie->imdb_rating ?? 0)) / 10
-                    * (max(0.0, (float) log10(($movie->imdb_votes ?? 0) + 1)) / 6);
+                $popularity = $movie->weighted_score / 10.0;
                 $recency = $movie->year
                     ? max(0.0, (5 - (now()->year - (int) $movie->year)) / 5)
                     : 0.0;
 
-                $score = $weights['pop'] * $popularity + $weights['recent'] * $recency;
+                $score = ($weights['pop'] * $popularity) + ($weights['recent'] * $recency);
 
                 return [$movie->id => $score];
             })

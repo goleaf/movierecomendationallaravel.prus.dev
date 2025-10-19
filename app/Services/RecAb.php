@@ -71,12 +71,17 @@ class RecAb
         $W = config("recs.$variant", ['pop' => 0.5, 'recent' => 0.2, 'pref' => 0.3]);
         $movies = Movie::query()->orderByDesc('imdb_votes')->limit(200)->get();
 
-        return $movies->map(function (Movie $m) use ($W) {
-            $pop = ((float) ($m->imdb_rating ?? 0)) / 10 * (max(0.0, (float) log10(($m->imdb_votes ?? 0) + 1)) / 6);
-            $recent = $m->year ? max(0.0, (5 - (now()->year - (int) $m->year))) / 5.0 : 0.0;
-            $score = $W['pop'] * $pop + $W['recent'] * $recent + $W['pref'] * 0.0;
+        $currentYear = now()->year;
 
-            return ['m' => $m, 's' => $score];
+        return $movies->map(function (Movie $movie) use ($W, $currentYear) {
+            $weightedScore = $movie->weighted_score;
+            $popularity = $weightedScore / 10.0;
+            $recency = $movie->year
+                ? max(0.0, (5 - ($currentYear - (int) $movie->year))) / 5.0
+                : 0.0;
+            $score = ($W['pop'] * $popularity) + ($W['recent'] * $recency) + ($W['pref'] * 0.0);
+
+            return ['m' => $movie, 's' => $score];
         })->sortByDesc('s')->pluck('m')->take($limit);
     }
 }
