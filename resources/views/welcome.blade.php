@@ -20,11 +20,11 @@
         <meta property="og:title" content="{{ $appName }}">
         <meta property="og:description" content="{{ $appDescription }}">
         <meta property="og:url" content="{{ url()->current() }}">
-        <meta property="og:image" content="{{ asset('img/og_default.jpg') }}">
+        <meta property="og:image" content="{{ asset('img/og-default.svg') }}">
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="{{ $appName }}">
         <meta name="twitter:description" content="{{ $appDescription }}">
-        <meta name="twitter:image" content="{{ asset('img/og_default.jpg') }}">
+        <meta name="twitter:image" content="{{ asset('img/og-default.svg') }}">
         <script nonce="{{ csp_nonce() }}" type="application/ld+json">{!! json_encode([
             '@context' => 'https://schema.org',
             '@type' => 'WebSite',

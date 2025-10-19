@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\NoIndex;
+use Filament\Http\Middleware\Authenticate;
 use Filament\Panel;
 use Filament\PanelProvider;
 use TomatoPHP\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
@@ -16,8 +18,16 @@ final class AnalyticsPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         $panel = $panel
+            ->default()
             ->id('analytics')
             ->path('analytics')
+            ->middleware([
+                'web',
+                NoIndex::class,
+            ])
+            ->authMiddleware([
+                Authenticate::class,
+            ])
             ->brandName('Analytics')
             ->navigationGroups([
                 'Catalog',

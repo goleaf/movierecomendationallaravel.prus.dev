@@ -31,6 +31,8 @@
     <meta property="og:locale" content="{{ $htmlLocale }}">
     @if($siteSettings->og_image)
         <meta property="og:image" content="{{ asset("storage/" . $siteSettings->og_image) }}">
+    @else
+        <meta property="og:image" content="{{ asset('img/og-default.svg') }}">
     @endif
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ $siteSettings->name }}">
@@ -38,6 +40,8 @@
     <meta name="twitter:description" content="{{ $siteSettings->description }}">
     @if($siteSettings->og_image)
         <meta name="twitter:image" content="{{ asset("storage/" . $siteSettings->og_image) }}">
+    @else
+        <meta name="twitter:image" content="{{ asset('img/og-default.svg') }}">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

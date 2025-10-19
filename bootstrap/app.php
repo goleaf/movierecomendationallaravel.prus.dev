@@ -7,6 +7,7 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AttachRequestContext;
 use App\Http\Middleware\EnsureDeviceCookie;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\SsrMetricsMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -29,6 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureDeviceCookie::class);
         $middleware->prepend(AttachRequestContext::class);
+
+        $middleware->alias([
+            'noindex' => NoIndex::class,
+        ]);
 
         $middleware->append(AddCspHeaders::class);
         $middleware->append(AddSecurityHeaders::class);
