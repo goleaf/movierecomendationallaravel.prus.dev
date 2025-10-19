@@ -54,7 +54,7 @@ class QueuePage extends Page
      */
     protected function getHeaderActions(): array
     {
-        if (! $this->canManageHorizonQueues()) {
+        if (! $this->canManageHorizonQueues() || ! $this->horizonIsAvailable()) {
             return [];
         }
 
@@ -65,6 +65,8 @@ class QueuePage extends Page
                 ->icon('heroicon-o-pause-circle')
                 ->color('warning')
                 ->requiresConfirmation()
+                ->authorize(fn (): bool => $this->canManageHorizonQueues())
+                ->visible(fn (): bool => $this->horizonIsAvailable())
                 ->action(function (): void {
                     $this->pauseHorizonQueues();
                 }),
@@ -74,6 +76,8 @@ class QueuePage extends Page
                 ->icon('heroicon-o-play-circle')
                 ->color('success')
                 ->requiresConfirmation()
+                ->authorize(fn (): bool => $this->canManageHorizonQueues())
+                ->visible(fn (): bool => $this->horizonIsAvailable())
                 ->action(function (): void {
                     $this->resumeHorizonQueues();
                 }),
