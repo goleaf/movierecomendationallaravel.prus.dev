@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Movie;
+use App\Services\Analytics\TrendsRollupService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,9 +32,16 @@ class TrendsPage extends Component
 
     public Collection $items;
 
+    protected TrendsRollupService $rollup;
+
     public string $from;
 
     public string $to;
+
+    public function boot(TrendsRollupService $rollup): void
+    {
+        $this->rollup = $rollup;
+    }
 
     public function mount(): void
     {
@@ -151,7 +159,47 @@ class TrendsPage extends Component
 
         $items = collect();
 
-        if (Schema::hasTable('rec_clicks')) {
+        $this->rollup->ensureBackfill($fromDate, $toDate);
+
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $query = DB::table('rec_trending_rollups')
+                ->join('movies', 'movies.id', '=', 'rec_trending_rollups.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, sum(rec_trending_rollups.clicks) as clicks')
+                ->whereBetween('rec_trending_rollups.captured_on', [$fromDate->toDateString(), $toDate->toDateString()])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($this->type !== '') {
+                $query->where('movies.type', $this->type);
+            }
+
+            if ($this->genre !== '') {
+                $query->whereJsonContains('movies.genres', $this->genre);
+            }
+
+            if ($this->yf > 0) {
+                $query->where('movies.year', '>=', $this->yf);
+            }
+
+            if ($this->yt > 0) {
+                $query->where('movies.year', '<=', $this->yt);
+            }
+
+            $items = $query->limit(40)->get()->map(static function ($item) {
+                return [
+                    'id' => (int) $item->id,
+                    'title' => $item->title,
+                    'poster_url' => $item->poster_url,
+                    'year' => $item->year,
+                    'type' => $item->type,
+                    'imdb_rating' => $item->imdb_rating,
+                    'imdb_votes' => $item->imdb_votes,
+                    'clicks' => (int) $item->clicks,
+                ];
+            });
+        }
+
+        if ($items->isEmpty() && Schema::hasTable('rec_clicks')) {
             $query = DB::table('rec_clicks')
                 ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')
                 ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, count(*) as clicks')

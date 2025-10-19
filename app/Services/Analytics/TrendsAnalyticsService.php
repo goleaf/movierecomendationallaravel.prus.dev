@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Analytics;
 
 use App\Models\Movie;
+use App\Services\Analytics\TrendsRollupService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class TrendsAnalyticsService
 {
+    public function __construct(private readonly TrendsRollupService $rollup) {}
+
     public function trending(
         int $days,
         string $type = '',
@@ -89,6 +92,39 @@ class TrendsAnalyticsService
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
+        $this->rollup->ensureBackfill($period['from'], $period['to']);
+
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $query = DB::table('rec_trending_rollups')
+                ->join('movies', 'movies.id', '=', 'rec_trending_rollups.movie_id')
+                ->selectRaw('movies.id, movies.title, movies.poster_url, movies.year, movies.type, movies.imdb_rating, movies.imdb_votes, sum(rec_trending_rollups.clicks) as clicks')
+                ->whereBetween('rec_trending_rollups.captured_on', [$period['from']->toDateString(), $period['to']->toDateString()])
+                ->groupBy('movies.id', 'movies.title', 'movies.poster_url', 'movies.year', 'movies.type', 'movies.imdb_rating', 'movies.imdb_votes')
+                ->orderByDesc('clicks');
+
+            if ($filters['type'] !== '') {
+                $query->where('movies.type', $filters['type']);
+            }
+
+            if ($filters['genre'] !== '') {
+                $query->whereJsonContains('movies.genres', $filters['genre']);
+            }
+
+            if ($filters['year_from'] > 0) {
+                $query->where('movies.year', '>=', $filters['year_from']);
+            }
+
+            if ($filters['year_to'] > 0) {
+                $query->where('movies.year', '<=', $filters['year_to']);
+            }
+
+            $items = $query->limit(40)->get();
+
+            if ($items->isNotEmpty()) {
+                return $items;
+            }
+        }
+
         if (Schema::hasTable('rec_clicks')) {
             $query = DB::table('rec_clicks')
                 ->join('movies', 'movies.id', '=', 'rec_clicks.movie_id')

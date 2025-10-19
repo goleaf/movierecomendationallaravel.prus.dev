@@ -68,6 +68,11 @@ class RecommendationLoggerTest extends TestCase
             'variant' => 'A',
         ]);
 
+        $this->assertDatabaseHas('rec_trending_rollups', [
+            'movie_id' => $movie->id,
+            'captured_on' => now()->toDateString(),
+        ]);
+
         $this->assertDatabaseHas('device_history', [
             'device_id' => $deviceId,
             'page' => 'movie',

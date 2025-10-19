@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Movie;
 use App\Services\Recommender;
+use App\Services\Analytics\TrendsRollupService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -59,16 +60,32 @@ class HomeController extends Controller
             return collect();
         }
 
-        $from = now()->subDays(7)->format('Y-m-d 00:00:00');
-        $to = now()->format('Y-m-d 23:59:59');
+        $from = now()->copy()->subDays(7)->startOfDay();
+        $to = now()->endOfDay();
 
-        $top = DB::table('rec_clicks')
-            ->selectRaw('movie_id, count(*) as clicks')
-            ->whereBetween('created_at', [$from, $to])
-            ->groupBy('movie_id')
-            ->orderByDesc('clicks')
-            ->limit(8)
-            ->pluck('clicks', 'movie_id');
+        app(TrendsRollupService::class)->ensureBackfill($from, $to);
+
+        $top = collect();
+
+        if (Schema::hasTable('rec_trending_rollups')) {
+            $top = DB::table('rec_trending_rollups')
+                ->selectRaw('movie_id, sum(clicks) as clicks')
+                ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit(8)
+                ->pluck('clicks', 'movie_id');
+        }
+
+        if ($top->isEmpty()) {
+            $top = DB::table('rec_clicks')
+                ->selectRaw('movie_id, count(*) as clicks')
+                ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+                ->groupBy('movie_id')
+                ->orderByDesc('clicks')
+                ->limit(8)
+                ->pluck('clicks', 'movie_id');
+        }
 
         if ($top->isEmpty()) {
             return collect();
