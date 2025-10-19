@@ -22,7 +22,7 @@
   <div class="grid grid-4" style="margin-top:10px;">
     @foreach($items as $m)
       <a class="card" href="{{ route('movies.show', ['movie'=>$m, 'placement'=>'search', 'variant'=>'search']) }}">
-        @if($m->poster_url)<img src="{{ $m->poster_url }}" alt="{{ $m->title ? 'Постер фильма «' . $m->title . '»' : 'Постер фильма' }}"/>@endif
+        @if($m->poster_url)<img src="{{ proxy_image_url($m->poster_url) ?? $m->poster_url }}" alt="{{ $m->title ? 'Постер фильма «' . $m->title . '»' : 'Постер фильма' }}"/>@endif
         <div><strong>{{ $m->title }}</strong> ({{ $m->year ?? __('messages.common.dash') }})</div>
         <div class="muted">{{ __('messages.common.imdb_with_votes_colon', ['rating' => $m->imdb_rating ?? __('messages.common.dash'), 'votes' => $m->imdb_votes ?? 0]) }}</div>
       </a>

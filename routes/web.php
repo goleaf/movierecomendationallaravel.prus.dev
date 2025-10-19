@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AdminSsrController;
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LandingPageRenderer;
 use App\Http\Controllers\MetricsController;
@@ -32,6 +33,11 @@ Route::get('/metrics', MetricsController::class)->name('metrics');
 
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
+
+Route::get('/images/proxy/{key}', ImageProxyController::class)
+    ->middleware('signed')
+    ->where('key', '[A-Za-z0-9]+')
+    ->name('images.proxy');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemaps.index');
 Route::get('/sitemaps/{type}.xml', [SitemapController::class, 'type'])
