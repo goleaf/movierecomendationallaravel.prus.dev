@@ -125,4 +125,53 @@ return [
         'imdb' => 'IMDb: :rating',
         'votes' => 'Votes: :count',
     ],
+    'experiments' => [
+        'title' => 'Experiments',
+        'weights' => [
+            'heading' => 'Variant B weight mix',
+            'description' => 'Tune the mix between popularity, recency, and personalisation. Values are normalised automatically before saving.',
+            'fields' => [
+                'pop' => 'Popularity weight',
+                'recent' => 'Recency weight',
+                'pref' => 'Personalisation weight',
+            ],
+            'save' => 'Save weights',
+            'sum_label' => 'Normalised sum',
+        ],
+        'filters' => [
+            'heading' => 'Snapshot period',
+            'from' => 'From',
+            'to' => 'To',
+        ],
+        'snapshots' => [
+            'contribution_heading' => 'Daily contribution mix',
+            'weight_heading' => 'Weight change history',
+            'table_heading' => 'Snapshot table',
+            'period' => 'Period: :from — :to',
+            'empty' => 'No snapshots captured for the selected range.',
+            'columns' => [
+                'day' => 'Day',
+                'items' => 'Items',
+                'pop' => 'Popularity',
+                'recent' => 'Recency',
+                'pref' => 'Personalisation',
+                'score' => 'Total',
+                'weights' => 'Weights (pop / recency / personalisation)',
+            ],
+            'labels' => [
+                'pop' => 'Popularity score',
+                'recent' => 'Recency score',
+                'pref' => 'Personalisation score',
+                'pop_weight' => 'Popularity weight',
+                'recent_weight' => 'Recency weight',
+                'pref_weight' => 'Personalisation weight',
+            ],
+            'contribution_chart_title' => 'Daily contribution mix',
+            'weight_chart_title' => 'Weight adjustments',
+        ],
+        'notifications' => [
+            'saved' => 'Variant B weights updated.',
+            'invalid' => 'Weights must be greater than zero.',
+        ],
+    ],
 ];

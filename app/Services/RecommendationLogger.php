@@ -16,7 +16,9 @@ class RecommendationLogger
     public function __construct(
         protected ConnectionInterface $db,
         protected TrendsRollupService $trendsRollup,
-    ) {}
+        protected RecommendationSnapshotService $snapshots,
+    ) {
+    }
 
     /**
      * @param  Collection<int,Movie>  $movies
@@ -29,9 +31,17 @@ class RecommendationLogger
             $rows = $movies
                 ->values()
                 ->map(function (Movie $movie, int $index) use ($deviceId, $variant, $placement, $now): array {
-                    $payload = json_encode([
-                        'position' => $index + 1,
-                    ]);
+                    $payloadData = ['position' => $index + 1];
+                    $scores = $movie->getAttribute('rec_variant_scores');
+                    if (is_array($scores)) {
+                        $payloadData['scores'] = $scores;
+                    }
+                    $weights = $movie->getAttribute('rec_variant_weights');
+                    if (is_array($weights)) {
+                        $payloadData['weights'] = $weights;
+                    }
+
+                    $payload = json_encode($payloadData);
 
                     return [
                         'device_id' => $deviceId,
@@ -49,6 +59,8 @@ class RecommendationLogger
                 $this->db->table('rec_ab_logs')->insert($rows);
             }
         }
+
+        $this->snapshots->record($variant, $movies);
 
         $this->recordPageView($deviceId, $placement, null, $now);
     }
