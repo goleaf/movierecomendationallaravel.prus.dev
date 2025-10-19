@@ -15,8 +15,8 @@
         "predis/predis": "^3.2",
         "spatie/laravel-settings": "^3.0",
         "symfony/uid": "^7.3",
-        "tightenco/ziggy": "^2.5",
-        "tomatophp/filament-helpers": "*"
+        "tomatophp/filament-helpers": "*",
+        "zpmlabs/filament-api-docs-builder": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

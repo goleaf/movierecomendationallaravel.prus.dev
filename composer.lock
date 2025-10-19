@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f78766225968cda0f4adb41ac6d624eb",
+    "content-hash": "c13f81c3e1ad5bd524a051d02b70f97b",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8612,41 +8612,38 @@
             "time": "2025-09-11T10:12:26+00:00"
         },
         {
-            "name": "tightenco/ziggy",
-            "version": "v2.6.0",
+            "name": "tempest/highlight",
+            "version": "2.13.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/tighten/ziggy.git",
-                "reference": "cccc6035c109daab03a33926b3a8499bedbed01f"
+                "url": "https://github.com/tempestphp/highlight.git",
+                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tighten/ziggy/zipball/cccc6035c109daab03a33926b3a8499bedbed01f",
-                "reference": "cccc6035c109daab03a33926b3a8499bedbed01f",
+                "url": "https://api.github.com/repos/tempestphp/highlight/zipball/b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
+                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
                 "shasum": ""
             },
             "require": {
-                "ext-json": "*",
-                "laravel/framework": ">=9.0",
-                "php": ">=8.1"
+                "php": "^8.4"
             },
             "require-dev": {
-                "laravel/folio": "^1.1",
-                "orchestra/testbench": "^7.0 || ^8.0 || ^9.0 || ^10.0",
-                "pestphp/pest": "^2.26|^3.0",
-                "pestphp/pest-plugin-laravel": "^2.4|^3.0"
+                "assertchris/ellison": "^1.0.2",
+                "friendsofphp/php-cs-fixer": "^3.84",
+                "league/commonmark": "^2.4",
+                "phpstan/phpstan": "^1.12.0",
+                "phpunit/phpunit": "^10.0",
+                "symfony/var-dumper": "^6.4|^7.0"
+            },
+            "suggest": {
+                "assertchris/ellison": "Allows you to analyse sentence complexity",
+                "league/commonmark": "Adds markdown support"
             },
             "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Tighten\\Ziggy\\ZiggyServiceProvider"
-                    ]
-                }
-            },
             "autoload": {
                 "psr-4": {
-                    "Tighten\\Ziggy\\": "src/"
+                    "Tempest\\Highlight\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -8655,31 +8652,22 @@
             ],
             "authors": [
                 {
-                    "name": "Daniel Coulbourne",
-                    "email": "daniel@tighten.co"
-                },
-                {
-                    "name": "Jake Bathman",
-                    "email": "jake@tighten.co"
-                },
-                {
-                    "name": "Jacob Baker-Kretzmar",
-                    "email": "jacob@tighten.co"
+                    "name": "Brent Roose",
+                    "email": "brendt@stitcher.io"
                 }
             ],
-            "description": "Use your Laravel named routes in JavaScript.",
-            "homepage": "https://github.com/tighten/ziggy",
-            "keywords": [
-                "Ziggy",
-                "javascript",
-                "laravel",
-                "routes"
-            ],
+            "description": "Fast, extensible, server-side code highlighting",
             "support": {
-                "issues": "https://github.com/tighten/ziggy/issues",
-                "source": "https://github.com/tighten/ziggy/tree/v2.6.0"
+                "issues": "https://github.com/tempestphp/highlight/issues",
+                "source": "https://github.com/tempestphp/highlight/tree/2.13.1"
             },
-            "time": "2025-09-15T00:00:26+00:00"
+            "funding": [
+                {
+                    "url": "https://github.com/brendt",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-07-18T12:38:05+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
