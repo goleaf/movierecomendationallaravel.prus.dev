@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Settings\RecommendationWeightsSettings;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
 return new class extends SettingsMigration
 {
     public function up(): void
     {
-        $this->migrator->add('recommendation-weights.A', config('recs.A', []));
-        $this->migrator->add('recommendation-weights.B', config('recs.B', []));
-        $this->migrator->add('recommendation-weights.ab_split', config('recs.ab_split', ['A' => 50.0, 'B' => 50.0]));
-        $this->migrator->add('recommendation-weights.seed', config('recs.seed'));
+        $defaults = RecommendationWeightsSettings::defaults();
+
+        $this->migrator->add('recommendation-weights.A', $defaults['A']);
+        $this->migrator->add('recommendation-weights.B', $defaults['B']);
+        $this->migrator->add('recommendation-weights.ab_split', $defaults['ab_split']);
+        $this->migrator->add('recommendation-weights.seed', $defaults['seed']);
     }
 };

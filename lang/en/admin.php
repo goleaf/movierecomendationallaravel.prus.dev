@@ -166,4 +166,33 @@ return [
         'imdb' => 'IMDb: :rating',
         'votes' => 'Votes: :count',
     ],
+    'recommendation_weights' => [
+        'navigation' => 'Recommendation weights',
+        'title' => 'Recommendation weights',
+        'description' => 'Adjust how variants weigh popularity, recency, and personal preferences. Values are normalised before scoring.',
+        'sections' => [
+            'variant_a' => 'Variant A weights',
+            'variant_b' => 'Variant B weights',
+            'ab_split' => 'Traffic split & experiment seed',
+        ],
+        'fields' => [
+            'pop' => 'Popularity weight',
+            'recent' => 'Recency weight',
+            'pref' => 'Preference weight',
+            'ab_split_a' => 'Variant A traffic',
+            'ab_split_b' => 'Variant B traffic',
+            'seed' => 'Experiment seed',
+            'seed_helper' => 'Optional. When provided, device assignments become deterministic.',
+            'seed_placeholder' => 'Leave blank for random assignment',
+        ],
+        'summary' => [
+            'heading' => 'Normalised weights',
+            'description' => 'These values show the proportional influence each factor has after normalisation.',
+            'variant' => 'Variant :variant',
+        ],
+        'actions' => [
+            'save' => 'Save weights',
+            'saved' => 'Recommendation weights updated.',
+        ],
+    ],
 ];

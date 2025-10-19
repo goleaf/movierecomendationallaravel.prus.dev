@@ -20,7 +20,7 @@ class TrendsPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chart-line-square';
+    protected static ?string $navigationIcon = 'heroicon-o-chart-bar-square';
 
     protected static string $view = 'filament.analytics.trends';
 

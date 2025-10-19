@@ -25,10 +25,10 @@ class RecAbFormulaTest extends TestCase
     {
         Carbon::setTestNow(now()->setDate(2025, 1, 1));
 
-        config([
-            'recs.ab_split' => ['A' => 100.0, 'B' => 0.0],
-            'recs.A' => ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0],
-            'recs.seed' => 'unit-tests',
+        $this->storeRecommendationWeights([
+            'A' => ['pop' => 0.6, 'recent' => 0.4, 'pref' => 0.0],
+            'ab_split' => ['A' => 100.0, 'B' => 0.0],
+            'seed' => 'unit-tests',
         ]);
 
         $recent = Movie::factory()->movie()->create([

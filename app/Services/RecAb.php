@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Spatie\LaravelSettings\SettingsRepositories\SettingsRepository;
 
 class RecAb
 {
@@ -19,6 +20,10 @@ class RecAb
     private const COOKIE_LIFETIME_MINUTES = 60 * 24 * 365 * 5;
 
     private ?RecommendationWeightsSettings $settings = null;
+
+    public function __construct(private readonly SettingsRepository $settingsRepository)
+    {
+    }
 
     /** @return array{0:string,1:Collection<int,Movie>} */
     public function forDevice(string $deviceId, int $limit = 12): array
@@ -200,7 +205,7 @@ class RecAb
     private function settings(): RecommendationWeightsSettings
     {
         if ($this->settings === null) {
-            $this->settings = app(RecommendationWeightsSettings::class);
+            $this->settings = RecommendationWeightsSettings::fromRepository($this->settingsRepository);
         }
 
         return $this->settings;
