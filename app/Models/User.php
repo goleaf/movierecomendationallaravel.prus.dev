@@ -8,6 +8,7 @@ use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Kirschbaum\Commentions\Contracts\Commenter;
 
@@ -48,6 +49,16 @@ class User extends Authenticatable implements Commenter, HasAvatar, HasName
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return Collection<int, static>
+     */
+    public static function mentionableForComments(): Collection
+    {
+        return static::query()
+            ->orderBy('name')
+            ->get();
     }
 
     public function getFilamentName(): string

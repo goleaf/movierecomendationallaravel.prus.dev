@@ -26,9 +26,24 @@ a{color:#9fc5ff;text-decoration:none}.container{max-width:1200px;margin:0 auto;p
 .markdown li{margin-bottom:.35rem;line-height:1.5}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.grid-4{grid-template-columns:1fr}}
 </style>
+@livewireStyles
+@filamentStyles([
+    'filament/support',
+    'filament/notifications',
+    'filament/filament',
+    'kirschbaum-development/commentions',
+])
 </head>
 <body><div class="container">
 <header class="mb"><a href="{{ url('/') }}"><strong>{{ __('messages.app.name') }}</strong></a> <span class="muted">{{ __('messages.app.tagline') }}</span></header>
 @yield('content')
 <footer class="muted">{{ __('messages.app.footer', ['year' => date('Y')]) }}</footer>
-</div></body></html>
+</div>
+@livewireScripts
+@filamentScripts([
+    'filament/support',
+    'filament/notifications',
+    'filament/filament',
+    'kirschbaum-development/commentions',
+], true)
+</body></html>

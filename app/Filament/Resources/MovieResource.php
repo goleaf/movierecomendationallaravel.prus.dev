@@ -360,8 +360,6 @@ class MovieResource extends Resource
      */
     public static function getCommentMentionables(): Collection
     {
-        return User::query()
-            ->orderBy('name')
-            ->get();
+        return User::mentionableForComments();
     }
 }
