@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 class FunnelWidget extends Widget
 {
     protected static string $view = 'filament.widgets.funnel';
+
     protected static ?string $heading = 'Funnels (7 дней)';
 
     protected function getViewData(): array
@@ -16,16 +17,26 @@ class FunnelWidget extends Widget
         $from = now()->subDays(7)->format('Y-m-d');
         $to = now()->format('Y-m-d');
 
-        $impVariant = Schema::hasTable('rec_ab_logs')
+        $placementVariantImpressions = Schema::hasTable('rec_ab_logs')
             ? DB::table('rec_ab_logs')
-                ->selectRaw('variant, count(*) as imps')
+                ->selectRaw('placement, variant, count(*) as imps')
                 ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-                ->groupBy('variant')
-                ->pluck('imps', 'variant')
+                ->groupBy('placement', 'variant')
+                ->get()
+                ->groupBy('placement')
+                ->map(static function ($rows) {
+                    return $rows
+                        ->pluck('imps', 'variant')
+                        ->map(static fn ($value) => (int) $value)
+                        ->all();
+                })
                 ->all()
             : [];
 
-        $totalImps = array_sum($impVariant);
+        $placementImps = [];
+        foreach ($placementVariantImpressions as $placement => $variants) {
+            $placementImps[$placement] = array_sum($variants);
+        }
 
         $totalViews = Schema::hasTable('device_history')
             ? (int) DB::table('device_history')
@@ -33,31 +44,34 @@ class FunnelWidget extends Widget
                 ->count()
             : 0;
 
-        $totalClicks = Schema::hasTable('rec_clicks')
-            ? (int) DB::table('rec_clicks')
+        $clicksPerPlacement = Schema::hasTable('rec_clicks')
+            ? DB::table('rec_clicks')
+                ->selectRaw('placement, count(*) as clks')
                 ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-                ->count()
-            : 0;
+                ->groupBy('placement')
+                ->pluck('clks', 'placement')
+                ->map(static fn ($value) => (int) $value)
+                ->all()
+            : [];
 
         $rows = [];
         $placements = ['home', 'show', 'trends'];
         foreach ($placements as $placement) {
-            $clicks = Schema::hasTable('rec_clicks')
-                ? (int) DB::table('rec_clicks')
-                    ->where('placement', $placement)
-                    ->whereBetween('created_at', ["{$from} 00:00:00", "{$to} 23:59:59"])
-                    ->count()
-                : 0;
+            $imps = $placementImps[$placement] ?? 0;
+            $clicks = $clicksPerPlacement[$placement] ?? 0;
 
             $rows[] = [
                 'label' => $placement,
-                'imps' => $totalImps,
+                'imps' => $imps,
                 'clicks' => $clicks,
                 'views' => $totalViews,
-                'ctr' => $totalImps > 0 ? round(100 * $clicks / $totalImps, 2) : 0.0,
+                'ctr' => $imps > 0 ? round(100 * $clicks / $imps, 2) : 0.0,
                 'view_rate' => $totalViews > 0 ? round(100 * $clicks / $totalViews, 2) : 0.0,
             ];
         }
+
+        $totalImps = array_sum(array_column($rows, 'imps'));
+        $totalClicks = array_sum(array_column($rows, 'clicks'));
 
         $rows[] = [
             'label' => 'Итого',
