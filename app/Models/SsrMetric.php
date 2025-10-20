@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property bool $has_open_graph
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $recorded_at
  * @property Carbon|null $collected_at
  *
  * @method static SsrMetricFactory factory($count = null, $state = [])
@@ -43,6 +44,7 @@ class SsrMetric extends Model
             'meta' => 'array',
             'has_json_ld' => 'boolean',
             'has_open_graph' => 'boolean',
+            'recorded_at' => 'datetime',
             'collected_at' => 'datetime',
         ];
     }

@@ -21,7 +21,7 @@ class AdminSsrPageTest extends TestCase
         $this->get(route('admin.ssr'))
             ->assertOk()
             ->assertSee('SSR Score')
-            ->assertSee('Top pages by SSR score drop')
+            ->assertSee(__('analytics.widgets.ssr_drop.heading'))
             ->assertSee('/');
 
         Carbon::setTestNow();

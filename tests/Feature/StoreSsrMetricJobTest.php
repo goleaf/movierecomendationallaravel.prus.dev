@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
+use App\Services\SsrMetricsNormalizer;
+use App\Services\SsrMetricsRecorder;
 use App\Services\SsrMetricsService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,7 +47,7 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 4,
             'blocking_scripts' => 2,
             'first_byte_ms' => 123,
-            'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 123,
                 'html_size' => 2048,
@@ -58,10 +60,24 @@ class StoreSsrMetricJobTest extends TestCase
                 'has_json_ld' => true,
                 'has_open_graph' => true,
             ],
+            'movie' => [
+                'id' => 101,
+                'title' => 'Metric Movie',
+                'slug' => 'metric-movie',
+                'imdb_tt' => 'tt4455667',
+                'year' => 2024,
+                'release_date' => '2024-01-15',
+                'poster_url' => 'https://images.test/metric-movie.jpg',
+                'imdb_rating' => 8.4,
+                'imdb_votes' => 12345,
+                'runtime_min' => 119,
+                'genres' => ['Drama', 'Sci-Fi'],
+                'type' => 'movie',
+            ],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(app(SsrMetricsNormalizer::class), app(SsrMetricsRecorder::class));
 
         $row = DB::table('ssr_metrics')->first();
 
@@ -79,13 +95,29 @@ class StoreSsrMetricJobTest extends TestCase
         $this->assertTrue((bool) $row->has_json_ld);
         $this->assertTrue((bool) $row->has_open_graph);
         $this->assertSame($now->toDateTimeString(), Carbon::parse($row->created_at)->toDateTimeString());
-        $this->assertSame($now->toDateTimeString(), Carbon::parse($row->collected_at)->toDateTimeString());
+        $recordedAt = $row->recorded_at ?? $row->collected_at;
+        $this->assertNotNull($recordedAt);
+        $this->assertSame($now->toDateTimeString(), Carbon::parse($recordedAt)->toDateTimeString());
 
         if (Schema::hasColumn('ssr_metrics', 'meta')) {
             $meta = json_decode((string) $row->meta, true, 512, JSON_THROW_ON_ERROR);
             $this->assertSame(2048, $meta['html_bytes']);
             $this->assertTrue($meta['has_json_ld']);
             $this->assertTrue($meta['has_open_graph']);
+            $this->assertSame([
+                'id' => 101,
+                'title' => 'Metric Movie',
+                'slug' => 'metric-movie',
+                'imdb_tt' => 'tt4455667',
+                'release_year' => 2024,
+                'release_date' => '2024-01-15',
+                'poster_url' => 'https://images.test/metric-movie.jpg',
+                'imdb_rating' => 8.4,
+                'imdb_votes' => 12345,
+                'runtime_min' => 119,
+                'type' => 'movie',
+                'genres' => ['Drama', 'Sci-Fi'],
+            ], $meta['movie']);
         }
     }
 
@@ -111,7 +143,7 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 3,
             'blocking_scripts' => 1,
             'first_byte_ms' => 98,
-            'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 98,
                 'html_size' => 1024,
@@ -126,7 +158,7 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(app(SsrMetricsNormalizer::class), app(SsrMetricsRecorder::class));
 
         $fallbackDisk = config('ssrmetrics.storage.fallback.disk');
         $fallbackFile = config('ssrmetrics.storage.fallback.files.incoming');
@@ -141,6 +173,7 @@ class StoreSsrMetricJobTest extends TestCase
         $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame($now->toIso8601String(), $decoded['ts']);
+        $this->assertSame($now->toIso8601String(), $decoded['recorded_at']);
         $this->assertSame('/movies', $decoded['path']);
         $this->assertSame(70, $decoded['score']);
         $this->assertSame(1024, $decoded['size']);
@@ -182,12 +215,12 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 2,
             'blocking_scripts' => 0,
             'first_byte_ms' => 45,
-            'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(app(SsrMetricsNormalizer::class), app(SsrMetricsRecorder::class));
 
         Storage::disk('metrics-disk')->assertExists('metrics/custom.jsonl');
 
@@ -222,7 +255,7 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 1,
             'blocking_scripts' => 0,
             'first_byte_ms' => 20,
-            'collected_at' => $oldTimestamp->toIso8601String(),
+            'recorded_at' => $oldTimestamp->toIso8601String(),
             'meta' => [],
         ]);
 
@@ -241,12 +274,12 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 2,
             'blocking_scripts' => 0,
             'first_byte_ms' => 80,
-            'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle($service);
+        $job->handle(app(SsrMetricsNormalizer::class), app(SsrMetricsRecorder::class));
 
         $paths = DB::table('ssr_metrics')->pluck('path')->all();
 
@@ -286,12 +319,12 @@ class StoreSsrMetricJobTest extends TestCase
             'img_count' => 1,
             'blocking_scripts' => 0,
             'first_byte_ms' => 60,
-            'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(app(SsrMetricsNormalizer::class), app(SsrMetricsRecorder::class));
 
         $content = Storage::disk('metrics-disk')->get('metrics/ssr.jsonl');
         $lines = array_values(array_filter(explode(PHP_EOL, $content)));

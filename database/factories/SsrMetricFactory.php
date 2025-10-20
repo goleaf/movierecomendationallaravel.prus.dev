@@ -35,6 +35,7 @@ class SsrMetricFactory extends Factory
             'first_byte_ms' => fake()->numberBetween(0, 1500),
             'has_json_ld' => $ldjsonCount > 0,
             'has_open_graph' => $ogCount > 0,
+            'recorded_at' => now(),
             'collected_at' => now(),
         ];
     }

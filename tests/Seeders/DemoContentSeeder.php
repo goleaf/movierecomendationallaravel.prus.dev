@@ -166,10 +166,23 @@ class DemoContentSeeder extends Seeder
         ];
 
         DB::table('ssr_metrics')->insert(array_map(function (array $row) use ($now): array {
+            $meta = [
+                'first_byte_ms' => $row['first_byte_ms'],
+                'html_bytes' => 350000,
+                'html_size' => 350000,
+                'meta_count' => 12,
+                'og_count' => 3,
+                'ldjson_count' => 1,
+                'img_count' => 8,
+                'blocking_scripts' => 1,
+                'has_json_ld' => true,
+                'has_open_graph' => true,
+            ];
+
             return [
                 'path' => $row['path'],
                 'score' => $row['score'],
-                'meta' => null,
+                'meta' => json_encode($meta, JSON_THROW_ON_ERROR),
                 'size' => 350000,
                 'html_bytes' => 350000,
                 'meta_count' => 12,
@@ -182,6 +195,7 @@ class DemoContentSeeder extends Seeder
                 'first_byte_ms' => $row['first_byte_ms'],
                 'created_at' => $now->subDays($row['delta']),
                 'updated_at' => $now->subDays($row['delta']),
+                'recorded_at' => $now->subDays($row['delta']),
                 'collected_at' => $now->subDays($row['delta']),
             ];
         }, $ssrMetrics));

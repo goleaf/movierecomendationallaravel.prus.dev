@@ -8,6 +8,8 @@ use App\Models\Movie;
 use App\Models\User;
 use App\Observers\MovieObserver;
 use App\Services\Ingestion\IdempotencyService;
+use App\Services\SsrMetricsNormalizer;
+use App\Services\SsrMetricsRecorder;
 use App\Services\SsrMetricsService;
 use App\Support\Session\ReadOnlyAwareDatabaseSessionHandler;
 use App\Support\SsrMetricsFallbackStore;
@@ -34,8 +36,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(IdempotencyService::class, static fn (): IdempotencyService => new IdempotencyService);
+        $this->app->singleton(SsrMetricsNormalizer::class, static fn (): SsrMetricsNormalizer => new SsrMetricsNormalizer);
+        $this->app->singleton(SsrMetricsRecorder::class, static function ($app): SsrMetricsRecorder {
+            return new SsrMetricsRecorder($app->make(SsrMetricsFallbackStore::class));
+        });
         $this->app->singleton(SsrMetricsService::class, static function ($app): SsrMetricsService {
-            return new SsrMetricsService($app->make(SsrMetricsFallbackStore::class));
+            return new SsrMetricsService(
+                $app->make(SsrMetricsNormalizer::class),
+                $app->make(SsrMetricsRecorder::class),
+            );
         });
 
         $this->registerHotPathCache('cache.hot_path.filters', 'hot_path_filters');

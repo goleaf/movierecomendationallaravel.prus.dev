@@ -16,7 +16,11 @@ class SsrIssuesController extends Controller
     {
         $issues = [];
         if (\Schema::hasTable('ssr_metrics')) {
-            $timestampColumn = \Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+            $timestampColumn = match (true) {
+                \Schema::hasColumn('ssr_metrics', 'recorded_at') => 'recorded_at',
+                \Schema::hasColumn('ssr_metrics', 'collected_at') => 'collected_at',
+                default => 'created_at',
+            };
 
             $rows = DB::table('ssr_metrics')
                 ->selectRaw('path, avg(score) as avg_score, avg(blocking_scripts) as avg_block, avg(ldjson_count) as ld, avg(og_count) as og')

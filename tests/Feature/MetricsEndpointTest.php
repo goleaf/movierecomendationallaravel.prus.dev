@@ -8,6 +8,7 @@ use App\Models\Movie;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -59,7 +60,7 @@ class MetricsEndpointTest extends TestCase
             ],
         ]);
 
-        DB::table('ssr_metrics')->insert([
+        $metricRows = [
             [
                 'path' => '/home',
                 'score' => 88,
@@ -75,7 +76,6 @@ class MetricsEndpointTest extends TestCase
                 'has_open_graph' => true,
                 'created_at' => $capturedAt,
                 'updated_at' => $capturedAt,
-                'collected_at' => $capturedAt,
             ],
             [
                 'path' => '/movie',
@@ -92,9 +92,26 @@ class MetricsEndpointTest extends TestCase
                 'has_open_graph' => true,
                 'created_at' => $capturedAt,
                 'updated_at' => $capturedAt,
-                'collected_at' => $capturedAt,
             ],
-        ]);
+        ];
+
+        if (Schema::hasColumn('ssr_metrics', 'recorded_at')) {
+            $metricRows = array_map(function (array $row) use ($capturedAt): array {
+                $row['recorded_at'] = $capturedAt;
+
+                return $row;
+            }, $metricRows);
+        }
+
+        if (Schema::hasColumn('ssr_metrics', 'collected_at')) {
+            $metricRows = array_map(function (array $row) use ($capturedAt): array {
+                $row['collected_at'] = $capturedAt;
+
+                return $row;
+            }, $metricRows);
+        }
+
+        DB::table('ssr_metrics')->insert($metricRows);
 
         DB::table('failed_jobs')->insert([
             'uuid' => (string) Str::uuid(),
