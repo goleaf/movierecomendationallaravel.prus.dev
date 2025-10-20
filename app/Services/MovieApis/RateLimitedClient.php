@@ -32,6 +32,17 @@ class RateLimitedClient
 
     protected string $rateLimiterKey;
 
+    protected int $batchConcurrency;
+
+    protected int $batchRetryAttempts;
+
+    protected int $batchRetryDelayMs;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $batchHeaders = [];
+
     /**
      * @var array<string, mixed>
      */
@@ -57,6 +68,10 @@ class RateLimitedClient
         $this->defaultQuery = $config->defaultQuery();
         $this->defaultHeaders = $config->defaultHeaders();
         $this->rateLimiterKey = $config->rateLimiterKey();
+        $this->batchConcurrency = $config->batchConcurrency();
+        $this->batchRetryAttempts = $config->batchRetryAttempts();
+        $this->batchRetryDelayMs = $config->batchRetryDelayMs();
+        $this->batchHeaders = $config->batchHeaders();
     }
 
     /**
@@ -195,6 +210,23 @@ class RateLimitedClient
         $merged = array_merge($optionQuery, $query);
 
         return array_filter($merged, static fn ($value) => $value !== null);
+    }
+
+    protected function ensureRateLimitAllowance(): void
+    {
+        if (RateLimiter::tooManyAttempts($this->rateLimiterKey, $this->rateLimitAllowance)) {
+            throw new TooManyRequestsHttpException($this->rateLimitWindow, sprintf(
+                'Rate limit exceeded for %s',
+                $this->rateLimiterKey,
+            ));
+        }
+
+        RateLimiter::hit($this->rateLimiterKey, $this->rateLimitWindow);
+    }
+
+    protected function filterQuery(array $query): array
+    {
+        return array_filter($query, static fn ($value) => $value !== null);
     }
 
     protected function shouldRetryResponse(Response $response): bool

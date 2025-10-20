@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Services\MovieApis\BatchedRateLimitedClient;
 use App\Services\MovieApis\OmdbClient;
-use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\RateLimitedClientConfig;
 use App\Services\MovieApis\TmdbClient;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -36,9 +36,10 @@ class MovieApiServiceProvider extends ServiceProvider
                 rateLimiterKey: 'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
             );
 
-            $client = new RateLimitedClient(
+            $client = new BatchedRateLimitedClient(
                 $app->make(HttpFactory::class),
                 $clientConfig,
+                'tmdb',
             );
 
             return new TmdbClient($client, $defaultLocale, $acceptedLocales);
@@ -60,9 +61,10 @@ class MovieApiServiceProvider extends ServiceProvider
                 rateLimiterKey: 'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
             );
 
-            $client = new RateLimitedClient(
+            $client = new BatchedRateLimitedClient(
                 $app->make(HttpFactory::class),
                 $clientConfig,
+                'omdb',
             );
 
             return new OmdbClient($client, (array) ($config['default_params'] ?? []));

@@ -50,6 +50,16 @@ return [
             'multiplier' => (float) env('TMDB_BACKOFF_MULTIPLIER', 2.0),
             'max_delay_ms' => (int) env('TMDB_BACKOFF_MAX_DELAY_MS', 2000),
         ],
+        'batch' => [
+            'concurrency' => (int) env('TMDB_BATCH_CONCURRENCY', 10),
+            'retry' => [
+                'attempts' => (int) env('TMDB_BATCH_RETRY_ATTEMPTS', 1),
+                'delay_ms' => (int) env('TMDB_BATCH_RETRY_DELAY_MS', 200),
+            ],
+            'headers' => [
+                'X-Ingestion-Client' => env('TMDB_BATCH_CLIENT_HEADER', 'tmdb-ingestion'),
+            ],
+        ],
         'rate_limit' => [
             'window' => (int) env('TMDB_RATE_LIMIT_WINDOW', 10),
             'allowance' => (int) env('TMDB_RATE_LIMIT_ALLOWANCE', 35),
@@ -72,6 +82,16 @@ return [
         'backoff' => [
             'multiplier' => (float) env('OMDB_BACKOFF_MULTIPLIER', 2.0),
             'max_delay_ms' => (int) env('OMDB_BACKOFF_MAX_DELAY_MS', 1200),
+        ],
+        'batch' => [
+            'concurrency' => (int) env('OMDB_BATCH_CONCURRENCY', 5),
+            'retry' => [
+                'attempts' => (int) env('OMDB_BATCH_RETRY_ATTEMPTS', 1),
+                'delay_ms' => (int) env('OMDB_BATCH_RETRY_DELAY_MS', 300),
+            ],
+            'headers' => [
+                'X-Ingestion-Client' => env('OMDB_BATCH_CLIENT_HEADER', 'omdb-ingestion'),
+            ],
         ],
         'rate_limit' => [
             'window' => (int) env('OMDB_RATE_LIMIT_WINDOW', 1),

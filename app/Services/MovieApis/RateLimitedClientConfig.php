@@ -36,6 +36,17 @@ class RateLimitedClientConfig
 
     protected string $rateLimiterKey;
 
+    protected int $batchConcurrency;
+
+    protected int $batchRetryAttempts;
+
+    protected int $batchRetryDelayMs;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $batchHeaders;
+
     /**
      * @param  array<string, mixed>  $retry
      * @param  array<string, mixed>  $backoff
@@ -52,6 +63,7 @@ class RateLimitedClientConfig
         array $defaultQuery = [],
         array $defaultHeaders = [],
         ?string $rateLimiterKey = null,
+        array $batch = [],
     ) {
         $this->baseUrl = $this->normaliseBaseUrl($baseUrl);
         $this->timeout = $this->normaliseTimeout($timeout);
@@ -64,6 +76,10 @@ class RateLimitedClientConfig
         $this->defaultQuery = $this->normaliseKeyValueArray($defaultQuery);
         $this->defaultHeaders = $this->normaliseKeyValueArray($defaultHeaders);
         $this->rateLimiterKey = $this->normaliseRateLimiterKey($rateLimiterKey);
+        $this->batchConcurrency = $this->normalisePositiveInt($batch, 'concurrency', 10);
+        $this->batchRetryAttempts = $this->normaliseNonNegativeInt($batch['retry'] ?? [], 'attempts', 0);
+        $this->batchRetryDelayMs = $this->normaliseNonNegativeInt($batch['retry'] ?? [], 'delay_ms', 0);
+        $this->batchHeaders = $this->normaliseKeyValueArray($batch['headers'] ?? []);
     }
 
     public function baseUrl(): string
@@ -125,6 +141,29 @@ class RateLimitedClientConfig
     public function rateLimiterKey(): string
     {
         return $this->rateLimiterKey;
+    }
+
+    public function batchConcurrency(): int
+    {
+        return $this->batchConcurrency;
+    }
+
+    public function batchRetryAttempts(): int
+    {
+        return $this->batchRetryAttempts;
+    }
+
+    public function batchRetryDelayMs(): int
+    {
+        return $this->batchRetryDelayMs;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function batchHeaders(): array
+    {
+        return $this->batchHeaders;
     }
 
     protected function normaliseBaseUrl(string $baseUrl): string

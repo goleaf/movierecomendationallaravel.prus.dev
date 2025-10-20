@@ -12,7 +12,7 @@ class OmdbClient
      * @param  array<string, mixed>  $defaultParameters
      */
     public function __construct(
-        protected RateLimitedClient $client,
+        protected BatchedRateLimitedClient $client,
         protected array $defaultParameters = [],
     ) {}
 
@@ -47,6 +47,27 @@ class OmdbClient
         $uri = $this->buildUri(['s' => $search], $parameters);
 
         return $this->send($uri);
+    }
+
+    /**
+     * @param  iterable<int|string, string>  $imdbIds
+     * @param  array<string, mixed>  $parameters
+     * @return array<int|string, array<string, mixed>>
+     */
+    public function batchFindByImdbIds(iterable $imdbIds, array $parameters = []): array
+    {
+        $requests = [];
+
+        foreach ($imdbIds as $key => $imdbId) {
+            $uri = $this->buildUri(['i' => $imdbId], $parameters);
+
+            $requests[$key] = [
+                'path' => $uri->path() === '' ? '/' : $uri->path(),
+                'query' => $uri->query()->all(),
+            ];
+        }
+
+        return $this->client->batch($requests);
     }
 
     /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Services\MovieApis\BatchedRateLimitedClient;
 use App\Services\MovieApis\OmdbClient;
-use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\TmdbClient;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ class ClientUriBuildTest extends TestCase
     #[DataProvider('percentEncodedValuesProvider')]
     public function test_clients_percent_encode_segments_and_query(string $value): void
     {
-        $tmdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
+        $tmdbRateLimitedClient = $this->createMock(BatchedRateLimitedClient::class);
 
         $tmdbRateLimitedClient->expects($this->once())
             ->method('get')
@@ -34,7 +34,7 @@ class ClientUriBuildTest extends TestCase
 
         $defaultParameters = ['apikey' => 'abc 123'];
 
-        $omdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
+        $omdbRateLimitedClient = $this->createMock(BatchedRateLimitedClient::class);
 
         $omdbRateLimitedClient->expects($this->once())
             ->method('get')
