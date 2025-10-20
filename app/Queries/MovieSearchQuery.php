@@ -7,10 +7,8 @@ namespace App\Queries;
 use App\Models\Movie;
 use App\Search\QueryBuilderExtensions;
 use App\Support\MovieSearchFilters;
-use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseQueryBuilder;
-use Illuminate\Database\SQLiteConnection;
 
 final class MovieSearchQuery
 {
@@ -24,6 +22,10 @@ final class MovieSearchQuery
         'plot',
         'translations->title->en',
         'translations->title->ru',
+        'translations->plot->en',
+        'translations->plot->ru',
+        'raw->cast',
+        'raw',
     ];
 
     public function __construct(?Builder $builder = null)
@@ -61,25 +63,11 @@ final class MovieSearchQuery
             return;
         }
 
-        $columns = $this->searchableColumns;
+        $patternSets = array_map(fn (string $token): array => $this->buildPatternVariants($token), $tokens);
 
-        $this->builder->whereAll(array_map(
-            function (string $token) use ($columns): callable {
-                $pattern = $this->buildLikePattern($token);
-
-                return function (Builder|BaseQueryBuilder $query) use ($columns, $pattern): void {
-                    $query->whereAny(array_map(
-                        function (string $column) use ($pattern): callable {
-                            return function (Builder|BaseQueryBuilder $columnQuery) use ($column, $pattern): void {
-                                $this->applyLike($columnQuery, $column, $pattern);
-                            };
-                        },
-                        $columns
-                    ));
-                };
-            },
-            $tokens
-        ));
+        $this->builder->whereAll(
+            QueryBuilderExtensions::whereAllLikeAcrossColumns($this->searchableColumns, $patternSets)
+        );
     }
 
     private function applyType(?string $type): void
@@ -140,24 +128,20 @@ final class MovieSearchQuery
         return '%'.$escaped.'%';
     }
 
-    private function applyLike(Builder|BaseQueryBuilder $builder, string $column, string $pattern): void
+    /**
+     * @return array<int, string>
+     */
+    private function buildPatternVariants(string $token): array
     {
-        $query = $builder instanceof Builder ? $builder->getQuery() : $builder;
-        $connection = $query->getConnection();
+        $variants = [$token];
 
-        if ($this->requiresLowercaseFallback($connection)) {
-            $wrapped = $query->getGrammar()->wrap($column);
+        $variants[] = mb_strtolower($token, 'UTF-8');
+        $variants[] = mb_convert_case(mb_strtolower($token, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+        $variants[] = mb_strtoupper($token, 'UTF-8');
 
-            $builder->whereRaw('lower('.$wrapped.') like ?', [mb_strtolower($pattern, 'UTF-8')]);
+        $patterns = array_map(fn (string $variant): string => $this->buildLikePattern($variant), $variants);
 
-            return;
-        }
-
-        $builder->whereLike($column, $pattern);
+        return array_values(array_unique($patterns));
     }
 
-    private function requiresLowercaseFallback(ConnectionInterface $connection): bool
-    {
-        return $connection instanceof SQLiteConnection;
-    }
 }

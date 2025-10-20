@@ -38,6 +38,7 @@ class SearchLikeTest extends TestCase
         $matching = Movie::factory()->create([
             'title' => 'Matrix Reloaded',
             'plot' => 'Neo fights Agent Smith inside the Matrix',
+            'raw' => ['cast' => ['Keanu Reeves', 'Carrie-Anne Moss']],
         ]);
 
         Movie::factory()->create([
@@ -50,6 +51,27 @@ class SearchLikeTest extends TestCase
         $results = MovieSearchQuery::forFilters($filters)->pluck('id')->all();
 
         $this->assertSame([$matching->id], $results);
+    }
+
+    public function test_search_matches_actor_names_with_diacritics_and_cyrillic(): void
+    {
+        $match = Movie::factory()->create([
+            'title' => 'Hidden Voices',
+            'plot' => 'An ensemble of multilingual actors uncovers a conspiracy.',
+            'raw' => ['cast' => ['Zoë Kravitz', 'Андрей Смирнов']],
+        ]);
+
+        Movie::factory()->create([
+            'title' => 'Galactic Heist',
+            'plot' => 'A rogue pilot assembles a crew for the ultimate robbery.',
+            'raw' => ['cast' => ['Pedro Pascal', 'Greta Lee']],
+        ]);
+
+        $filters = new MovieSearchFilters('zoë смирнов', null, null, null, null);
+
+        $results = MovieSearchQuery::forFilters($filters)->pluck('id')->all();
+
+        $this->assertSame([$match->id], $results);
     }
 
     public function test_year_range_filters_are_combined_via_where_all(): void
