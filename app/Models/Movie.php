@@ -6,10 +6,12 @@ namespace App\Models;
 
 use App\Casts\GenresCast;
 use App\Casts\ReleaseDateCast;
+use App\Collections\MovieCollection;
 use Database\Factories\MovieFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Kirschbaum\Commentions\Contracts\Commentable;
 use Kirschbaum\Commentions\HasComments;
 
@@ -44,6 +46,17 @@ class Movie extends Model implements Commentable
     protected $guarded = [];
 
     protected $appends = ['weighted_score'];
+
+    /**
+     * @param  array<int, Model>  $models
+     * @return MovieCollection<int, Movie>
+     */
+    public function newCollection(array $models = []): MovieCollection
+    {
+        $collection = new MovieCollection($models);
+
+        return $collection->withListRelations();
+    }
 
     protected function casts(): array
     {
@@ -97,5 +110,72 @@ class Movie extends Model implements Commentable
     public function deviceHistory(): HasMany
     {
         return $this->hasMany(DeviceHistory::class);
+    }
+
+    /**
+     * @return HasMany<MovieCast>
+     */
+    public function castMembers(): HasMany
+    {
+        return $this->hasMany(MovieCast::class)->orderBy('order_column');
+    }
+
+    /**
+     * @return HasMany<MoviePoster>
+     */
+    public function posters(): HasMany
+    {
+        return $this->hasMany(MoviePoster::class)->orderBy('priority');
+    }
+
+    /**
+     * @return array<string, callable>
+     */
+    public static function listRelationConstraints(): array
+    {
+        $configuration = config('movies.list_relations');
+
+        if (! is_array($configuration) || empty($configuration['enabled'])) {
+            return [];
+        }
+
+        $configuredRelations = $configuration['relations'] ?? [];
+
+        if (! is_array($configuredRelations)) {
+            return [];
+        }
+
+        $constraints = [];
+
+        foreach ($configuredRelations as $alias => $settings) {
+            $relation = is_array($settings) && is_string($settings['relation'] ?? null)
+                ? $settings['relation']
+                : (is_string($alias) ? $alias : null);
+
+            if ($relation === null || $relation === '' || ! method_exists(static::class, $relation)) {
+                continue;
+            }
+
+            $limit = is_array($settings) ? ($settings['limit'] ?? null) : $settings;
+
+            $constraints[$relation] = static function (Builder $query) use ($limit): void {
+                if (is_int($limit) && $limit > 0) {
+                    $query->limit($limit);
+                }
+            };
+        }
+
+        return $constraints;
+    }
+
+    public function loadListRelations(): self
+    {
+        $relations = self::listRelationConstraints();
+
+        if ($relations !== []) {
+            $this->load($relations);
+        }
+
+        return $this;
     }
 }
