@@ -7,6 +7,7 @@ namespace App\Services\Analytics;
 use App\Models\Movie;
 use App\Reports\TrendsReport;
 use App\Support\AnalyticsCache;
+use App\Support\Cache\MemoPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,7 @@ class TrendsAnalyticsService
         private readonly TrendsRollupService $rollup,
         private readonly AnalyticsCache $cache,
         private readonly TrendsReport $report,
+        private readonly MemoPolicy $memo,
     ) {}
 
     /**
@@ -161,53 +163,58 @@ class TrendsAnalyticsService
      */
     private function buildTrendingItems(array $filters, array $period): Collection
     {
-        $cached = $this->cache->rememberTrends('items', [
+        $cached = $this->memo->rememberFilters('trends.items', [
             'filters' => $filters,
             'period' => $period,
         ], function () use ($filters, $period): array {
-            $this->rollup->ensureBackfill($period['from'], $period['to']);
+            return $this->cache->rememberTrends('items', [
+                'filters' => $filters,
+                'period' => $period,
+            ], function () use ($filters, $period): array {
+                $this->rollup->ensureBackfill($period['from'], $period['to']);
 
-            $formatItem = static function (object $item): array {
-                return [
-                    'id' => (int) $item->id,
-                    'title' => (string) $item->title,
-                    'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
-                    'year' => $item->year !== null ? (int) $item->year : null,
-                    'type' => (string) $item->type,
-                    'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
-                    'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
-                    'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
-                ];
-            };
+                $formatItem = static function (object $item): array {
+                    return [
+                        'id' => (int) $item->id,
+                        'title' => (string) $item->title,
+                        'poster_url' => $item->poster_url !== null ? (string) $item->poster_url : null,
+                        'year' => $item->year !== null ? (int) $item->year : null,
+                        'type' => (string) $item->type,
+                        'imdb_rating' => $item->imdb_rating !== null ? (float) $item->imdb_rating : null,
+                        'imdb_votes' => $item->imdb_votes !== null ? (int) $item->imdb_votes : null,
+                        'clicks' => $item->clicks !== null ? (int) $item->clicks : null,
+                    ];
+                };
 
-            if (Schema::hasTable('rec_trending_rollups')) {
-                $items = $this->report->rollupItems($period['from'], $period['to'], $filters)
-                    ->map($formatItem)
-                    ->values()
-                    ->all();
+                if (Schema::hasTable('rec_trending_rollups')) {
+                    $items = $this->report->rollupItems($period['from'], $period['to'], $filters)
+                        ->map($formatItem)
+                        ->values()
+                        ->all();
 
-                if ($items !== []) {
-                    return $items;
+                    if ($items !== []) {
+                        return $items;
+                    }
                 }
-            }
 
-            if (Schema::hasTable('rec_clicks')) {
-                $items = $this->report->clickItems($period['from'], $period['to'], $filters)
-                    ->map($formatItem)
-                    ->values()
-                    ->all();
+                if (Schema::hasTable('rec_clicks')) {
+                    $items = $this->report->clickItems($period['from'], $period['to'], $filters)
+                        ->map($formatItem)
+                        ->values()
+                        ->all();
 
-                if ($items !== []) {
-                    return $items;
+                    if ($items !== []) {
+                        return $items;
+                    }
                 }
-            }
 
-            return $this->fallback(
-                $filters['type'],
-                $filters['genre'],
-                $filters['year_from'],
-                $filters['year_to'],
-            )->all();
+                return $this->fallback(
+                    $filters['type'],
+                    $filters['genre'],
+                    $filters['year_from'],
+                    $filters['year_to'],
+                )->all();
+            });
         });
 
         /**
