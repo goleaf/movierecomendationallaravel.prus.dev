@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Support\Http\MovieApiUriBuilder;
 use App\Support\Http\Policy;
 use Illuminate\Support\Uri;
 
@@ -16,6 +17,7 @@ class TmdbClient
         protected RateLimitedClient $client,
         protected string $defaultLocale,
         protected array $acceptedLocales = [],
+        ?MovieApiUriBuilder $uriBuilder = null,
     ) {
         if ($this->defaultLocale === '' && $this->acceptedLocales !== []) {
             $this->defaultLocale = $this->acceptedLocales[0];
@@ -24,7 +26,11 @@ class TmdbClient
         if ($this->defaultLocale === '') {
             $this->defaultLocale = 'en-US';
         }
+
+        $this->uriBuilder = $uriBuilder ?? new MovieApiUriBuilder;
     }
+
+    protected MovieApiUriBuilder $uriBuilder;
 
     /**
      * @return array<string, mixed>
@@ -82,27 +88,7 @@ class TmdbClient
 
     protected function buildUri(array $segments, array $query = []): Uri
     {
-        $uri = Uri::of()->withPath($this->buildPath($segments));
-
-        if ($query !== []) {
-            $uri = $uri->withQuery($query);
-        }
-
-        return $uri;
-    }
-
-    protected function buildPath(array $segments): string
-    {
-        if ($segments === []) {
-            return '/';
-        }
-
-        $encodedSegments = array_map(
-            static fn (string|int $segment): string => rawurlencode((string) $segment),
-            $segments,
-        );
-
-        return implode('/', $encodedSegments);
+        return $this->uriBuilder->build($segments, $query);
     }
 
     protected function send(Uri $uri): array

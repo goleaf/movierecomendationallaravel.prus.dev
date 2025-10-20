@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MovieApis;
 
+use App\Support\Http\MovieApiUriBuilder;
 use App\Support\Http\Policy;
 use Illuminate\Support\Uri;
 
@@ -15,7 +16,12 @@ class OmdbClient
     public function __construct(
         protected RateLimitedClient $client,
         protected array $defaultParameters = [],
-    ) {}
+        ?MovieApiUriBuilder $uriBuilder = null,
+    ) {
+        $this->uriBuilder = $uriBuilder ?? new MovieApiUriBuilder;
+    }
+
+    protected MovieApiUriBuilder $uriBuilder;
 
     /**
      * @param  array<string, mixed>  $parameters
@@ -57,12 +63,7 @@ class OmdbClient
      */
     protected function buildQuery(array $query, array $overrides = []): array
     {
-        $merged = array_merge($this->defaultParameters, $overrides, $query);
-
-        return array_filter(
-            $merged,
-            static fn ($value) => $value !== null && $value !== ''
-        );
+        return array_merge($this->defaultParameters, $overrides, $query);
     }
 
     /**
@@ -71,15 +72,9 @@ class OmdbClient
      */
     protected function buildUri(array $query, array $overrides = []): Uri
     {
-        $uri = Uri::of('/');
-
         $parameters = $this->buildQuery($query, $overrides);
 
-        if ($parameters !== []) {
-            $uri = $uri->withQuery($parameters);
-        }
-
-        return $uri;
+        return $this->uriBuilder->build([], $parameters);
     }
 
     protected function send(Uri $uri): array

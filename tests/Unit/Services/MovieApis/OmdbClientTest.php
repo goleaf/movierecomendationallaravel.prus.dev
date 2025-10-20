@@ -6,6 +6,7 @@ namespace Tests\Unit\Services\MovieApis;
 
 use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
+use App\Support\Http\MovieApiUriBuilder;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -25,6 +26,7 @@ class OmdbClientTest extends TestCase
             $mock->shouldReceive('get')
                 ->once()
                 ->with('/', [
+                    'apikey' => 'test-key',
                     'r' => 'json',
                     'plot' => 'full',
                     'type' => 'movie',
@@ -33,10 +35,14 @@ class OmdbClientTest extends TestCase
                 ->andReturn(['Response' => 'True']);
         });
 
-        $service = new OmdbClient($client, [
-            'r' => 'json',
-            'plot' => 'short',
-        ]);
+        $service = new OmdbClient(
+            $client,
+            [
+                'r' => 'json',
+                'plot' => 'short',
+            ],
+            new MovieApiUriBuilder('apikey', 'test-key'),
+        );
 
         $result = $service->findByImdbId('tt7654321', [
             'plot' => 'full',
@@ -52,6 +58,7 @@ class OmdbClientTest extends TestCase
             $mock->shouldReceive('get')
                 ->once()
                 ->with('/', [
+                    'apikey' => 'test-key',
                     'r' => 'json',
                     'plot' => 'short',
                     's' => 'Matrix',
@@ -60,13 +67,18 @@ class OmdbClientTest extends TestCase
                 ->andReturn(['Search' => []]);
         });
 
-        $service = new OmdbClient($client, [
-            'r' => 'json',
-            'plot' => 'short',
-        ]);
+        $service = new OmdbClient(
+            $client,
+            [
+                'r' => 'json',
+                'plot' => 'short',
+            ],
+            new MovieApiUriBuilder('apikey', 'test-key'),
+        );
 
         $result = $service->search('Matrix', [
             'type' => null,
+            'page' => '',
             'y' => 1999,
         ]);
 

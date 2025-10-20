@@ -8,6 +8,7 @@ use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\RateLimitedClientConfig;
 use App\Services\MovieApis\TmdbClient;
+use App\Support\Http\MovieApiUriBuilder;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,9 +30,7 @@ class MovieApiServiceProvider extends ServiceProvider
                 retry: (array) ($config['retry'] ?? []),
                 backoff: (array) ($config['backoff'] ?? []),
                 rateLimit: (array) ($config['rate_limit'] ?? []),
-                defaultQuery: [
-                    'api_key' => $config['key'] ?? null,
-                ],
+                defaultQuery: [],
                 defaultHeaders: (array) ($config['headers'] ?? []),
                 rateLimiterKey: 'tmdb:'.md5((string) ($config['key'] ?? 'tmdb')),
             );
@@ -41,7 +40,9 @@ class MovieApiServiceProvider extends ServiceProvider
                 $clientConfig,
             );
 
-            return new TmdbClient($client, $defaultLocale, $acceptedLocales);
+            $uriBuilder = new MovieApiUriBuilder('api_key', (string) ($config['key'] ?? ''));
+
+            return new TmdbClient($client, $defaultLocale, $acceptedLocales, $uriBuilder);
         });
 
         $this->app->singleton(OmdbClient::class, function ($app): OmdbClient {
@@ -53,9 +54,7 @@ class MovieApiServiceProvider extends ServiceProvider
                 retry: (array) ($config['retry'] ?? []),
                 backoff: (array) ($config['backoff'] ?? []),
                 rateLimit: (array) ($config['rate_limit'] ?? []),
-                defaultQuery: [
-                    'apikey' => $config['key'] ?? null,
-                ],
+                defaultQuery: [],
                 defaultHeaders: (array) ($config['headers'] ?? []),
                 rateLimiterKey: 'omdb:'.md5((string) ($config['key'] ?? 'omdb')),
             );
@@ -65,7 +64,9 @@ class MovieApiServiceProvider extends ServiceProvider
                 $clientConfig,
             );
 
-            return new OmdbClient($client, (array) ($config['default_params'] ?? []));
+            $uriBuilder = new MovieApiUriBuilder('apikey', (string) ($config['key'] ?? ''));
+
+            return new OmdbClient($client, (array) ($config['default_params'] ?? []), $uriBuilder);
         });
     }
 }
