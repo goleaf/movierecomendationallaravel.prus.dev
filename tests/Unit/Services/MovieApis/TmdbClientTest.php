@@ -6,6 +6,7 @@ namespace Tests\Unit\Services\MovieApis;
 
 use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\TmdbClient;
+use App\Support\Http\MovieApiUriBuilder;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -25,13 +26,19 @@ class TmdbClientTest extends TestCase
             $mock->shouldReceive('get')
                 ->once()
                 ->with('find/tt0123456', [
+                    'api_key' => 'test-key',
                     'external_source' => 'imdb_id',
                     'language' => 'en-US',
                 ])
                 ->andReturn(['movie_results' => []]);
         });
 
-        $service = new TmdbClient($client, 'en-US', ['en-US', 'pt-BR']);
+        $service = new TmdbClient(
+            $client,
+            'en-US',
+            ['en-US', 'pt-BR'],
+            new MovieApiUriBuilder('api_key', 'test-key'),
+        );
 
         $result = $service->findByImdbId('tt0123456', 'ru-RU');
 
@@ -44,13 +51,19 @@ class TmdbClientTest extends TestCase
             $mock->shouldReceive('get')
                 ->once()
                 ->with('tv/42', [
+                    'api_key' => 'test-key',
                     'append_to_response' => 'credits,images',
                     'language' => 'pt-BR',
                 ])
                 ->andReturn(['id' => 42]);
         });
 
-        $service = new TmdbClient($client, 'en-US', ['en-US', 'pt-BR']);
+        $service = new TmdbClient(
+            $client,
+            'en-US',
+            ['en-US', 'pt-BR'],
+            new MovieApiUriBuilder('api_key', 'test-key'),
+        );
 
         $result = $service->fetchTitle(42, 'pt-BR', 'tv', [
             'append_to_response' => 'credits,images',

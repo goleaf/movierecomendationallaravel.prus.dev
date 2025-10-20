@@ -7,6 +7,7 @@ namespace Tests\Unit;
 use App\Services\MovieApis\OmdbClient;
 use App\Services\MovieApis\RateLimitedClient;
 use App\Services\MovieApis\TmdbClient;
+use App\Support\Http\MovieApiUriBuilder;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -16,23 +17,31 @@ class ClientUriBuildTest extends TestCase
     public function test_clients_percent_encode_segments_and_query(string $value): void
     {
         $tmdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
+        $tmdbApiKey = 'tmdb key '.$value;
 
         $tmdbRateLimitedClient->expects($this->once())
             ->method('get')
             ->with(
                 $this->identicalTo('find/'.rawurlencode($value)),
                 $this->identicalTo([
+                    'api_key' => $tmdbApiKey,
                     'external_source' => 'imdb_id',
                     'language' => 'en-US',
                 ]),
             )
             ->willReturn([]);
 
-        $tmdbClient = new TmdbClient($tmdbRateLimitedClient, 'en-US');
+        $tmdbClient = new TmdbClient(
+            $tmdbRateLimitedClient,
+            'en-US',
+            [],
+            new MovieApiUriBuilder('api_key', $tmdbApiKey),
+        );
 
         $tmdbClient->findByImdbId($value);
 
-        $defaultParameters = ['apikey' => 'abc 123'];
+        $omdbApiKey = 'abc 123';
+        $defaultParameters = ['r' => 'json'];
 
         $omdbRateLimitedClient = $this->createMock(RateLimitedClient::class);
 
@@ -40,9 +49,11 @@ class ClientUriBuildTest extends TestCase
             ->method('get')
             ->with(
                 $this->identicalTo('/'),
-                $this->callback(function (array $query) use ($value, $defaultParameters): bool {
+                $this->callback(function (array $query) use ($value, $defaultParameters, $omdbApiKey): bool {
                     $expected = http_build_query(
-                        array_merge($defaultParameters, ['s' => $value]),
+                        array_merge([
+                            'apikey' => $omdbApiKey,
+                        ], $defaultParameters, ['s' => $value]),
                         '',
                         '&',
                         PHP_QUERY_RFC3986,
@@ -58,7 +69,11 @@ class ClientUriBuildTest extends TestCase
             )
             ->willReturn([]);
 
-        $omdbClient = new OmdbClient($omdbRateLimitedClient, $defaultParameters);
+        $omdbClient = new OmdbClient(
+            $omdbRateLimitedClient,
+            $defaultParameters,
+            new MovieApiUriBuilder('apikey', $omdbApiKey),
+        );
 
         $omdbClient->search($value);
     }
