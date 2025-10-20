@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
 use App\Http\Controllers\AdminSsrController;
 use App\Http\Controllers\CtrSvgBarsController;
 use App\Http\Controllers\CtrSvgController;
@@ -67,6 +68,11 @@ Route::middleware([ResolveHost::class])->group(function (): void {
         Route::permanentRedirect('/metrics', '/analytics/queue')->name('metrics');
         Route::get('/ssr', AdminSsrController::class)->name('ssr');
         Route::get('/ssr/issues', SsrIssuesController::class)->name('ssr.issues');
+
+        Route::resource('inquiries', AdminInquiryController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middlewareFor(['store', 'update', 'destroy'], ['admin.audit', 'admin.track'])
+            ->withoutMiddlewareFor('index', ['admin.audit', 'admin.track']);
     });
 
     Route::prefix('flirt')->group(function (): void {

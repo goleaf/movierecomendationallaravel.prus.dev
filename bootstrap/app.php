@@ -44,6 +44,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'noindex' => NoIndex::class,
+            'admin.audit' => \App\Http\Middleware\AuditAdminAction::class,
+            'admin.track' => \App\Http\Middleware\TrackAdminAction::class,
         ]);
 
         $middleware->append(AddCspHeaders::class);
