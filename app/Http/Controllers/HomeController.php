@@ -8,6 +8,7 @@ use App\Models\Movie;
 use App\Services\Analytics\TrendsRollupService;
 use App\Services\Recommender;
 use App\Support\AnalyticsCache;
+use App\Support\Cache\MemoPolicy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class HomeController extends Controller
     public function __construct(
         private readonly TrendsRollupService $rollup,
         private readonly AnalyticsCache $cache,
+        private readonly MemoPolicy $memo,
     ) {}
 
     public function __invoke(Recommender $recommender): View
@@ -70,46 +72,52 @@ class HomeController extends Controller
         $to = now()->endOfDay();
         $limit = 8;
 
-        $aggregates = $this->cache->rememberTrending('snapshot', [
+        $aggregates = $this->memo->rememberGenres('home.snapshot', [
             'from' => $from,
             'to' => $to,
             'limit' => $limit,
         ], function () use ($from, $to, $limit): array {
-            $this->rollup->ensureBackfill($from, $to);
+            return $this->cache->rememberTrending('snapshot', [
+                'from' => $from,
+                'to' => $to,
+                'limit' => $limit,
+            ], function () use ($from, $to, $limit): array {
+                $this->rollup->ensureBackfill($from, $to);
 
-            if (Schema::hasTable('rec_trending_rollups')) {
-                $rollupTop = DB::table('rec_trending_rollups')
-                    ->selectRaw('movie_id, sum(clicks) as clicks')
-                    ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
-                    ->groupBy('movie_id')
-                    ->orderByDesc('clicks')
-                    ->limit($limit)
-                    ->pluck('clicks', 'movie_id')
-                    ->map(fn ($value) => (int) $value)
-                    ->all();
+                if (Schema::hasTable('rec_trending_rollups')) {
+                    $rollupTop = DB::table('rec_trending_rollups')
+                        ->selectRaw('movie_id, sum(clicks) as clicks')
+                        ->whereBetween('captured_on', [$from->toDateString(), $to->toDateString()])
+                        ->groupBy('movie_id')
+                        ->orderByDesc('clicks')
+                        ->limit($limit)
+                        ->pluck('clicks', 'movie_id')
+                        ->map(fn ($value) => (int) $value)
+                        ->all();
 
-                if ($rollupTop !== []) {
-                    return $rollupTop;
+                    if ($rollupTop !== []) {
+                        return $rollupTop;
+                    }
                 }
-            }
 
-            if (Schema::hasTable('rec_clicks')) {
-                $clickTop = DB::table('rec_clicks')
-                    ->selectRaw('movie_id, count(*) as clicks')
-                    ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
-                    ->groupBy('movie_id')
-                    ->orderByDesc('clicks')
-                    ->limit($limit)
-                    ->pluck('clicks', 'movie_id')
-                    ->map(fn ($value) => (int) $value)
-                    ->all();
+                if (Schema::hasTable('rec_clicks')) {
+                    $clickTop = DB::table('rec_clicks')
+                        ->selectRaw('movie_id, count(*) as clicks')
+                        ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+                        ->groupBy('movie_id')
+                        ->orderByDesc('clicks')
+                        ->limit($limit)
+                        ->pluck('clicks', 'movie_id')
+                        ->map(fn ($value) => (int) $value)
+                        ->all();
 
-                if ($clickTop !== []) {
-                    return $clickTop;
+                    if ($clickTop !== []) {
+                        return $clickTop;
+                    }
                 }
-            }
 
-            return [];
+                return [];
+            });
         });
 
         $aggregates = collect($aggregates)
