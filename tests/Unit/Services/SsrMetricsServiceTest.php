@@ -38,6 +38,7 @@ class SsrMetricsServiceTest extends TestCase
                 'has_open_graph' => true,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
+                'recorded_at' => $timestamp,
                 'collected_at' => $timestamp,
             ]);
         }

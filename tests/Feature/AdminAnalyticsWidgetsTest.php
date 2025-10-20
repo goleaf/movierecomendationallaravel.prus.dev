@@ -39,13 +39,13 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertViewHas('rows', function (array $rows): bool {
-                $this->assertSame('home', $rows[0]['label']);
-                $this->assertSame(17, $rows[0]['imps']);
+                $this->assertSame('Home', $rows[0]['label']);
+                $this->assertSame(8, $rows[0]['imps']);
                 $this->assertSame(4, $rows[0]['clicks']);
-                $this->assertSame(12, $rows[0]['views']);
+                $this->assertSame(6, $rows[0]['views']);
 
                 $totals = end($rows);
-                $this->assertSame('Итого', $totals['label']);
+                $this->assertSame(__('admin.ctr.funnels.total'), $totals['label']);
                 $this->assertSame(17, $totals['imps']);
                 $this->assertSame(11, $totals['clicks']);
                 $this->assertSame(12, $totals['views']);
@@ -80,9 +80,14 @@ class AdminAnalyticsWidgetsTest extends TestCase
 
         $scoreComponent->assertSee('SSR Score (trend)');
 
-        Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
-            ->assertSee('/');
+        $dropComponent = Livewire::test(SsrDropWidget::class);
+
+        $this->assertSame(
+            __('analytics.widgets.ssr_drop.heading'),
+            $dropComponent->instance()->getHeading(),
+        );
+
+        $dropComponent->assertSee('/');
 
         $this->assertEquals(
             [185, 244, 201, 176, 192],
@@ -92,11 +97,21 @@ class AdminAnalyticsWidgetsTest extends TestCase
 
     public function test_z_test_widget_displays_variant_breakdown(): void
     {
+        $expectedVariantADescription = __('analytics.widgets.z_test.description_format', [
+            'impressions' => __('analytics.widgets.z_test.impressions', ['count' => number_format(9)]),
+            'clicks' => __('analytics.widgets.z_test.clicks', ['count' => number_format(7)]),
+        ]);
+
+        $expectedVariantBDescription = __('analytics.widgets.z_test.description_format', [
+            'impressions' => __('analytics.widgets.z_test.impressions', ['count' => number_format(8)]),
+            'clicks' => __('analytics.widgets.z_test.clicks', ['count' => number_format(4)]),
+        ]);
+
         Livewire::test(ZTestWidget::class)
             ->assertSee('CTR A')
-            ->assertSee('Imps:9 Clicks:7')
+            ->assertSee($expectedVariantADescription)
             ->assertSee('CTR B')
-            ->assertSee('Imps:8 Clicks:4')
+            ->assertSee($expectedVariantBDescription)
             ->assertSee('Z-test');
     }
 }

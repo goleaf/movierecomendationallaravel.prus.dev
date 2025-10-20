@@ -82,12 +82,12 @@ class SsrMetricsMiddlewareTest extends TestCase
                 return false;
             }
 
-            if (! isset($payload['collected_at']) || ! is_string($payload['collected_at'])) {
+            if (! isset($payload['recorded_at']) || ! is_string($payload['recorded_at'])) {
                 return false;
             }
 
             try {
-                Carbon::parse($payload['collected_at']);
+                Carbon::parse($payload['recorded_at']);
             } catch (\Throwable) {
                 return false;
             }

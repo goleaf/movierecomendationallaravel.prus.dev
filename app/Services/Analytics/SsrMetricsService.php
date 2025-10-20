@@ -232,6 +232,10 @@ class SsrMetricsService
             return 'created_at';
         }
 
+        if (Schema::hasColumn('ssr_metrics', 'recorded_at')) {
+            return 'recorded_at';
+        }
+
         return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 
@@ -248,7 +252,8 @@ class SsrMetricsService
      */
     private function resolveFallbackDate(array $record): ?string
     {
-        $timestamp = $record['ts']
+        $timestamp = $record['recorded_at']
+            ?? $record['ts']
             ?? $record['timestamp']
             ?? $record['collected_at']
             ?? null;
