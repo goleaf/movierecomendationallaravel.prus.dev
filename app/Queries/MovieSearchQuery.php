@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Queries;
 
 use App\Models\Movie;
+use App\Search\DSL;
 use App\Search\QueryBuilderExtensions;
 use App\Support\MovieSearchFilters;
-use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseQueryBuilder;
-use Illuminate\Database\SQLiteConnection;
 
 final class MovieSearchQuery
 {
@@ -55,31 +54,7 @@ final class MovieSearchQuery
 
     private function applySearch(string $term): void
     {
-        $tokens = $this->tokenize($term);
-
-        if ($tokens === []) {
-            return;
-        }
-
-        $columns = $this->searchableColumns;
-
-        $this->builder->whereAll(array_map(
-            function (string $token) use ($columns): callable {
-                $pattern = $this->buildLikePattern($token);
-
-                return function (Builder|BaseQueryBuilder $query) use ($columns, $pattern): void {
-                    $query->whereAny(array_map(
-                        function (string $column) use ($pattern): callable {
-                            return function (Builder|BaseQueryBuilder $columnQuery) use ($column, $pattern): void {
-                                $this->applyLike($columnQuery, $column, $pattern);
-                            };
-                        },
-                        $columns
-                    ));
-                };
-            },
-            $tokens
-        ));
+        $this->builder = DSL::for($this->builder)->search($this->searchableColumns, $term);
     }
 
     private function applyType(?string $type): void
@@ -115,49 +90,5 @@ final class MovieSearchQuery
         if ($clauses !== []) {
             $this->builder->whereAll($clauses);
         }
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function tokenize(string $value): array
-    {
-        $value = trim($value);
-
-        if ($value === '') {
-            return [];
-        }
-
-        $tokens = preg_split('/\s+/u', $value) ?: [];
-
-        return array_values(array_filter($tokens, static fn (string $token): bool => $token !== ''));
-    }
-
-    private function buildLikePattern(string $value): string
-    {
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
-
-        return '%'.$escaped.'%';
-    }
-
-    private function applyLike(Builder|BaseQueryBuilder $builder, string $column, string $pattern): void
-    {
-        $query = $builder instanceof Builder ? $builder->getQuery() : $builder;
-        $connection = $query->getConnection();
-
-        if ($this->requiresLowercaseFallback($connection)) {
-            $wrapped = $query->getGrammar()->wrap($column);
-
-            $builder->whereRaw('lower('.$wrapped.') like ?', [mb_strtolower($pattern, 'UTF-8')]);
-
-            return;
-        }
-
-        $builder->whereLike($column, $pattern);
-    }
-
-    private function requiresLowercaseFallback(ConnectionInterface $connection): bool
-    {
-        return $connection instanceof SQLiteConnection;
     }
 }
