@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\MovieFactory;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
+use Traversable;
 use Kirschbaum\Commentions\Contracts\Commentable;
 use Kirschbaum\Commentions\HasComments;
 
@@ -127,6 +130,171 @@ class Movie extends Model implements Commentable
             + (($minimumVotes / ($voteCount + $minimumVotes)) * $globalAverage);
 
         return round($weighted, 4);
+    }
+
+    protected function newCollection(array $models = []): EloquentCollection
+    {
+        $collection = parent::newCollection($models);
+
+        self::eagerLoadListRelations($collection);
+
+        return $collection;
+    }
+
+    /**
+     * @param  iterable<int, self>|self|null  $movies
+     */
+    public static function ensureListRelationsLoaded(iterable|self|null $movies): void
+    {
+        if ($movies === null) {
+            return;
+        }
+
+        $collection = self::normalizeToEloquentCollection($movies);
+
+        if ($collection === null) {
+            return;
+        }
+
+        self::eagerLoadListRelations($collection);
+    }
+
+    protected static function eagerLoadListRelations(EloquentCollection $movies): void
+    {
+        if ($movies->isEmpty() || ! self::shouldEagerLoadListRelations()) {
+            return;
+        }
+
+        $relations = self::listRelationLoaders();
+
+        if ($relations === []) {
+            return;
+        }
+
+        $movies->loadMissing($relations);
+    }
+
+    protected static function shouldEagerLoadListRelations(): bool
+    {
+        return (bool) config('flags.movie.list_eager_load.enabled', true);
+    }
+
+    /**
+     * @return array<string, callable>
+     */
+    protected static function listRelationLoaders(): array
+    {
+        $definitions = self::normalizeRelationDefinitions(
+            (array) config('flags.movie.list_eager_load.relations', [])
+        );
+
+        if ($definitions === []) {
+            return [];
+        }
+
+        $loaders = [];
+
+        foreach ($definitions as $definition) {
+            $relation = $definition['relation'];
+            $limit = $definition['limit'];
+
+            if (! self::relationExists($relation)) {
+                continue;
+            }
+
+            $loaders[$relation] = static fn ($query) => $query->limit($limit);
+        }
+
+        return $loaders;
+    }
+
+    /**
+     * @param  array<mixed>  $definitions
+     * @return array<int, array{relation: string, limit: int}>
+     */
+    protected static function normalizeRelationDefinitions(array $definitions): array
+    {
+        $normalized = [];
+
+        foreach ($definitions as $key => $definition) {
+            $relation = null;
+            $limit = null;
+
+            if (is_int($key)) {
+                if (is_array($definition)) {
+                    $relation = $definition['relation'] ?? null;
+                    $limit = $definition['limit'] ?? null;
+                }
+            } elseif (is_string($key)) {
+                if (is_array($definition)) {
+                    $relation = $definition['relation'] ?? $key;
+                    $limit = $definition['limit'] ?? null;
+                } else {
+                    $relation = $key;
+                    $limit = $definition;
+                }
+            }
+
+            if (! is_string($relation) || $relation === '') {
+                continue;
+            }
+
+            $limit = is_numeric($limit) ? (int) $limit : null;
+
+            if ($limit === null || $limit <= 0) {
+                continue;
+            }
+
+            $normalized[] = [
+                'relation' => $relation,
+                'limit' => $limit,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    protected static function relationExists(string $relation): bool
+    {
+        if (method_exists(static::class, $relation)) {
+            return true;
+        }
+
+        $class = static::class;
+
+        return isset(static::$relationResolvers[$class][$relation]);
+    }
+
+    /**
+     * @param  iterable<int, self>|self  $movies
+     */
+    protected static function normalizeToEloquentCollection(iterable|self $movies): ?EloquentCollection
+    {
+        if ($movies instanceof self) {
+            return new EloquentCollection([$movies]);
+        }
+
+        if ($movies instanceof EloquentCollection) {
+            return $movies;
+        }
+
+        if ($movies instanceof BaseCollection) {
+            $movies = $movies->all();
+        } elseif ($movies instanceof Traversable) {
+            $movies = iterator_to_array($movies);
+        }
+
+        if (! is_array($movies)) {
+            return null;
+        }
+
+        $filtered = array_values(array_filter($movies, static fn ($model): bool => $model instanceof self));
+
+        if ($filtered === []) {
+            return null;
+        }
+
+        return new EloquentCollection($filtered);
     }
 
     /**

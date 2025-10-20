@@ -22,6 +22,7 @@ class MovieController extends Controller
         );
 
         $movie->loadCount('comments');
+        Movie::ensureListRelationsLoaded($movie);
 
         return view('movies.show', [
             'movie' => $movie,
