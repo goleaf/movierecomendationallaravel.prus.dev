@@ -39,13 +39,13 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(FunnelWidget::class)
             ->assertViewHas('rows', function (array $rows): bool {
-                $this->assertSame('home', $rows[0]['label']);
-                $this->assertSame(17, $rows[0]['imps']);
+                $this->assertSame('Home', $rows[0]['label']);
+                $this->assertSame(8, $rows[0]['imps']);
                 $this->assertSame(4, $rows[0]['clicks']);
-                $this->assertSame(12, $rows[0]['views']);
+                $this->assertSame(6, $rows[0]['views']);
 
                 $totals = end($rows);
-                $this->assertSame('Итого', $totals['label']);
+                $this->assertSame('admin.ctr.funnels.total', $totals['label']);
                 $this->assertSame(17, $totals['imps']);
                 $this->assertSame(11, $totals['clicks']);
                 $this->assertSame(12, $totals['views']);
@@ -81,8 +81,8 @@ class AdminAnalyticsWidgetsTest extends TestCase
         $scoreComponent->assertSee('SSR Score (trend)');
 
         Livewire::test(SsrDropWidget::class)
-            ->assertSee('Top pages by SSR score drop')
-            ->assertSee('/');
+            ->assertSee('/')
+            ->assertSee('Δ');
 
         $this->assertEquals(
             [185, 244, 201, 176, 192],
@@ -94,9 +94,9 @@ class AdminAnalyticsWidgetsTest extends TestCase
     {
         Livewire::test(ZTestWidget::class)
             ->assertSee('CTR A')
-            ->assertSee('Imps:9 Clicks:7')
+            ->assertSee('Imps: 9 · Clicks: 7')
             ->assertSee('CTR B')
-            ->assertSee('Imps:8 Clicks:4')
+            ->assertSee('Imps: 8 · Clicks: 4')
             ->assertSee('Z-test');
     }
 }

@@ -8,12 +8,14 @@ use App\Models\Movie;
 use App\Models\User;
 use App\Observers\MovieObserver;
 use App\Services\Ingestion\IdempotencyService;
+use App\Services\SsrMetricPayloadNormalizer;
+use App\Services\SsrMetricRecorder;
 use App\Services\SsrMetricsService;
 use App\Support\SsrMetricsFallbackStore;
 use Filament\Facades\Filament;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Cache\Repository;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,8 +31,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(IdempotencyService::class, static fn (): IdempotencyService => new IdempotencyService);
-        $this->app->singleton(SsrMetricsService::class, static function ($app): SsrMetricsService {
-            return new SsrMetricsService($app->make(SsrMetricsFallbackStore::class));
+        $this->app->singleton(SsrMetricsService::class, static fn (): SsrMetricsService => new SsrMetricsService);
+        $this->app->singleton(SsrMetricPayloadNormalizer::class, static fn (): SsrMetricPayloadNormalizer => new SsrMetricPayloadNormalizer);
+        $this->app->singleton(SsrMetricRecorder::class, static function ($app): SsrMetricRecorder {
+            return new SsrMetricRecorder($app->make(SsrMetricsFallbackStore::class));
         });
 
         $this->registerHotPathCache('cache.hot_path.filters', 'hot_path_filters');

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Services\SsrMetricsService;
+use App\Services\SsrMetricPayloadNormalizer;
+use App\Services\SsrMetricRecorder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,8 +24,10 @@ class StoreSsrMetric implements ShouldQueue
      */
     public function __construct(public array $payload) {}
 
-    public function handle(SsrMetricsService $ssrMetricsService): void
+    public function handle(SsrMetricPayloadNormalizer $normalizer, SsrMetricRecorder $recorder): void
     {
-        $ssrMetricsService->storeMetric($this->payload);
+        $normalizedPayload = $normalizer->normalize($this->payload);
+
+        $recorder->record($normalizedPayload, $this->payload);
     }
 }

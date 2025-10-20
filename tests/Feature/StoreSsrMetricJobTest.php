@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\StoreSsrMetric;
-use App\Services\SsrMetricsService;
+use App\Services\SsrMetricPayloadNormalizer;
+use App\Services\SsrMetricRecorder;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,7 @@ class StoreSsrMetricJobTest extends TestCase
             'blocking_scripts' => 2,
             'first_byte_ms' => 123,
             'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 123,
                 'html_size' => 2048,
@@ -61,7 +63,10 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class)
+        );
 
         $row = DB::table('ssr_metrics')->first();
 
@@ -112,6 +117,7 @@ class StoreSsrMetricJobTest extends TestCase
             'blocking_scripts' => 1,
             'first_byte_ms' => 98,
             'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [
                 'first_byte_ms' => 98,
                 'html_size' => 1024,
@@ -126,7 +132,10 @@ class StoreSsrMetricJobTest extends TestCase
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class)
+        );
 
         $fallbackDisk = config('ssrmetrics.storage.fallback.disk');
         $fallbackFile = config('ssrmetrics.storage.fallback.files.incoming');
@@ -141,6 +150,7 @@ class StoreSsrMetricJobTest extends TestCase
         $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame($now->toIso8601String(), $decoded['ts']);
+        $this->assertSame($now->toIso8601String(), $decoded['recorded_at']);
         $this->assertSame('/movies', $decoded['path']);
         $this->assertSame(70, $decoded['score']);
         $this->assertSame(1024, $decoded['size']);
@@ -183,11 +193,15 @@ class StoreSsrMetricJobTest extends TestCase
             'blocking_scripts' => 0,
             'first_byte_ms' => 45,
             'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class)
+        );
 
         Storage::disk('metrics-disk')->assertExists('metrics/custom.jsonl');
 
@@ -198,6 +212,8 @@ class StoreSsrMetricJobTest extends TestCase
 
         $decoded = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
 
+        $this->assertSame($now->toIso8601String(), $decoded['ts']);
+        $this->assertSame($now->toIso8601String(), $decoded['recorded_at']);
         $this->assertSame('/custom', $decoded['path']);
     }
 
@@ -206,25 +222,43 @@ class StoreSsrMetricJobTest extends TestCase
         config()->set('ssrmetrics.storage.fallback.disk', 'local');
         config()->set('ssrmetrics.storage.fallback.files.incoming', 'metrics/ssr.jsonl');
 
-        $service = app(SsrMetricsService::class);
+        $normalizer = app(SsrMetricPayloadNormalizer::class);
+        $recorder = app(SsrMetricRecorder::class);
 
         $oldTimestamp = Carbon::parse('2024-02-01 00:00:00');
 
         config()->set('ssrmetrics.retention.primary_days', 0);
 
-        $service->storeMetric([
-            'path' => '/old',
-            'score' => 40,
-            'html_size' => 256,
-            'meta_count' => 1,
-            'og_count' => 0,
-            'ldjson_count' => 0,
-            'img_count' => 1,
-            'blocking_scripts' => 0,
-            'first_byte_ms' => 20,
-            'collected_at' => $oldTimestamp->toIso8601String(),
-            'meta' => [],
-        ]);
+        $recorder->record(
+            $normalizer->normalize([
+                'path' => '/old',
+                'score' => 40,
+                'html_size' => 256,
+                'meta_count' => 1,
+                'og_count' => 0,
+                'ldjson_count' => 0,
+                'img_count' => 1,
+                'blocking_scripts' => 0,
+                'first_byte_ms' => 20,
+                'collected_at' => $oldTimestamp->toIso8601String(),
+                'recorded_at' => $oldTimestamp->toIso8601String(),
+                'meta' => [],
+            ]),
+            [
+                'path' => '/old',
+                'score' => 40,
+                'html_size' => 256,
+                'meta_count' => 1,
+                'og_count' => 0,
+                'ldjson_count' => 0,
+                'img_count' => 1,
+                'blocking_scripts' => 0,
+                'first_byte_ms' => 20,
+                'collected_at' => $oldTimestamp->toIso8601String(),
+                'recorded_at' => $oldTimestamp->toIso8601String(),
+                'meta' => [],
+            ]
+        );
 
         config()->set('ssrmetrics.retention.primary_days', 5);
 
@@ -242,11 +276,12 @@ class StoreSsrMetricJobTest extends TestCase
             'blocking_scripts' => 0,
             'first_byte_ms' => 80,
             'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle($service);
+        $job->handle($normalizer, $recorder);
 
         $paths = DB::table('ssr_metrics')->pluck('path')->all();
 
@@ -287,11 +322,15 @@ class StoreSsrMetricJobTest extends TestCase
             'blocking_scripts' => 0,
             'first_byte_ms' => 60,
             'collected_at' => $now->toIso8601String(),
+            'recorded_at' => $now->toIso8601String(),
             'meta' => [],
         ];
 
         $job = new StoreSsrMetric($payload);
-        $job->handle(app(SsrMetricsService::class));
+        $job->handle(
+            app(SsrMetricPayloadNormalizer::class),
+            app(SsrMetricRecorder::class)
+        );
 
         $content = Storage::disk('metrics-disk')->get('metrics/ssr.jsonl');
         $lines = array_values(array_filter(explode(PHP_EOL, $content)));

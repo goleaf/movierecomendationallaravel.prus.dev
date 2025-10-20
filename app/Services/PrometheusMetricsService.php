@@ -10,6 +10,7 @@ use App\Support\SsrMetricsFallbackStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class PrometheusMetricsService
 {
@@ -116,10 +117,27 @@ class PrometheusMetricsService
 
         if ($samples === 0) {
             $fallback = $this->loadSsrFallback();
+
             if ($fallback !== []) {
-                $samples = count($fallback);
-                $avgScore = $this->averageFromRecords($fallback, 'score');
-                $avgFirstByte = $this->averageFromRecords($fallback, 'first_byte_ms');
+                $filtered = array_values(array_filter($fallback, function ($record) use ($from): bool {
+                    if (! is_array($record)) {
+                        return false;
+                    }
+
+                    $timestamp = $this->resolveFallbackTimestamp($record);
+
+                    if ($timestamp === null) {
+                        return true;
+                    }
+
+                    return $timestamp->greaterThanOrEqualTo($from);
+                }));
+
+                if ($filtered !== []) {
+                    $samples = count($filtered);
+                    $avgScore = $this->averageFromRecords($filtered, 'score');
+                    $avgFirstByte = $this->averageFromRecords($filtered, 'first_byte_ms');
+                }
             }
         }
 
@@ -256,6 +274,44 @@ class PrometheusMetricsService
             return 'created_at';
         }
 
+        if (Schema::hasColumn('ssr_metrics', 'recorded_at')) {
+            return 'recorded_at';
+        }
+
         return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function resolveFallbackTimestamp(array $record): ?CarbonImmutable
+    {
+        $value = $record['recorded_at']
+            ?? $record['ts']
+            ?? $record['timestamp']
+            ?? $record['collected_at']
+            ?? null;
+
+        if ($value instanceof CarbonImmutable) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return CarbonImmutable::createFromInterface($value);
+        }
+
+        if (is_numeric($value)) {
+            return CarbonImmutable::createFromTimestamp((int) $value);
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return CarbonImmutable::parse($value);
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }
