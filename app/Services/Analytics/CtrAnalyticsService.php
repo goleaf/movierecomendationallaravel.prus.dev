@@ -699,18 +699,7 @@ class CtrAnalyticsService
 
     private function translatePlacement(string $placement): string
     {
-        $key = "admin.ctr.filters.placements.$placement";
-        $translated = __($key);
-
-        if (is_array($translated)) {
-            $translated = reset($translated) ?: null;
-        }
-
-        if (is_string($translated) && $translated !== $key && $translated !== '') {
-            return $translated;
-        }
-
-        return ucfirst($placement);
+        return $placement;
     }
 
     /**

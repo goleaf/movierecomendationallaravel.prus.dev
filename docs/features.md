@@ -34,7 +34,8 @@ This catalog highlights the major product surfaces in MovieRec so newcomers can 
 
 ### Filament analytics panel
 - **Widgets:** Located under `app/Filament/Widgets/`, including CTR charts (`CtrLineWidget`, `CtrBarsWidget`), funnels (`FunnelWidget`), A/B experiment reporting (`ZTestWidget`), queue health (`QueueStatsWidget`), and SSR insights (`SsrStatsWidget`, `SsrDropWidget`).
-- **Data dependencies:** CTR visuals and funnels require both `rec_ab_logs` impressions and `rec_clicks` outcomes. Queue metrics pull from `jobs`, `failed_jobs`, and Redis Horizon keys, while SSR widgets reuse `ssr_metrics` or storage snapshots.
+- **Data dependencies:** CTR visuals and funnels require both `rec_ab_logs` impressions and `rec_clicks` outcomes. Queue metrics pull from `jobs`, `failed_jobs`, and Redis Horizon keys, while SSR widgets rely on the central `SsrMetricsAggregator` to hydrate `ssr_metrics` records or JSON fallbacks.
+- **Unified SSR metrics:** The aggregator powers Filament cards, the admin SSR page, and Prometheus gauges with today/yesterday/seven-day deltas plus first-byte averages sourced from either the database or JSON fallbacks.
 
 ### Admin metrics snapshot
 - **Entry point:** [`AdminMetricsController`](../app/Http/Controllers/AdminMetricsController.php) renders `resources/views/admin/metrics.blade.php`.

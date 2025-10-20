@@ -64,7 +64,7 @@ return [
         ],
         'funnels' => [
             'heading' => 'Funnels',
-            'total' => 'Total',
+            'total' => 'Итого',
         ],
         'empty_summary' => 'No summary data for the selected filters.',
     ],

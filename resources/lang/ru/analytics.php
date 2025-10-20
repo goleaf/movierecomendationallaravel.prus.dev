@@ -51,9 +51,9 @@ return [
             'ctr_a' => 'CTR A',
             'ctr_b' => 'CTR B',
             'z_test' => 'Z-test',
-            'impressions' => 'Показы: :count',
-            'clicks' => 'Клики: :count',
-            'description_format' => ':impressions · :clicks',
+            'impressions' => 'Показы::count',
+            'clicks' => 'Клики::count',
+            'description_format' => ':impressions :clicks',
             'p_value' => [
                 'significant' => 'p < 0.05',
                 'not_significant' => 'p ≥ 0.05',
@@ -64,7 +64,31 @@ return [
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',
-            'description' => '{0}Нет путей|{1}:count путь|[2,4]:count пути|[5,*]:count путей',
+            'empty' => 'Данные SSR недоступны.',
+            'summary' => '{0}Нет отслеживаемых путей за период :start — :end.|{1}Отслеживаем :paths путь по :samples измерениям за период :start — :end.|[2,4]Отслеживаем :paths пути по :samples измерениям за период :start — :end.|[5,*]Отслеживаем :paths путей по :samples измерениям за период :start — :end.',
+            'periods' => [
+                'today' => [
+                    'label' => 'Сегодня',
+                    'comparison' => 'к вчерашнему дню',
+                ],
+                'yesterday' => [
+                    'label' => 'Вчера',
+                    'comparison' => 'к позавчерашнему дню',
+                ],
+                'seven_days' => [
+                    'label' => 'Последние 7 дней',
+                    'comparison' => 'к прошлой неделе',
+                ],
+                'delta' => 'Δ :delta :comparison',
+                'delta_unavailable' => 'Δ н/д',
+                'samples' => '{0}Нет выборок|{1}:count выборка|[2,4]:count выборки|[5,*]:count выборок',
+                'first_byte' => [
+                    'label' => 'Время первого байта: :value мс',
+                    'delta' => '(:delta мс :comparison)',
+                ],
+                'first_byte_unavailable' => 'Время первого байта не фиксируется',
+                'range' => 'Период: :start → :end',
+            ],
         ],
         'ssr_drop' => [
             'heading' => 'Топ страниц по просадке SSR (день к дню)',

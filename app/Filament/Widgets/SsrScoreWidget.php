@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Services\Analytics\SsrMetricsService;
+use App\Services\Analytics\SsrMetricsAggregator;
 use Filament\Widgets\ChartWidget;
 
 class SsrScoreWidget extends ChartWidget
@@ -21,6 +21,6 @@ class SsrScoreWidget extends ChartWidget
 
     protected function getData(): array
     {
-        return app(SsrMetricsService::class)->trend();
+        return app(SsrMetricsAggregator::class)->trend();
     }
 }

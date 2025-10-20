@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Filament\Widgets\SsrScoreWidget;
 use App\Filament\Widgets\SsrStatsWidget;
+use App\Services\Analytics\SsrMetricsAggregator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -50,9 +51,17 @@ class SsrAnalyticsFallbackTest extends TestCase
         Storage::disk('local')->put('metrics/ssr.jsonl', implode("\n", $lines));
 
         Livewire::test(SsrStatsWidget::class)
-            ->assertSee('SSR Score')
-            ->assertSee('84')
-            ->assertSee('3 paths');
+            ->assertSee('Today')
+            ->assertSee('Δ -2.50 vs yesterday')
+            ->assertSee('First byte not recorded')
+            ->assertSee('Range: 2024-03-19 → 2024-03-19')
+            ->assertSee('Yesterday')
+            ->assertSee('Δ n/a')
+            ->assertSee('Last 7 days')
+            ->assertSee('Δ n/a');
+
+        $summary = app(SsrMetricsAggregator::class)->summary();
+        $this->assertSame('Tracking 3 paths across 4 samples between 2024-03-13 and 2024-03-19.', $summary['description']);
 
         $scoreComponent = Livewire::test(SsrScoreWidget::class);
         $scoreComponent->call('rendering');

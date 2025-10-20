@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Analytics;
 
-use App\Services\Analytics\SsrMetricsService;
+use App\Services\Analytics\SsrMetricsAggregator;
 use Filament\Pages\Page;
 
 class SsrPage extends Page
@@ -19,15 +19,17 @@ class SsrPage extends Page
 
     protected static ?string $slug = 'ssr';
 
-    /** @var array{label: string, score: int, paths: int, description: string} */
-    public array $headline = [
+    /** @var array<string, mixed> */
+    public array $summary = [
         'label' => '',
-        'score' => 0,
-        'paths' => 0,
         'description' => '',
+        'paths' => 0,
+        'samples' => 0,
+        'periods' => [],
+        'source' => 'none',
     ];
 
-    /** @var array{datasets: array<int, array{label: string, data: array<int, float>}>, labels: array<int, string>} */
+    /** @var array{datasets: array<int, array<string, mixed>>, labels: array<int, string>} */
     public array $trend = [
         'datasets' => [],
         'labels' => [],
@@ -38,10 +40,10 @@ class SsrPage extends Page
 
     public function mount(): void
     {
-        $service = app(SsrMetricsService::class);
+        $aggregator = app(SsrMetricsAggregator::class);
 
-        $this->headline = $service->headline();
-        $this->trend = $service->trend();
-        $this->drops = $service->dropRows();
+        $this->summary = $aggregator->summary();
+        $this->trend = $aggregator->trend();
+        $this->drops = $aggregator->dropRows();
     }
 }

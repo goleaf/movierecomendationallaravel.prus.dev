@@ -51,9 +51,9 @@ return [
             'ctr_a' => 'CTR A',
             'ctr_b' => 'CTR B',
             'z_test' => 'Z-test',
-            'impressions' => 'Imps: :count',
-            'clicks' => 'Clicks: :count',
-            'description_format' => ':impressions · :clicks',
+            'impressions' => 'Imps::count',
+            'clicks' => 'Clicks::count',
+            'description_format' => ':impressions :clicks',
             'p_value' => [
                 'significant' => 'p < 0.05',
                 'not_significant' => 'p ≥ 0.05',
@@ -64,7 +64,31 @@ return [
         ],
         'ssr_stats' => [
             'label' => 'SSR Score',
-            'description' => '{0}No tracked paths|{1}:count path|[2,*]:count paths',
+            'empty' => 'No SSR metrics available.',
+            'summary' => '{0}No tracked paths between :start and :end.|{1}Tracking :paths path across :samples samples between :start and :end.|[2,*]Tracking :paths paths across :samples samples between :start and :end.',
+            'periods' => [
+                'today' => [
+                    'label' => 'Today',
+                    'comparison' => 'vs yesterday',
+                ],
+                'yesterday' => [
+                    'label' => 'Yesterday',
+                    'comparison' => 'vs prior day',
+                ],
+                'seven_days' => [
+                    'label' => 'Last 7 days',
+                    'comparison' => 'vs previous week',
+                ],
+                'delta' => 'Δ :delta :comparison',
+                'delta_unavailable' => 'Δ n/a',
+                'samples' => '{0}No samples|{1}:count sample|[2,*]:count samples',
+                'first_byte' => [
+                    'label' => 'First byte: :value ms',
+                    'delta' => '(:delta ms :comparison)',
+                ],
+                'first_byte_unavailable' => 'First byte not recorded',
+                'range' => 'Range: :start → :end',
+            ],
         ],
         'ssr_drop' => [
             'heading' => 'Top pages by SSR score drop (day over day)',

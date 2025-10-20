@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Services\Analytics\CtrAnalyticsService;
+use App\Services\Analytics\SsrMetricsAggregator;
 use App\Support\MetricsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class PrometheusMetricsService
     public function __construct(
         private readonly MetricsCache $cache,
         private readonly CtrAnalyticsService $ctrAnalytics,
+        private readonly SsrMetricsAggregator $ssrMetricsAggregator,
     ) {}
 
     public function render(): string
@@ -92,34 +94,19 @@ class PrometheusMetricsService
      */
     private function ssrMetrics(): array
     {
-        $from = CarbonImmutable::now()->subDay();
-        $avgScore = 0.0;
-        $avgFirstByte = 0.0;
-        $samples = 0;
+        $summary = $this->ssrMetricsAggregator->summary();
+        $periods = $summary['periods'] ?? [];
+        $today = $periods['today'] ?? [];
 
-        if (Schema::hasTable('ssr_metrics')) {
-            $timestampColumn = $this->timestampColumn();
+        $avgScore = (float) ($today['score_average'] ?? 0.0);
+        $avgFirstByte = (float) ($today['first_byte_average'] ?? 0.0);
+        $samples = (int) ($today['score_samples'] ?? 0);
 
-            $row = DB::table('ssr_metrics')
-                ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
-                ->whereNotNull($timestampColumn)
-                ->where($timestampColumn, '>=', $from->toDateTimeString())
-                ->first();
-
-            if ($row !== null) {
-                $avgScore = (float) ($row->avg_score ?? 0.0);
-                $avgFirstByte = (float) ($row->avg_first_byte ?? 0.0);
-                $samples = (int) ($row->sample_size ?? 0);
-            }
-        }
-
-        if ($samples === 0) {
-            $fallback = $this->loadSsrFallback();
-            if ($fallback !== []) {
-                $samples = count($fallback);
-                $avgScore = $this->averageFromRecords($fallback, 'score');
-                $avgFirstByte = $this->averageFromRecords($fallback, 'first_byte_ms');
-            }
+        if ($today === [] && Schema::hasTable('ssr_metrics')) {
+            $fallbackValues = $this->legacySsrMetricsFallback();
+            $avgScore = $fallbackValues['score'];
+            $avgFirstByte = $fallbackValues['first_byte'];
+            $samples = $fallbackValues['samples'];
         }
 
         return [
@@ -141,6 +128,60 @@ class PrometheusMetricsService
                 'SSR metric samples collected during the last 24 hours.',
                 $samples,
             ),
+        ];
+    }
+
+    /**
+     * @return array{name: string, type: string, help: string, value: int|float}
+     */
+    private function metric(string $name, string $type, string $help, int|float $value): array
+    {
+        return [
+            'name' => $name,
+            'type' => $type,
+            'help' => $help,
+            'value' => $value,
+        ];
+    }
+
+    /**
+     * @return array{score: float, first_byte: float, samples: int}
+     */
+    private function legacySsrMetricsFallback(): array
+    {
+        $avgScore = 0.0;
+        $avgFirstByte = 0.0;
+        $samples = 0;
+
+        if (Schema::hasTable('ssr_metrics')) {
+            $timestampColumn = $this->timestampColumn();
+
+            $row = DB::table('ssr_metrics')
+                ->selectRaw('avg(score) as avg_score, avg(first_byte_ms) as avg_first_byte, count(*) as sample_size')
+                ->whereNotNull($timestampColumn)
+                ->where($timestampColumn, '>=', CarbonImmutable::now()->subDay()->toDateTimeString())
+                ->first();
+
+            if ($row !== null) {
+                $avgScore = (float) ($row->avg_score ?? 0.0);
+                $avgFirstByte = (float) ($row->avg_first_byte ?? 0.0);
+                $samples = (int) ($row->sample_size ?? 0);
+            }
+        }
+
+        if ($samples === 0) {
+            $fallback = $this->loadSsrFallback();
+            if ($fallback !== []) {
+                $samples = count($fallback);
+                $avgScore = $this->averageFromRecords($fallback, 'score');
+                $avgFirstByte = $this->averageFromRecords($fallback, 'first_byte_ms');
+            }
+        }
+
+        return [
+            'score' => $avgScore,
+            'first_byte' => $avgFirstByte,
+            'samples' => $samples,
         ];
     }
 
@@ -236,14 +277,13 @@ class PrometheusMetricsService
         return [];
     }
 
-    private function metric(string $name, string $type, string $help, int|float $value): array
+    private function timestampColumn(): string
     {
-        return [
-            'name' => $name,
-            'type' => $type,
-            'help' => $help,
-            'value' => $value,
-        ];
+        if (! Schema::hasTable('ssr_metrics')) {
+            return 'created_at';
+        }
+
+        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 
     /**
@@ -271,14 +311,5 @@ class PrometheusMetricsService
         $formatted = number_format($value, 4, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.');
-    }
-
-    private function timestampColumn(): string
-    {
-        if (! Schema::hasTable('ssr_metrics')) {
-            return 'created_at';
-        }
-
-        return Schema::hasColumn('ssr_metrics', 'collected_at') ? 'collected_at' : 'created_at';
     }
 }
