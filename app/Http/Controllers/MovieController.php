@@ -85,6 +85,7 @@ class MovieController extends Controller
         );
 
         $movie->loadCount('comments');
+        $movie->loadListRelations();
 
         return view('movies.show', [
             'movie' => $movie,
